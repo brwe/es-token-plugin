@@ -17,8 +17,14 @@
 
 package org.elasticsearch.plugin.mapper.token;
 
+import org.elasticsearch.action.ActionModule;
+import org.elasticsearch.action.allterms.AllTermsAction;
+import org.elasticsearch.action.allterms.TransportAllTermsAction;
+import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
 import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.plugins.AbstractPlugin;
+import org.elasticsearch.rest.RestModule;
+import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 
 import java.util.Collection;
 
@@ -44,5 +50,17 @@ public class AnalyzedTextPlugin extends AbstractPlugin {
         Collection<Class<? extends Module>> modules = newArrayList();
         modules.add(AnalyzedTextIndexModule.class);
         return modules;
+    }
+
+    @Override
+    public void processModule(Module module) {
+        if (module instanceof ActionModule) {
+            ActionModule actionModule = (ActionModule) module;
+            actionModule.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
+                    TransportAllTermsShardAction.class);
+        } else if (module instanceof RestModule) {
+            RestModule restModule = (RestModule) module;
+            restModule.addRestAction(RestAllTermsAction.class);
+        }
     }
 }
