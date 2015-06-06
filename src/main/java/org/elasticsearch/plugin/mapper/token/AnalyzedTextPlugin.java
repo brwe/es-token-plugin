@@ -25,6 +25,8 @@ import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
+import org.elasticsearch.script.VectorizerScript;
+import org.elasticsearch.script.ScriptModule;
 
 import java.util.Collection;
 
@@ -62,5 +64,10 @@ public class AnalyzedTextPlugin extends AbstractPlugin {
             RestModule restModule = (RestModule) module;
             restModule.addRestAction(RestAllTermsAction.class);
         }
+    }
+
+    public void onModule(ScriptModule module) {
+        // Register each script that we defined in this plugin
+        module.registerScript("vector", VectorizerScript.Factory.class);
     }
 }
