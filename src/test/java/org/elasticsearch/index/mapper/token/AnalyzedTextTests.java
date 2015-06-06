@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.equalTo;
  *
  */
 @ElasticsearchIntegrationTest.ClusterScope(scope = ElasticsearchIntegrationTest.Scope.SUITE)
-public class SimpleAttachmentIntegrationTests extends ElasticsearchIntegrationTest {
+public class AnalyzedTextTests extends ElasticsearchIntegrationTest {
 
     @Override
     protected Settings nodeSettings(int nodeOrdinal) {
@@ -49,7 +49,6 @@ public class SimpleAttachmentIntegrationTests extends ElasticsearchIntegrationTe
                 .put("plugins." + PluginsService.LOAD_PLUGIN_FROM_CLASSPATH, true)
                 .build();
     }
-
 
     @Test
     public void testAnalyzedText() throws IOException {
@@ -77,6 +76,5 @@ public class SimpleAttachmentIntegrationTests extends ElasticsearchIntegrationTe
                 assertThat(bucket.getDocCount(), equalTo(1l));
             }
         }
-
     }
 }

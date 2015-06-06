@@ -149,9 +149,9 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
                     spare.copyUTF8Bytes(lastTerm);
                     terms.add(spare.toString());
                 }
-                BytesRef blah = new BytesRef();
-                blah.copyBytes(lastTerm);
-                lastTerm = blah;
+                BytesRef bytesRef = new BytesRef();
+                bytesRef.copyBytes(lastTerm);
+                lastTerm = bytesRef;
 
                 while (terms.size() < request.size() && lastTerm != null) {
                     moveIterators(exhausted, termIters, lastTerm, shardId);
