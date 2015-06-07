@@ -29,9 +29,8 @@ public class VectorizerScript extends AbstractSearchScript {
 
         /**
          * This method is called for every search on every shard.
-         * 
-         * @param params
-         *            list of script parameters passed with the query
+         *
+         * @param params list of script parameters passed with the query
          * @return new native script
          */
         @Override
@@ -41,9 +40,8 @@ public class VectorizerScript extends AbstractSearchScript {
     }
 
     /**
-     * @param params
-     *            terms that a scored are placed in this parameter. Initialize
-     *            them here.
+     * @param params terms that a scored are placed in this parameter. Initialize
+     *               them here.
      * @throws ScriptException
      */
     private VectorizerScript(Map<String, Object> params) throws ScriptException {

@@ -17,6 +17,7 @@
 
 package org.elasticsearch.plugin.mapper.token;
 
+import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsAction;
@@ -25,6 +26,7 @@ import org.elasticsearch.common.inject.Module;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
+import org.elasticsearch.script.NaiveBayesModelScript;
 import org.elasticsearch.script.VectorizerScript;
 import org.elasticsearch.script.ScriptModule;
 
@@ -69,5 +71,6 @@ public class AnalyzedTextPlugin extends AbstractPlugin {
     public void onModule(ScriptModule module) {
         // Register each script that we defined in this plugin
         module.registerScript("vector", VectorizerScript.Factory.class);
+        module.registerScript("nb_model", NaiveBayesModelScript.Factory.class);
     }
 }

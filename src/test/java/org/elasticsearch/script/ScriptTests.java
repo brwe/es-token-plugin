@@ -41,4 +41,20 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         assertThat(vector[2], equalTo(1.0));
 
     }
+    @Test
+    public void testNaiveBayesModelScript() {
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        ensureGreen("index");
+        refresh();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("features", new String[]{"the", "quick", "fox"});
+        parameters.put("pi", new double[]{1,2});
+        parameters.put("thetas", new double[][]{{1,2}, {2,1}});
+        parameters.put("labels", new double[]{0,1});
+        parameters.put("field", "text");
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", "native", "nb_model", parameters).get();
+        double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
+
+
+    }
 }
