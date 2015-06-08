@@ -1,6 +1,6 @@
 package org.elasticsearch.script;
 
-import org.apache.spark.mllib.classification.NaiveBayesModel;
+import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.search.lookup.IndexField;
@@ -11,16 +11,16 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * Script for predicting class with a Naive Bayes model
+ * Script for predicting class with an svm model
  */
-public class NaiveBayesModelScript extends AbstractSearchScript {
+public class SVMModelScript extends AbstractSearchScript {
 
-    NaiveBayesModel model = null;
+    SVMModel model = null;
     ArrayList<String> features = null;
     String field = null;
     double[] tfs = null;
 
-    final static public String SCRIPT_NAME = "naive_bayes_model";
+    final static public String SCRIPT_NAME = "svm_model";
 
     /**
      * Factory that is registered in
@@ -37,7 +37,7 @@ public class NaiveBayesModelScript extends AbstractSearchScript {
          */
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
-            return new NaiveBayesModelScript(params);
+            return new SVMModelScript(params);
         }
     }
 
@@ -46,34 +46,23 @@ public class NaiveBayesModelScript extends AbstractSearchScript {
      *               naive bayes model here.
      * @throws ScriptException
      */
-    private NaiveBayesModelScript(Map<String, Object> params) throws ScriptException {
+    private SVMModelScript(Map<String, Object> params) throws ScriptException {
         // get the terms
         features = (ArrayList<String>) params.get("features");
         // get the field
         field = (String) params.get("field");
-        ArrayList piAsArrayList = (ArrayList) params.get("pi");
-        ArrayList labelsAsArrayList = (ArrayList) params.get("labels");
-        ArrayList thetasAsArrayList = (ArrayList) params.get("thetas");
-        if (field == null || features == null || piAsArrayList == null || labelsAsArrayList == null || thetasAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": one of the following parameters missing: field, features, pi, thetas, labels");
+        ArrayList weightsArrayList = (ArrayList) params.get("weights");
+        Number intercept = (Number) params.get("intercept");
+        if (field == null || features == null || weightsArrayList == null || intercept == null) {
+            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
         }
         tfs = new double[features.size()];
-        double[] pi = new double[piAsArrayList.size()];
-        for (int i = 0; i < piAsArrayList.size(); i++) {
-            pi[i] = ((Number) piAsArrayList.get(i)).doubleValue();
+        double[] weights = new double[weightsArrayList.size()];
+        for (int i = 0; i < weightsArrayList.size(); i++) {
+            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
         }
-        double[] labels = new double[labelsAsArrayList.size()];
-        for (int i = 0; i < labelsAsArrayList.size(); i++) {
-            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
-        }
-        double thetas[][] = new double[labels.length][features.size()];
-        for (int i = 0; i < thetasAsArrayList.size(); i++) {
-            ArrayList thetaRow = (ArrayList) thetasAsArrayList.get(i);
-            for (int j = 0; j < thetaRow.size(); j++) {
-                thetas[i][j] = ((Number) thetaRow.get(j)).doubleValue();
-            }
-        }
-        model = new NaiveBayesModel(labels, pi, thetas);
+
+        model = new SVMModel(Vectors.dense(weights), intercept.doubleValue());
     }
 
     @Override

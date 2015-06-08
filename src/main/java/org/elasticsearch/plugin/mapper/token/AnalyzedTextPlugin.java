@@ -27,6 +27,7 @@ import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.script.NaiveBayesModelScript;
+import org.elasticsearch.script.SVMModelScript;
 import org.elasticsearch.script.VectorizerScript;
 import org.elasticsearch.script.ScriptModule;
 
@@ -70,7 +71,8 @@ public class AnalyzedTextPlugin extends AbstractPlugin {
 
     public void onModule(ScriptModule module) {
         // Register each script that we defined in this plugin
-        module.registerScript("vector", VectorizerScript.Factory.class);
-        module.registerScript("nb_model", NaiveBayesModelScript.Factory.class);
+        module.registerScript(VectorizerScript.SCRIPT_NAME, VectorizerScript.Factory.class);
+        module.registerScript(NaiveBayesModelScript.SCRIPT_NAME, NaiveBayesModelScript.Factory.class);
+        module.registerScript(SVMModelScript.SCRIPT_NAME, SVMModelScript.Factory.class);
     }
 }
