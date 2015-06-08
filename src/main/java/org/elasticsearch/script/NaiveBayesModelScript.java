@@ -3,6 +3,7 @@ package org.elasticsearch.script;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.search.lookup.IndexField;
 import org.elasticsearch.search.lookup.IndexFieldTerm;
 
@@ -24,7 +25,7 @@ public class NaiveBayesModelScript extends AbstractSearchScript {
 
     /**
      * Factory that is registered in
-     * {@link org.elasticsearch.plugin.mapper.token.AnalyzedTextPlugin#onModule(ScriptModule)}
+     * {@link TokenPlugin#onModule(ScriptModule)}
      * method when the plugin is loaded.
      */
     public static class Factory implements NativeScriptFactory {

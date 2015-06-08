@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.elasticsearch.plugin.mapper.token;
+package org.elasticsearch.plugin;
 
-import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
 import org.elasticsearch.common.inject.Module;
+import org.elasticsearch.index.mapper.token.AnalyzedTextIndexModule;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.script.NaiveBayesModelScript;
 import org.elasticsearch.script.SVMModelScript;
-import org.elasticsearch.script.VectorizerScript;
 import org.elasticsearch.script.ScriptModule;
+import org.elasticsearch.script.VectorizerScript;
 
 import java.util.Collection;
 
@@ -38,16 +38,16 @@ import static org.elasticsearch.common.collect.Lists.newArrayList;
 /**
  *
  */
-public class AnalyzedTextPlugin extends AbstractPlugin {
+public class TokenPlugin extends AbstractPlugin {
 
     @Override
     public String name() {
-        return "analyzed-text";
+        return "token-plugin";
     }
 
     @Override
     public String description() {
-        return "Adds the analyzed_text type that stores the analyzed text in a separate field";
+        return "Tools for https://github.com/costin/poc";
     }
 
     @Override

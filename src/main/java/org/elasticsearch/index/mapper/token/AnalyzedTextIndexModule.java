@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.plugin.mapper.token;
+package org.elasticsearch.index.mapper.token;
 
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.index.mapper.token.RegisterAnalyzedTextType;

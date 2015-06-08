@@ -1,6 +1,7 @@
 package org.elasticsearch.script;
 
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.search.lookup.IndexField;
 import org.elasticsearch.search.lookup.IndexFieldTerm;
 
@@ -22,7 +23,7 @@ public class VectorizerScript extends AbstractSearchScript {
 
     /**
      * Factory that is registered in
-     * {@link org.elasticsearch.plugin.mapper.token.AnalyzedTextPlugin#onModule(org.elasticsearch.script.ScriptModule)}
+     * {@link TokenPlugin#onModule(org.elasticsearch.script.ScriptModule)}
      * method when the plugin is loaded.
      */
     public static class Factory implements NativeScriptFactory {
