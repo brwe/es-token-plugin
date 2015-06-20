@@ -69,11 +69,13 @@ public class SVMModelScript extends AbstractSearchScript {
     @Override
     public Object run() {
         try {
+            /** here be the vectorizer **/
             IndexField indexField = this.indexLookup().get(field);
             for (int i = 0; i < features.size(); i++) {
                 IndexFieldTerm indexTermField = indexField.get(features.get(i));
                 tfs[i] = indexTermField.tf();
             }
+            /** until here **/
             return model.predict(Vectors.dense(tfs));
         } catch (IOException ex) {
             throw new ScriptException("Model prediction failed: ", ex);

@@ -26,10 +26,7 @@ import org.elasticsearch.index.mapper.token.AnalyzedTextIndexModule;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
-import org.elasticsearch.script.NaiveBayesModelScript;
-import org.elasticsearch.script.SVMModelScript;
-import org.elasticsearch.script.ScriptModule;
-import org.elasticsearch.script.VectorizerScript;
+import org.elasticsearch.script.*;
 
 import java.util.Collection;
 
@@ -74,5 +71,7 @@ public class TokenPlugin extends AbstractPlugin {
         module.registerScript(VectorizerScript.SCRIPT_NAME, VectorizerScript.Factory.class);
         module.registerScript(NaiveBayesModelScript.SCRIPT_NAME, NaiveBayesModelScript.Factory.class);
         module.registerScript(SVMModelScript.SCRIPT_NAME, SVMModelScript.Factory.class);
+        module.registerScript(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, NaiveBayesModelScriptWithStoredParameters.Factory.class);
+        module.registerScript(SVMModelScriptWithStoredParameters.SCRIPT_NAME, SVMModelScriptWithStoredParameters.Factory.class);
     }
 }

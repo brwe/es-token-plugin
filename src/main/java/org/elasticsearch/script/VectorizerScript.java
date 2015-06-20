@@ -11,6 +11,7 @@ import java.util.Map;
 
 /**
  * looks up the frequencies for a terms list and returns as vector of same dimension as input array length
+ * this whole class could be a vectorizer: https://github.com/elastic/elasticsearch/issues/10823
  */
 public class VectorizerScript extends AbstractSearchScript {
 
