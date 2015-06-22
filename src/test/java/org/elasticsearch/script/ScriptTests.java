@@ -3,6 +3,7 @@ package org.elasticsearch.script;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugins.PluginsService;
 import org.elasticsearch.test.ElasticsearchIntegrationTest;
 import org.junit.Test;
@@ -99,6 +100,52 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         ).get();
         refresh();
         searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParameters.SCRIPT_NAME, parameters).get();
+        label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
+    }
+
+    @Test
+    // only just checks that nothing crashes
+    public void testModelScriptsWithStoredParamsAndSparseVectors() throws IOException {
+        XContentBuilder mapping = jsonBuilder();
+        mapping.startObject()
+                .startObject("type")
+                .startObject("properties")
+                .startObject("text")
+                .field("type", "string")
+                .field("term_vector", "yes")
+                .endObject()
+                .endObject()
+                .endObject()
+                .endObject();
+        client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
+        ensureGreen();
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        ensureGreen("index");
+        client().prepareIndex("model", "params", "test_params").setSource(
+                jsonBuilder().startObject()
+                        .field("pi", new double[]{1, 2})
+                        .field("thetas", new double[][]{{1, 2, 3}, {3, 2, 1}})
+                        .field("labels", new double[]{0, 1})
+                        .field("features", new String[]{"the", "quick", "fox"})
+                        .endObject()
+        ).get();
+        refresh();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("index", "model");
+        parameters.put("type", "params");
+        parameters.put("id", "test_params");
+        parameters.put("field", "text");
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", "native", NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+        double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
+        client().prepareIndex("model", "params", "test_params").setSource(
+                jsonBuilder().startObject()
+                        .field("weights", new double[]{1, 2, 3})
+                        .field("intercept", 0.5)
+                        .field("features", new String[]{"the", "quick", "fox"})
+                        .endObject()
+        ).get();
+        refresh();
+        searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 }
