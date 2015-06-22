@@ -74,7 +74,6 @@ public class NaiveBayesModelScriptWithStoredParametersAndSparseVector extends Mo
         if (getResponse.isExists() == false) {
             throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
         }
-        ESLoggerFactory.getLogger("test").info("param doc: {}", getResponse.getSourceAsString());
 
         // get the field
         field = (String) params.get("field");

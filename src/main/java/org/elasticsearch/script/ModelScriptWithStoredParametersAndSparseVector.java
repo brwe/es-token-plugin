@@ -6,7 +6,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.spark.mllib.classification.ClassificationModel;
-import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.linalg.Vectors;
 
 import java.io.IOException;
@@ -35,32 +34,36 @@ public class ModelScriptWithStoredParametersAndSparseVector extends AbstractSear
         List<IndexAndValue> indicesAndValues = new ArrayList<>();
         try {
             Fields fields = indexLookup().termVectors();
-            Terms terms = fields.terms(field);
-            TermsEnum termsEnum = terms.iterator(null);
-            BytesRef t;
-            DocsEnum docsEnum = null;
-            while ((t = termsEnum.next()) != null) {
-                Integer ind = wordMap.get(t.utf8ToString());
-                if (ind != null) {
-                    docsEnum = termsEnum.docs(null, docsEnum);
-                    int nextDoc = docsEnum.nextDoc();
-                    assert nextDoc != DocsEnum.NO_MORE_DOCS;
-                    int freq = docsEnum.freq();
-                    nextDoc = docsEnum.nextDoc();
-                    assert nextDoc == DocsEnum.NO_MORE_DOCS;
-                    indicesAndValues.add(new IndexAndValue(ind.intValue(), freq));
+            if (fields == null) {
+                return -1;
+            } else {
+                Terms terms = fields.terms(field);
+                TermsEnum termsEnum = terms.iterator(null);
+                BytesRef t;
+                DocsEnum docsEnum = null;
+                while ((t = termsEnum.next()) != null) {
+                    Integer ind = wordMap.get(t.utf8ToString());
+                    if (ind != null) {
+                        docsEnum = termsEnum.docs(null, docsEnum);
+                        int nextDoc = docsEnum.nextDoc();
+                        assert nextDoc != DocsEnum.NO_MORE_DOCS;
+                        int freq = docsEnum.freq();
+                        nextDoc = docsEnum.nextDoc();
+                        assert nextDoc == DocsEnum.NO_MORE_DOCS;
+                        indicesAndValues.add(new IndexAndValue(ind.intValue(), freq));
+                    }
                 }
-            }
-            Collections.sort(indicesAndValues, comparator);
+                Collections.sort(indicesAndValues, comparator);
 
-            int[] indices = new int[indicesAndValues.size()];
-            double[] values = new double[indicesAndValues.size()];
-            for (int i = 0; i < indicesAndValues.size(); i++) {
-                indices[i] = indicesAndValues.get(i).index;
-                values[i] = indicesAndValues.get(i).value;
+                int[] indices = new int[indicesAndValues.size()];
+                double[] values = new double[indicesAndValues.size()];
+                for (int i = 0; i < indicesAndValues.size(); i++) {
+                    indices[i] = indicesAndValues.get(i).index;
+                    values[i] = indicesAndValues.get(i).value;
+                }
+                /** until here **/
+                return model.predict(Vectors.sparse(features.size(), indices, values));
             }
-            /** until here **/
-            return model.predict(Vectors.sparse(features.size(), indices, values));
         } catch (IOException ex) {
             throw new ScriptException("Model prediction failed: ", ex);
         }
