@@ -46,6 +46,28 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
     }
 
     @Test
+    public void testSparseVectorScript() throws IOException {
+        createIndexWithTermVectors();
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        ensureGreen("index");
+        refresh();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("features", new String[]{"the", "quick", "foo", "fox"});
+        parameters.put("field", "text");
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", "native", "sparse_vector", parameters).get();
+        int[] vector =(int[]) ( (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("indices");
+        assertThat(vector.length, equalTo(3));
+        assertThat(vector[0], equalTo(0));
+        assertThat(vector[1], equalTo(1));
+        assertThat(vector[2], equalTo(3));
+        double[] value =(double[]) ( (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("values");
+        assertThat(value.length, equalTo(3));
+        assertThat(value[0], equalTo(1.0));
+        assertThat(value[1], equalTo(2.0));
+        assertThat(value[2], equalTo(1.0));
+    }
+
+    @Test
     // only just checks that nothing crashes
     public void testModelScripts() {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
@@ -66,8 +88,6 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         parameters.put("field", "text");
         searchResponse = client().prepareSearch("index").addScriptField("svm", "native", "svm_model", parameters).get();
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
-
-
     }
 
     @Test
@@ -106,18 +126,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
     @Test
     // only just checks that nothing crashes
     public void testModelScriptsWithStoredParamsAndSparseVectors() throws IOException {
-        XContentBuilder mapping = jsonBuilder();
-        mapping.startObject()
-                .startObject("type")
-                .startObject("properties")
-                .startObject("text")
-                .field("type", "string")
-                .field("term_vector", "yes")
-                .endObject()
-                .endObject()
-                .endObject()
-                .endObject();
-        client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
+        createIndexWithTermVectors();
         ensureGreen();
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
@@ -147,5 +156,20 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         refresh();
         searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
+    }
+
+    void createIndexWithTermVectors() throws IOException {
+        XContentBuilder mapping = jsonBuilder();
+        mapping.startObject()
+                .startObject("type")
+                .startObject("properties")
+                .startObject("text")
+                .field("type", "string")
+                .field("term_vector", "yes")
+                .endObject()
+                .endObject()
+                .endObject()
+                .endObject();
+        client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
     }
 }
