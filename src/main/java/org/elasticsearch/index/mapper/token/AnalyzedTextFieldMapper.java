@@ -56,6 +56,7 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
     private final String nullValue;
     private final int ignoreAbove;
     private Boolean includeInAll;
+    private NamedAnalyzer tokenAnalyzer;
 
     public static class Defaults extends StringFieldMapper.Defaults {
     }
@@ -66,6 +67,8 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
         public Mapper.Builder parse(String name, Map<String, Object> node, ParserContext parserContext) throws MapperParsingException {
             AnalyzedTextFieldMapper.Builder builder = new AnalyzedTextFieldMapper.Builder(name);
             parseField(builder, name, node, parserContext);
+            builder.tokenized(false);
+            builder.docValues(true);
             for (Map.Entry<String, Object> entry : node.entrySet()) {
                 String propName = Strings.toUnderscoreCase(entry.getKey());
                 Object propNode = entry.getValue();
@@ -95,6 +98,8 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
                     }
                 } else if (propName.equals("ignore_above")) {
                     builder.ignoreAbove(XContentMapValues.nodeIntegerValue(propNode, -1));
+                } else if (propName.equals("token_analyzer")) {
+                    builder.tokenAnalyzer(parserContext.analysisService().analyzer(propName));
                 } else {
                     parseMultiField(builder, name, parserContext, propName, propNode);
                 }
@@ -106,6 +111,13 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
     public static class Builder extends StringFieldMapper.Builder {
 
         String nullValue;
+
+        NamedAnalyzer tokenAnalyzer = null;
+
+        public Builder tokenAnalyzer(NamedAnalyzer tokenAnalyzer) {
+            this.tokenAnalyzer = tokenAnalyzer;
+            return this;
+        }
 
         @Override
         public Builder nullValue(String nullValue) {
@@ -146,6 +158,7 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
                     positionOffsetGap, ignoreAbove, postingsProvider, docValuesProvider, similarity, normsLoading,
                     fieldDataSettings, context.indexSettings(), multiFieldsBuilder.build(this, context), copyTo);
             fieldMapper.includeInAll(includeInAll);
+            fieldMapper.tokenAnalyzer(tokenAnalyzer);
             return fieldMapper;
         }
 
@@ -160,6 +173,10 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
         public NamedAnalyzer searchQuotedAnalyzer() {
             return this.searchQuotedAnalyzer;
         }
+    }
+
+    private void tokenAnalyzer(NamedAnalyzer tokenAnalyzer) {
+        this.tokenAnalyzer = tokenAnalyzer;
     }
 
 
@@ -197,7 +214,7 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
             context.allEntries().addText(names.fullName(), valueAndBoost.value(), valueAndBoost.boost());
         }
 
-        Analyzer namedAnalyzer = (indexAnalyzer == null) ? context.analysisService().defaultAnalyzer() : indexAnalyzer;
+        Analyzer namedAnalyzer = (tokenAnalyzer == null) ? context.analysisService().defaultAnalyzer() : tokenAnalyzer;
         List<String> analyzedText = getAnalyzedText(namedAnalyzer.tokenStream(name(), valueAndBoost.value()));
         for (String s : analyzedText) {
             boolean added = false;
@@ -215,6 +232,10 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
                 context.ignoredValue(names.indexName(), s);
             }
         }
+    }
+
+    public boolean hasDocValues() {
+        return true;
     }
 
     static List<String> getAnalyzedText(TokenStream tokenStream) throws IOException {
