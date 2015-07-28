@@ -9,6 +9,8 @@ import org.apache.spark.mllib.classification.ClassificationModel;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.common.collect.Tuple;
 
+
+
 import java.io.IOException;
 import java.util.*;
 
@@ -21,13 +23,8 @@ public class ModelScriptWithStoredParametersAndSparseVector extends AbstractSear
     String field = null;
     ArrayList features = null;
     Map<String, Integer> wordMap;
-
-    private static final Comparator<IndexAndValue> comparator = new Comparator<IndexAndValue>() {
-        public int compare(IndexAndValue a,
-                           IndexAndValue b) {
-            return a.index > b.index ? 1 : (a.index == b.index ? 0 : -1);
-        }
-    };
+    List<Integer> indices = new ArrayList<Integer>();
+    List<Integer> values = new ArrayList<Integer>();
 
     @Override
     public Object run() {
@@ -46,41 +43,35 @@ public class ModelScriptWithStoredParametersAndSparseVector extends AbstractSear
         }
     }
 
-    static Tuple<int[], double[]> getIndicesAndValuesSortedByIndex(Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
+    Tuple<int[], double[]> getIndicesAndValuesSortedByIndex(Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator(null);
         BytesRef t;
         DocsEnum docsEnum = null;
-        List<IndexAndValue> indicesAndValues = new ArrayList<>();
+
+        int counter = 0;
+        int numTerms = 0;
+        indices.clear();
         while ((t = termsEnum.next()) != null) {
-            Integer ind = wordMap.get(t.utf8ToString());
-            if (ind != null) {
+            Integer termIndex  = wordMap.get(t.utf8ToString());
+            if (termIndex != null) {
+                indices.add(termIndex);
                 docsEnum = termsEnum.docs(null, docsEnum);
                 int nextDoc = docsEnum.nextDoc();
                 assert nextDoc != DocsEnum.NO_MORE_DOCS;
-                int freq = docsEnum.freq();
+                values.add(docsEnum.freq());
                 nextDoc = docsEnum.nextDoc();
                 assert nextDoc == DocsEnum.NO_MORE_DOCS;
-                indicesAndValues.add(new IndexAndValue(ind.intValue(), freq));
+                numTerms++;
             }
+            counter++;
         }
-        Collections.sort(indicesAndValues, comparator);
-        int[] indices = new int[indicesAndValues.size()];
-        double[] values = new double[indicesAndValues.size()];
-        for (int i = 0; i < indicesAndValues.size(); i++) {
-            indices[i] = indicesAndValues.get(i).index;
-            values[i] = indicesAndValues.get(i).value;
+        int[] indicesArray = new int[numTerms];
+        double[] valuesArray = new double[numTerms];
+        for (int i = 0; i< numTerms ; i++) {
+            indicesArray[i] = indices.get(i);
+            valuesArray[i] = values.get(i);
         }
-        return new Tuple<>(indices, values);
-    }
-
-    public static class IndexAndValue {
-        int index;
-        double value;
-
-        public IndexAndValue(int index, double value) {
-            this.index = index;
-            this.value = value;
-        }
+        return new Tuple<>(indicesArray, valuesArray);
     }
 }

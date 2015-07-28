@@ -103,6 +103,11 @@ public class NaiveBayesModelScriptWithStoredParametersAndSparseVector extends Mo
         wordMap = new HashMap<>();
         for (int i = 0; i < features.size(); i++) {
             wordMap.put((String) features.get(i), i);
+            if (i > 0) {
+                if (((String) features.get(i)).compareTo(((String) features.get(i - 1))) < 0) {
+                    throw new IllegalArgumentException("features must be sorted! these are in wrong order: " + features.get(i - 1) + " " + features.get(i));
+                }
+            }
         }
     }
 
