@@ -23,7 +23,7 @@ public class NaiveBayesModelScriptWithStoredParameters extends AbstractSearchScr
     NaiveBayesModel model = null;
     String field = null;
     double[] tfs = null;
-    ArrayList features = null;
+    ArrayList features = new ArrayList();
 
     final static public String SCRIPT_NAME = "naive_bayes_model_stored_parameters";
 
@@ -61,53 +61,10 @@ public class NaiveBayesModelScriptWithStoredParameters extends AbstractSearchScr
      * @throws ScriptException
      */
     private NaiveBayesModelScriptWithStoredParameters(Map<String, Object> params, Client client) throws ScriptException {
-        // get the terms
-
-        String index = (String) params.get("index");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"index\" missing");
-        }
-        String type = (String) params.get("type");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"type\" missing");
-        }
-        String id = (String) params.get("id");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"id\" missing");
-        }
-
-        // get the parameters from somewhere else
-        GetResponse getResponse = client.prepareGet(index, type, id).get();
-        if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
-        }
-
-        // get the field
+        GetResponse parametersDoc = SharedMethods.getStoredParameters(params, client);
         field = (String) params.get("field");
-        ArrayList piAsArrayList = (ArrayList) getResponse.getSource().get("pi");
-        ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
-        ArrayList thetasAsArrayList = (ArrayList) getResponse.getSource().get("thetas");
-        features = (ArrayList) getResponse.getSource().get("features");
-        if (field == null || features == null || piAsArrayList == null || labelsAsArrayList == null || thetasAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": one of the following parameters missing: field, features, pi, thetas, labels");
-        }
+        model = SharedMethods.initializeNaiveBayesModel(features, field, parametersDoc);
         tfs = new double[features.size()];
-        double[] pi = new double[piAsArrayList.size()];
-        for (int i = 0; i < piAsArrayList.size(); i++) {
-            pi[i] = ((Number) piAsArrayList.get(i)).doubleValue();
-        }
-        double[] labels = new double[labelsAsArrayList.size()];
-        for (int i = 0; i < labelsAsArrayList.size(); i++) {
-            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
-        }
-        double thetas[][] = new double[labels.length][features.size()];
-        for (int i = 0; i < thetasAsArrayList.size(); i++) {
-            ArrayList thetaRow = (ArrayList) thetasAsArrayList.get(i);
-            for (int j = 0; j < thetaRow.size(); j++) {
-                thetas[i][j] = ((Number) thetaRow.get(j)).doubleValue();
-            }
-        }
-        model = new NaiveBayesModel(labels, pi, thetas);
     }
 
     @Override

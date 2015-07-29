@@ -1,24 +1,80 @@
 package org.elasticsearch.script;
 
-import org.apache.spark.mllib.classification.SVMModel;
+import org.apache.lucene.index.Fields;
+import org.apache.spark.mllib.classification.ClassificationModel;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugin.TokenPlugin;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Script for predicting class with a Naive Bayes model
+ * Script for predicting a class based on a text field with an SVM model. This needs the parameters "weights" and "intercept"
+ * to be stored in a document elasticsearch together with the relevant features (words).
+ * This script expects that term vectors are stored. You can use the same thing without term
+ * vectors with SVMModelScriptWithStoredParameters but that is very slow.
+ * <p/>
+ * Say for example the parameters are stored as
+ * <pre>
+ *     @code
+ *     {
+ *      "_index": "model",
+ *      "_type": "params",
+ *      "_id": "svm_model_params",
+ *      "_version": 2,
+ *      "found": true,
+ *      "_source": {
+ *          "features": [ "bad","boring","both","life","perfect","performances","plot","stupid","world","worst"],
+ *          "weights": "[-0.07491787895405054,-0.05231695457685094,0.03431992220241421,0.06571009494852478,0.030971637109495756,0.04603892002762882,-0.04478331311778441,-0.035575529112258635,0.05189841894023615,-0.056083775306384205]",
+ *          "intercept": 0
+ *      }
+ *     }
+ *
+ * </pre>
+ * <p/>
+ * Then a request to classify documents would look like this:
+ * <p/>
+ * <p/>
+ * <p/>
+ * <p/>
+ * <pre>
+ *  @code
+ * GET twitter/tweets/_search
+ * {
+ *  "script_fields": {
+ *      "predicted_label": {
+ *          "script": "svm_model_stored_parameters_sparse_vectors",
+ *          "lang": "native",
+ *          "params": {
+ *              "field": "message",
+ *              "index": "model",
+ *              "type": "params",
+ *              "id": "svm_model_params"
+ *          }
+ *      }
+ *  }
+ * }
+ * </pre>
  */
-public class SVMModelScriptWithStoredParametersAndSparseVector extends ModelScriptWithStoredParametersAndSparseVector {
+
+public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractSearchScript {
 
     final static public String SCRIPT_NAME = "svm_model_stored_parameters_sparse_vectors";
+    ClassificationModel model = null;
+    String field = null;
+    ArrayList features = new ArrayList();
+    Map<String, Integer> wordMap;
+    List<Integer> indices = new ArrayList<>();
+    List<Integer> values = new ArrayList<>();
 
     /**
      * Factory that is registered in
@@ -49,48 +105,31 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends ModelScri
     }
 
     /**
-     * @param params terms that a used for classification and model parameters. Initialize
-     *               naive bayes model here.
+     * @param params terms that a used for classification and model parameters. Initialize model here.
      * @throws ScriptException
      */
     private SVMModelScriptWithStoredParametersAndSparseVector(Map<String, Object> params, Client client) throws ScriptException {
-        // get the terms
-
-        String index = (String) params.get("index");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"index\" missing");
-        }
-        String type = (String) params.get("type");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"type\" missing");
-        }
-        String id = (String) params.get("id");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"id\" missing");
-        }
-
-        // get the parameters from somewhere else
-        GetResponse getResponse = client.prepareGet(index, type, id).get();
-        if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
-        }
-
-        // get the field
+        GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         field = (String) params.get("field");
-        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
-        double[] weights = new double[weightsArrayList.size()];
-        for (int i = 0; i < weightsArrayList.size(); i++) {
-            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
-        }
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        features = (ArrayList) getResponse.getSource().get("features");
-        if (field == null || features == null || weightsArrayList == null || intercept == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
-        }
-        model = new SVMModel(Vectors.dense(weights), intercept.doubleValue());
+        model = SharedMethods.initializeSVMModel(features, field, getResponse);
         wordMap = new HashMap<>();
-        for (int i = 0; i < features.size(); i++) {
-            wordMap.put((String) features.get(i), i);
+        SharedMethods.fillWordIndexMap(features, wordMap);
+    }
+
+    @Override
+    public Object run() {
+        /** here be the vectorizer **/
+        try {
+            Fields fields = indexLookup().termVectors();
+            if (fields == null) {
+                return -1;
+            } else {
+                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesSortedByIndex(indices, values, fields, field, wordMap);
+                /** until here **/
+                return model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
+            }
+        } catch (IOException ex) {
+            throw new ScriptException("Model prediction failed: ", ex);
         }
     }
 

@@ -12,7 +12,7 @@ import java.util.*;
  * looks up the frequencies for a terms list and returns as sparse vector of same dimension as input array length
  * this whole class could be a vectorizer: https://github.com/elastic/elasticsearch/issues/10823
  */
-public class SparseVectorizerScript extends ModelScriptWithStoredParametersAndSparseVector {
+public class SparseVectorizerScript extends AbstractSearchScript {
 
     // the field containing the terms
     String field = null;
@@ -20,6 +20,9 @@ public class SparseVectorizerScript extends ModelScriptWithStoredParametersAndSp
     ArrayList<String> features = null;
 
     Map<String, Integer> wordMap;
+
+    List<Integer> indices = new ArrayList<>();
+    List<Integer> values = new ArrayList<>();
 
     final static public String SCRIPT_NAME = "sparse_vector";
 
@@ -69,7 +72,7 @@ public class SparseVectorizerScript extends ModelScriptWithStoredParametersAndSp
             if (fields == null) {
                 return Collections.emptyMap();
             } else {
-                Tuple<int[], double[]> indicesAndValues = getIndicesAndValuesSortedByIndex(fields, field, wordMap);
+                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesSortedByIndex(indices, values, fields, field, wordMap);
                 Map<String, Object> map = new HashMap<>();
                 map.put("indices", indicesAndValues.v1());
                 map.put("values", indicesAndValues.v2());

@@ -23,7 +23,7 @@ public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
     SVMModel model = null;
     String field = null;
     double[] tfs = null;
-    ArrayList features = null;
+    ArrayList features = new ArrayList();
 
     final static public String SCRIPT_NAME = "svm_model_stored_parameters";
 
@@ -60,42 +60,10 @@ public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
      * @throws ScriptException
      */
     private SVMModelScriptWithStoredParameters(Map<String, Object> params, Client client) throws ScriptException {
-        // get the terms
-
-        String index = (String) params.get("index");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"index\" missing");
-        }
-        String type = (String) params.get("type");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"type\" missing");
-        }
-        String id = (String) params.get("id");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": parameter \"id\" missing");
-        }
-
-        // get the parameters from somewhere else
-        GetResponse getResponse = client.prepareGet(index, type, id).get();
-        if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
-        }
-
-        // get the field
+        GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         field = (String) params.get("field");
-        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
-        double[] weights = new double[weightsArrayList.size()];
-        for (int i = 0; i < weightsArrayList.size(); i++) {
-            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
-        }
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        features = (ArrayList) getResponse.getSource().get("features");
-        if (field == null || features == null || weightsArrayList == null || intercept == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
-        }
+        model = SharedMethods.initializeSVMModel(features, field, getResponse);
         tfs = new double[features.size()];
-        model = new SVMModel(Vectors.dense(weights), intercept.doubleValue());
-
     }
 
     @Override
