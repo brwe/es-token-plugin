@@ -35,7 +35,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         ensureGreen("index");
         refresh();
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("features", new String[]{"fox", "quick",  "the"});
+        parameters.put("features", new String[]{"fox", "quick", "the"});
         parameters.put("field", "text");
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", "native", "vector", parameters).get();
         double[] vector = (double[]) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
@@ -55,6 +55,8 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("features", new String[]{"foo", "fox", "quick", "the"});
         parameters.put("field", "text");
+        boolean fieldDataFields = randomBoolean();
+        parameters.put("fieldDataFields", fieldDataFields);
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", "native", "sparse_vector", parameters).get();
         assertSearchResponse(searchResponse);
         int[] vector = (int[]) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("indices");
@@ -64,9 +66,15 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         assertThat(vector[2], equalTo(3));
         double[] value = (double[]) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("values");
         assertThat(value.length, equalTo(3));
-        assertThat(value[0], equalTo(1.0));
-        assertThat(value[1], equalTo(2.0));
-        assertThat(value[2], equalTo(3.0));
+        if (fieldDataFields) {
+            assertThat(value[0], equalTo(1.0));
+            assertThat(value[1], equalTo(1.0));
+            assertThat(value[2], equalTo(1.0));
+        } else {
+            assertThat(value[0], equalTo(1.0));
+            assertThat(value[1], equalTo(2.0));
+            assertThat(value[2], equalTo(3.0));
+        }
     }
 
     @Test
@@ -79,7 +87,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                         .field("pi", new double[]{1, 2})
                         .field("thetas", new double[][]{{1, 2, 3}, {3, 2, 1}})
                         .field("labels", new double[]{0, 1})
-                        .field("features", new String[]{"fox", "quick",  "the"})
+                        .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
         ).get();
         refresh();
@@ -95,7 +103,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
                         .field("intercept", 0.5)
-                        .field("features", new String[]{"fox", "quick",  "the"})
+                        .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
         ).get();
         refresh();
@@ -115,7 +123,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                         .field("pi", new double[]{1, 2})
                         .field("thetas", new double[][]{{1, 2, 3}, {3, 2, 1}})
                         .field("labels", new double[]{0, 1})
-                        .field("features", new String[]{"fox", "quick",  "the"})
+                        .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
         ).get();
         refresh();
@@ -124,13 +132,17 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         parameters.put("type", "params");
         parameters.put("id", "test_params");
         parameters.put("field", "text");
+        if (randomBoolean()) {
+            parameters.put("fieldDataFields", true);
+        }
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", "native", NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+        assertSearchResponse(searchResponse);
         double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
                         .field("intercept", 0.5)
-                        .field("features", new String[]{"fox", "quick",  "the"})
+                        .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
         ).get();
         refresh();

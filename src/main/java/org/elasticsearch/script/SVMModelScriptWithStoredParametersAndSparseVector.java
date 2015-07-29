@@ -124,7 +124,7 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
             if (fields == null) {
                 return -1;
             } else {
-                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesSortedByIndex(indices, values, fields, field, wordMap);
+                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
                 /** until here **/
                 return model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
             }

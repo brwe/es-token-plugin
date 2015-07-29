@@ -29,6 +29,7 @@ import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.index.fielddata.ScriptDocValues;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ import java.util.Map;
 
 
 public class SharedMethods {
-    public static Tuple<int[], double[]> getIndicesAndValuesSortedByIndex(List<Integer> indices, List<Integer> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
+    public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(List<Integer> indices, List<Integer> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator(null);
         BytesRef t;
@@ -138,5 +139,25 @@ public class SharedMethods {
             }
         }
         return new NaiveBayesModel(labels, pi, thetas);
+    }
+
+    static Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {
+        Tuple<int[], double[]> indicesAndValues;
+        List<Integer> indices = new ArrayList<>();
+
+        for (String value : docValues.getValues()) {
+            Integer index = wordMap.get(value);
+            if (index != null) {
+                indices.add(index);
+            }
+        }
+        int[] indicesArray = new int[indices.size()];
+        double[] valuesArray = new double[indices.size()];
+        for (int i = 0; i < indices.size(); i++) {
+            indicesArray[i] = indices.get(i).intValue();
+            valuesArray[i] = 1;
+        }
+        indicesAndValues = new Tuple<>(indicesArray, valuesArray);
+        return indicesAndValues;
     }
 }

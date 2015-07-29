@@ -3,6 +3,7 @@ package org.elasticsearch.script;
 import org.apache.lucene.index.Fields;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.plugin.TokenPlugin;
 
 import java.io.IOException;
@@ -16,6 +17,8 @@ public class SparseVectorizerScript extends AbstractSearchScript {
 
     // the field containing the terms
     String field = null;
+
+    boolean fieldDataFields = false;
     // the terms for which we need the tfs
     ArrayList<String> features = null;
 
@@ -56,6 +59,7 @@ public class SparseVectorizerScript extends AbstractSearchScript {
         features = (ArrayList<String>) params.get("features");
         // get the field
         field = (String) params.get("field");
+        fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
         if (field == null || features == null) {
             throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": field or features parameter missing!");
         }
@@ -68,16 +72,23 @@ public class SparseVectorizerScript extends AbstractSearchScript {
     @Override
     public Object run() {
         try {
-            Fields fields = indexLookup().termVectors();
-            if (fields == null) {
-                return Collections.emptyMap();
+            /** here be the vectorizer **/
+            Tuple<int[], double[]> indicesAndValues;
+            if (fieldDataFields == false) {
+                Fields fields = indexLookup().termVectors();
+                if (fields == null) {
+                    return Collections.emptyMap();
+                }
+                indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
+
             } else {
-                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesSortedByIndex(indices, values, fields, field, wordMap);
-                Map<String, Object> map = new HashMap<>();
-                map.put("indices", indicesAndValues.v1());
-                map.put("values", indicesAndValues.v2());
-                return map;
+                ScriptDocValues<String> docValues = docFieldStrings(field);
+                indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
             }
+            Map<String, Object> map = new HashMap<>();
+            map.put("indices", indicesAndValues.v1());
+            map.put("values", indicesAndValues.v2());
+            return map;
         } catch (IOException ex) {
             throw new ScriptException("Could not create sparse vector: ", ex);
         }
