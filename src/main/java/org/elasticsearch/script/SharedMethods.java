@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.Vectors;
+import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.collect.Tuple;
@@ -147,6 +148,26 @@ public class SharedMethods {
 
         for (String value : docValues.getValues()) {
             Integer index = wordMap.get(value);
+            if (index != null) {
+                indices.add(index);
+            }
+        }
+        int[] indicesArray = new int[indices.size()];
+        double[] valuesArray = new double[indices.size()];
+        for (int i = 0; i < indices.size(); i++) {
+            indicesArray[i] = indices.get(i).intValue();
+            valuesArray[i] = 1;
+        }
+        indicesAndValues = new Tuple<>(indicesArray, valuesArray);
+        return indicesAndValues;
+    }
+
+    static Tuple<int[], double[]> getIndicesAndValuesFromAnalyzedTokens(Map<String, Integer> wordMap, List<AnalyzeResponse.AnalyzeToken> tokens) {
+        Tuple<int[], double[]> indicesAndValues;
+        List<Integer> indices = new ArrayList<>();
+
+        for (AnalyzeResponse.AnalyzeToken value : tokens) {
+            Integer index = wordMap.get(value.getTerm());
             if (index != null) {
                 indices.add(index);
             }

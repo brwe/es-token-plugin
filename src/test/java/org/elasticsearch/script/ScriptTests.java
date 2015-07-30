@@ -1,5 +1,6 @@
 package org.elasticsearch.script;
 
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
@@ -149,6 +150,39 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
         assertSearchResponse(searchResponse);
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
+    }
+
+    @Test
+    // only just checks that nothing crashes
+    public void testNaiveBayesUpdateScript() throws IOException {
+
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        refresh();
+        client().prepareIndex("model", "params", "test_params").setSource(
+                jsonBuilder().startObject()
+                        .field("pi", new double[]{1, 2})
+                        .field("thetas", new double[][]{{1, 2, 3}, {3, 2, 1}})
+                        .field("labels", new double[]{0, 1})
+                        .field("features", new String[]{"fox", "quick", "the"})
+                        .endObject()
+        ).get();
+        refresh();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("index", "model");
+        parameters.put("type", "params");
+        parameters.put("id", "test_params");
+        parameters.put("field", "text");
+        if (randomBoolean()) {
+            parameters.put("fieldDataFields", true);
+        }
+        client().prepareUpdate().setId("1").setIndex("index").setType("type")
+                .setScriptParams(parameters)
+                .setScript(NaiveBayesUpdateScript.SCRIPT_NAME, ScriptService.ScriptType.INLINE)
+                .setScriptLang("native").get();
+
+        GetResponse getResponse = client().prepareGet().setId("1").setIndex("index").setType("type").get();
+        assertNotNull(getResponse.getSource().get("label"));
+
     }
 
     void createIndexWithTermVectors() throws IOException {
