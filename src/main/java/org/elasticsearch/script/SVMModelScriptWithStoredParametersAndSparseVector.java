@@ -8,6 +8,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugin.TokenPlugin;
 
@@ -75,6 +76,7 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
     Map<String, Integer> wordMap;
     List<Integer> indices = new ArrayList<>();
     List<Integer> values = new ArrayList<>();
+    private boolean fieldDataFields;
 
     /**
      * Factory that is registered in
@@ -111,6 +113,7 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
     private SVMModelScriptWithStoredParametersAndSparseVector(Map<String, Object> params, Client client) throws ScriptException {
         GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         field = (String) params.get("field");
+        fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
         model = SharedMethods.initializeSVMModel(features, field, getResponse);
         wordMap = new HashMap<>();
         SharedMethods.fillWordIndexMap(features, wordMap);
@@ -118,16 +121,22 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
 
     @Override
     public Object run() {
-        /** here be the vectorizer **/
         try {
-            Fields fields = indexLookup().termVectors();
-            if (fields == null) {
-                return -1;
+            /** here be the vectorizer **/
+            Tuple<int[], double[]> indicesAndValues;
+            if (fieldDataFields == false) {
+                Fields fields = indexLookup().termVectors();
+                if (fields == null) {
+                    return -1;
+                }
+                indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
+
             } else {
-                Tuple<int[], double[]> indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
-                /** until here **/
-                return model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
+                ScriptDocValues<String> docValues = docFieldStrings(field);
+                indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
             }
+            /** until here **/
+            return model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
         } catch (IOException ex) {
             throw new ScriptException("Model prediction failed: ", ex);
         }
