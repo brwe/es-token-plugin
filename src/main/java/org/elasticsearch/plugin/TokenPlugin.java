@@ -22,20 +22,20 @@ import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
 import org.elasticsearch.common.inject.Module;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.mapper.token.AnalyzedTextIndexModule;
-import org.elasticsearch.plugins.AbstractPlugin;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.script.*;
 
 import java.util.Collection;
-
-import static org.elasticsearch.common.collect.Lists.newArrayList;
+import java.util.Collections;
 
 /**
  *
  */
-public class TokenPlugin extends AbstractPlugin {
+public class TokenPlugin extends Plugin {
 
     @Override
     public String name() {
@@ -48,22 +48,8 @@ public class TokenPlugin extends AbstractPlugin {
     }
 
     @Override
-    public Collection<Class<? extends Module>> indexModules() {
-        Collection<Class<? extends Module>> modules = newArrayList();
-        modules.add(AnalyzedTextIndexModule.class);
-        return modules;
-    }
-
-    @Override
-    public void processModule(Module module) {
-        if (module instanceof ActionModule) {
-            ActionModule actionModule = (ActionModule) module;
-            actionModule.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
-                    TransportAllTermsShardAction.class);
-        } else if (module instanceof RestModule) {
-            RestModule restModule = (RestModule) module;
-            restModule.addRestAction(RestAllTermsAction.class);
-        }
+    public Collection<Module> indexModules(Settings indexSettings) {
+        return Collections.<Module>singletonList(new AnalyzedTextIndexModule());
     }
 
     public void onModule(ScriptModule module) {
@@ -75,5 +61,15 @@ public class TokenPlugin extends AbstractPlugin {
         module.registerScript(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, NaiveBayesModelScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, SVMModelScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
+    }
+    public void onModule(ActionModule module) {
+        ActionModule actionModule = (ActionModule) module;
+        actionModule.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
+                TransportAllTermsShardAction.class);
+    }
+
+    public void onModule(RestModule module) {
+        RestModule restModule = (RestModule) module;
+        restModule.addRestAction(RestAllTermsAction.class);
     }
 }

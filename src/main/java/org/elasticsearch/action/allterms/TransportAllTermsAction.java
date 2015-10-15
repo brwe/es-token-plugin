@@ -25,6 +25,7 @@ import org.elasticsearch.action.support.HandledTransportAction;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.block.ClusterBlockLevel;
+import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.common.inject.Inject;
@@ -43,8 +44,9 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
 
     @Inject
     public TransportAllTermsAction(Settings settings, ThreadPool threadPool, TransportService transportService,
-                                   ClusterService clusterService, TransportAllTermsShardAction shardAction, ActionFilters actionFilters) {
-        super(settings, AllTermsAction.NAME, threadPool, transportService, actionFilters);
+                                   ClusterService clusterService, TransportAllTermsShardAction shardAction, ActionFilters actionFilters,
+                                   IndexNameExpressionResolver indexNameExpressionResolver) {
+        super(settings, AllTermsAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver, AllTermsRequest.class);
         this.clusterService = clusterService;
         this.shardAction = shardAction;
     }
@@ -55,7 +57,7 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
 
         clusterState.blocks().globalBlockedRaiseException(ClusterBlockLevel.READ);
 
-        final GroupShardsIterator groupShardsIterator = clusterService.operationRouting().searchShards(clusterState, request.indices(), request.indices(), null, null);
+        final GroupShardsIterator groupShardsIterator = clusterService.operationRouting().searchShards(clusterState, request.indices(), null, null);
         final AtomicArray<AllTermsSingleShardResponse> shardResponses = new AtomicArray<>(groupShardsIterator.size());
         final AtomicInteger shardCounter = new AtomicInteger(shardResponses.length());
         for (final ShardIterator shardIterator : groupShardsIterator) {
@@ -85,8 +87,4 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
 
     }
 
-    @Override
-    public AllTermsRequest newRequestInstance() {
-        return new AllTermsRequest();
-    }
 }

@@ -23,21 +23,19 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.BytesRef;
-import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
-import org.elasticsearch.index.codec.docvaluesformat.DocValuesFormatProvider;
-import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
-import org.elasticsearch.index.mapper.*;
+import org.elasticsearch.index.mapper.MappedFieldType;
+import org.elasticsearch.index.mapper.Mapper;
+import org.elasticsearch.index.mapper.MapperParsingException;
+import org.elasticsearch.index.mapper.ParseContext;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
-import org.elasticsearch.index.similarity.SimilarityProvider;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,7 +82,7 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
                     }
                     builder.searchQuotedAnalyzer(analyzer);
                 } else if (propName.equals("position_offset_gap")) {
-                    builder.positionOffsetGap(XContentMapValues.nodeIntegerValue(propNode, -1));
+                    builder.positionIncrementGap(XContentMapValues.nodeIntegerValue(propNode, -1));
                     // we need to update to actual analyzers if they are not set in this case...
                     // so we can inject the position offset gap...
                     if (builder.indexAnalyzer() == null) {
@@ -119,59 +117,47 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
             return this;
         }
 
-        @Override
-        public Builder nullValue(String nullValue) {
-            this.nullValue = nullValue;
-            return this;
-        }
-
         public Builder(String name) {
             super(name);
         }
 
         @Override
         public AnalyzedTextFieldMapper build(BuilderContext context) {
-            if (positionOffsetGap > 0) {
-                indexAnalyzer = new NamedAnalyzer(indexAnalyzer, positionOffsetGap);
-                searchAnalyzer = new NamedAnalyzer(searchAnalyzer, positionOffsetGap);
-                searchQuotedAnalyzer = new NamedAnalyzer(searchQuotedAnalyzer, positionOffsetGap);
+            if (positionIncrementGap != -1 ) {
+                fieldType.setIndexAnalyzer(new NamedAnalyzer(fieldType.indexAnalyzer(), positionIncrementGap));
+                fieldType.setSearchAnalyzer(new NamedAnalyzer(fieldType.searchAnalyzer(), positionIncrementGap));
+                fieldType.setSearchQuoteAnalyzer(new NamedAnalyzer(fieldType.searchQuoteAnalyzer(), positionIncrementGap));
             }
-            // if the field is not analyzed, then by default, we should omit norms and have docs only
-            // index options, as probably what the user really wants
-            // if they are set explicitly, we will use those values
-            // we also change the values on the default field type so that toXContent emits what
-            // differs from the defaults
-            FieldType defaultFieldType = new FieldType(Defaults.FIELD_TYPE);
-            if (fieldType.indexed() && !fieldType.tokenized()) {
+            if (fieldType.indexOptions() != IndexOptions.NONE && !fieldType.tokenized()) {
                 defaultFieldType.setOmitNorms(true);
-                defaultFieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
-                if (!omitNormsSet && boost == Defaults.BOOST) {
+                defaultFieldType.setIndexOptions(IndexOptions.DOCS);
+                if (!omitNormsSet && fieldType.boost() == 1.0f) {
                     fieldType.setOmitNorms(true);
                 }
                 if (!indexOptionsSet) {
-                    fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
+                    fieldType.setIndexOptions(IndexOptions.DOCS);
                 }
             }
             defaultFieldType.freeze();
-            AnalyzedTextFieldMapper fieldMapper = new AnalyzedTextFieldMapper(buildNames(context),
-                    boost, fieldType, defaultFieldType, docValues, nullValue, indexAnalyzer, searchAnalyzer, searchQuotedAnalyzer,
-                    positionOffsetGap, ignoreAbove, postingsProvider, docValuesProvider, similarity, normsLoading,
-                    fieldDataSettings, context.indexSettings(), multiFieldsBuilder.build(this, context), copyTo);
+            setupFieldType(context);
+
+            AnalyzedTextFieldMapper fieldMapper = new AnalyzedTextFieldMapper(name, fieldType, defaultFieldType, nullValue, positionIncrementGap, ignoreAbove,
+                    context.indexSettings(), multiFieldsBuilder.build(this, context), copyTo);
             fieldMapper.includeInAll(includeInAll);
             fieldMapper.tokenAnalyzer(tokenAnalyzer);
             return fieldMapper;
         }
 
         public NamedAnalyzer indexAnalyzer() {
-            return this.indexAnalyzer;
+            return fieldType.indexAnalyzer();
         }
 
         public NamedAnalyzer searchAnalyzer() {
-            return this.searchAnalyzer;
+            return fieldType.searchAnalyzer();
         }
 
         public NamedAnalyzer searchQuotedAnalyzer() {
-            return this.searchQuotedAnalyzer;
+            return fieldType.searchQuoteAnalyzer();
         }
     }
 
@@ -180,17 +166,11 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
     }
 
 
-    protected AnalyzedTextFieldMapper(Names names, float boost, FieldType fieldType, FieldType defaultFieldType, Boolean docValues,
-                                      String nullValue, NamedAnalyzer indexAnalyzer, NamedAnalyzer searchAnalyzer,
-                                      NamedAnalyzer searchQuotedAnalyzer, int positionOffsetGap, int ignoreAbove,
-                                      PostingsFormatProvider postingsFormat, DocValuesFormatProvider docValuesFormat,
-                                      SimilarityProvider similarity, Loading normsLoading, @Nullable Settings fieldDataSettings,
+    protected AnalyzedTextFieldMapper(String name, MappedFieldType fieldType, MappedFieldType defaultFieldType,
+                                      String nullValue, int positionIncrementGap, int ignoreAbove,
                                       Settings indexSettings, MultiFields multiFields, CopyTo copyTo) {
-        super(names, boost, fieldType, defaultFieldType, docValues,
-                nullValue, indexAnalyzer, searchAnalyzer,
-                searchQuotedAnalyzer, positionOffsetGap, ignoreAbove,
-                postingsFormat, docValuesFormat,
-                similarity, normsLoading, fieldDataSettings,
+        super(name, fieldType, defaultFieldType, positionIncrementGap, ignoreAbove,
+
                 indexSettings, multiFields, copyTo);
         this.nullValue = nullValue;
         this.ignoreAbove = ignoreAbove;
@@ -203,7 +183,7 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
 
     @Override
     protected void parseCreateField(ParseContext context, List<Field> fields) throws IOException {
-        ValueAndBoost valueAndBoost = parseCreateFieldForString(context, nullValue, boost);
+        ValueAndBoost valueAndBoost = parseCreateFieldForString(context, nullValue, 1.0f);
         if (valueAndBoost.value() == null) {
             return;
         }
@@ -211,25 +191,25 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
             return;
         }
         if (context.includeInAll(includeInAll, this)) {
-            context.allEntries().addText(names.fullName(), valueAndBoost.value(), valueAndBoost.boost());
+            context.allEntries().addText(name(), valueAndBoost.value(), valueAndBoost.boost());
         }
 
-        Analyzer namedAnalyzer = (tokenAnalyzer == null) ? context.analysisService().defaultAnalyzer() : tokenAnalyzer;
+        Analyzer namedAnalyzer = (tokenAnalyzer == null) ? context.analysisService().defaultIndexAnalyzer() : tokenAnalyzer;
         List<String> analyzedText = getAnalyzedText(namedAnalyzer.tokenStream(name(), valueAndBoost.value()));
         for (String s : analyzedText) {
             boolean added = false;
-            if (fieldType.indexed() || fieldType.stored()) {
-                Field field = new Field(names.indexName(), s, fieldType);
+            if (fieldType().indexOptions() != IndexOptions.NONE || fieldType().stored()) {
+                Field field = new Field(name(), s, fieldType());
                 field.setBoost(valueAndBoost.boost());
                 fields.add(field);
                 added = true;
             }
             if (hasDocValues()) {
-                fields.add(new SortedSetDocValuesField(names.indexName(), new BytesRef(s)));
+                fields.add(new SortedSetDocValuesField(name(), new BytesRef(s)));
                 added = true;
             }
             if (added == false) {
-                context.ignoredValue(names.indexName(), s);
+                context.ignoredValue(name(), s);
             }
         }
     }
@@ -259,13 +239,6 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
         return CONTENT_TYPE;
     }
 
-    @Override
-    public void merge(Mapper mergeWith, MergeContext mergeContext) throws MergeMappingException {
-        super.merge(mergeWith, mergeContext);
-        if (!this.getClass().equals(mergeWith.getClass())) {
-            return;
-        }
-    }
 
     @Override
     protected void doXContentBody(XContentBuilder builder, boolean includeDefaults, Params params) throws IOException {

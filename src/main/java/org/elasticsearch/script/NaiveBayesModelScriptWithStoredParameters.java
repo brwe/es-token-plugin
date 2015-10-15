@@ -53,6 +53,11 @@ public class NaiveBayesModelScriptWithStoredParameters extends AbstractSearchScr
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new NaiveBayesModelScriptWithStoredParameters(params, node.client());
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

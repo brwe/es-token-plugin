@@ -39,6 +39,11 @@ public class VectorizerScript extends AbstractSearchScript {
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new VectorizerScript(params);
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

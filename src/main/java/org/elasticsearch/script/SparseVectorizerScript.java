@@ -46,6 +46,11 @@ public class SparseVectorizerScript extends AbstractSearchScript {
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new SparseVectorizerScript(params);
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

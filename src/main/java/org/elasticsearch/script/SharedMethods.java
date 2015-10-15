@@ -41,7 +41,7 @@ import java.util.Map;
 public class SharedMethods {
     public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(List<Integer> indices, List<Integer> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
         Terms terms = fields.terms(field);
-        TermsEnum termsEnum = terms.iterator(null);
+        TermsEnum termsEnum = terms.iterator();
         BytesRef t;
         DocsEnum docsEnum = null;
 

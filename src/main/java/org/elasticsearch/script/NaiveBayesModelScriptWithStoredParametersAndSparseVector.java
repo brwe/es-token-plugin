@@ -58,6 +58,11 @@ public class NaiveBayesModelScriptWithStoredParametersAndSparseVector extends Ab
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new NaiveBayesModelScriptWithStoredParametersAndSparseVector(params, node.client());
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

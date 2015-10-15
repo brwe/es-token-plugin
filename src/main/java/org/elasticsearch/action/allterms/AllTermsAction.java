@@ -19,12 +19,12 @@
 
 package org.elasticsearch.action.allterms;
 
-import org.elasticsearch.action.ClientAction;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.Action;
+import org.elasticsearch.client.ElasticsearchClient;
 
 /**
  */
-public class AllTermsAction extends ClientAction<AllTermsRequest, AllTermsResponse, AllTermsRequestBuilder> {
+public class AllTermsAction extends Action<AllTermsRequest, AllTermsResponse, AllTermsRequestBuilder> {
 
     public static final AllTermsAction INSTANCE = new AllTermsAction();
     public static final String NAME = "indices:data/read/allterms";
@@ -39,7 +39,7 @@ public class AllTermsAction extends ClientAction<AllTermsRequest, AllTermsRespon
     }
 
     @Override
-    public AllTermsRequestBuilder newRequestBuilder(Client client) {
+    public AllTermsRequestBuilder newRequestBuilder(ElasticsearchClient client) {
         return new AllTermsRequestBuilder(client);
     }
 }

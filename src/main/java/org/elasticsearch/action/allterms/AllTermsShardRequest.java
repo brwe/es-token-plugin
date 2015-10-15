@@ -19,13 +19,14 @@
 
 package org.elasticsearch.action.allterms;
 
-import org.elasticsearch.action.support.single.shard.SingleShardOperationRequest;
+import org.elasticsearch.action.ActionRequestValidationException;
+import org.elasticsearch.action.support.single.shard.SingleShardRequest;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 
 import java.io.IOException;
 
-public class AllTermsShardRequest extends SingleShardOperationRequest<AllTermsShardRequest> {
+public class AllTermsShardRequest extends SingleShardRequest<AllTermsShardRequest> {
 
     private String from;
     private int shardId;
@@ -38,6 +39,11 @@ public class AllTermsShardRequest extends SingleShardOperationRequest<AllTermsSh
 
     AllTermsShardRequest() {
 
+    }
+
+    @Override
+    public ActionRequestValidationException validate() {
+        return null;
     }
 
     AllTermsShardRequest(AllTermsRequest request, String index, int shardId, String field, int size, String from, long minDocFreq) {

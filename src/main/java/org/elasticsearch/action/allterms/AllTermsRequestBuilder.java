@@ -22,10 +22,11 @@ package org.elasticsearch.action.allterms;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.ElasticsearchClient;
 
-public class AllTermsRequestBuilder extends ActionRequestBuilder<AllTermsRequest, AllTermsResponse, AllTermsRequestBuilder, Client> {
-    public AllTermsRequestBuilder(Client client) {
-        super(client, new AllTermsRequest());
+public class AllTermsRequestBuilder extends ActionRequestBuilder<AllTermsRequest, AllTermsResponse, AllTermsRequestBuilder> {
+    public AllTermsRequestBuilder(ElasticsearchClient client) {
+        super(client, AllTermsAction.INSTANCE, new AllTermsRequest());
     }
 
 
@@ -50,7 +51,7 @@ public class AllTermsRequestBuilder extends ActionRequestBuilder<AllTermsRequest
     }
 
     @Override
-    protected void doExecute(ActionListener<AllTermsResponse> listener) {
+    public void execute(ActionListener<AllTermsResponse> listener) {
         client.execute(AllTermsAction.INSTANCE, request, listener);
     }
 

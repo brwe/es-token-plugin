@@ -104,6 +104,11 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new SVMModelScriptWithStoredParametersAndSparseVector(params, node.client());
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

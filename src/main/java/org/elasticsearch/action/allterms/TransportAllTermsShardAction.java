@@ -19,16 +19,17 @@
 
 package org.elasticsearch.action.allterms;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.support.ActionFilters;
-import org.elasticsearch.action.support.single.shard.TransportShardSingleOperationAction;
+import org.elasticsearch.action.support.single.shard.TransportSingleShardAction;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
+import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
@@ -42,9 +43,10 @@ import org.elasticsearch.transport.TransportService;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class TransportAllTermsShardAction extends TransportShardSingleOperationAction<AllTermsShardRequest, AllTermsSingleShardResponse> {
+public class TransportAllTermsShardAction extends TransportSingleShardAction<AllTermsShardRequest, AllTermsSingleShardResponse> {
 
     private final IndicesService indicesService;
 
@@ -53,8 +55,8 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
 
     @Inject
     public TransportAllTermsShardAction(Settings settings, ClusterService clusterService, TransportService transportService,
-                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters) {
-        super(settings, ACTION_NAME, threadPool, clusterService, transportService, actionFilters);
+                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters,  IndexNameExpressionResolver indexNameExpressionResolver) {
+        super(settings, ACTION_NAME, threadPool, clusterService, transportService, actionFilters, indexNameExpressionResolver, AllTermsShardRequest.class, ThreadPool.Names.GENERIC);
         this.indicesService = indicesService;
     }
 
@@ -64,22 +66,12 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
     }
 
     @Override
-    protected String executor() {
-        return ThreadPool.Names.GET;
-    }
-
-    @Override
-    protected AllTermsShardRequest newRequest() {
-        return new AllTermsShardRequest();
-    }
-
-    @Override
     protected AllTermsSingleShardResponse newResponse() {
         return new AllTermsSingleShardResponse(null);
     }
 
     @Override
-    protected boolean resolveIndex() {
+    protected boolean resolveIndex(AllTermsShardRequest request) {
         return false;
     }
 
@@ -97,7 +89,7 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
         final Engine.Searcher searcher = indexShard.acquireSearcher("all_terms");
         IndexReader topLevelReader = searcher.reader();
 
-        List<AtomicReaderContext> leaves = topLevelReader.leaves();
+        List<LeafReaderContext> leaves = topLevelReader.leaves();
 
         try {
             if (leaves.size() == 0) {
@@ -106,8 +98,8 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
             List<TermsEnum> termIters = new ArrayList<>();
 
             try {
-                for (AtomicReaderContext reader : leaves) {
-                    termIters.add(reader.reader().terms(request.field()).iterator(null));
+                for (LeafReaderContext reader : leaves) {
+                    termIters.add(reader.reader().terms(request.field()).iterator());
                 }
             } catch (IOException e) {
             }
@@ -149,8 +141,7 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
                     spare.copyUTF8Bytes(lastTerm);
                     terms.add(spare.toString());
                 }
-                BytesRef bytesRef = new BytesRef();
-                bytesRef.copyBytes(lastTerm);
+                BytesRef bytesRef = new BytesRef(Arrays.copyOf(lastTerm.bytes, lastTerm.bytes.length));
                 lastTerm = bytesRef;
 
                 while (terms.size() < request.size() && lastTerm != null) {
@@ -237,8 +228,7 @@ public class TransportAllTermsShardAction extends TransportShardSingleOperationA
                 toiString.copyUTF8Bytes(minTerm);
                 logger.trace("{} final min term {}", shardId, toiString.toString());
             }
-            BytesRef ret = new BytesRef();
-            ret.copyBytes(minTerm);
+            BytesRef ret = new BytesRef(Arrays.copyOf(minTerm.bytes, minTerm.bytes.length));
             return ret;
         }
         return null;

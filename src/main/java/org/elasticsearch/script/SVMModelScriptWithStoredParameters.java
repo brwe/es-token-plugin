@@ -53,6 +53,11 @@ public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new SVMModelScriptWithStoredParameters(params, node.client());
         }
+
+        @Override
+        public boolean needsScores() {
+            return false;
+        }
     }
 
     /**

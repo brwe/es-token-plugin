@@ -2,31 +2,31 @@ package org.elasticsearch.script;
 
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.plugins.PluginsService;
-import org.elasticsearch.test.ElasticsearchIntegrationTest;
+import org.elasticsearch.plugin.TokenPlugin;
+import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertSearchResponse;
 import static org.hamcrest.Matchers.equalTo;
 
 /**
  */
-@ElasticsearchIntegrationTest.ClusterScope(scope = ElasticsearchIntegrationTest.Scope.SUITE)
-public class ScriptTests extends ElasticsearchIntegrationTest {
+@ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
+public class ScriptTests extends ESIntegTestCase {
 
     @Override
     protected Settings nodeSettings(int nodeOrdinal) {
-        return ImmutableSettings.builder()
+        return settingsBuilder()
                 .put(super.nodeSettings(nodeOrdinal))
-                .put("plugins." + PluginsService.LOAD_PLUGIN_FROM_CLASSPATH, true)
+                .put("plugin.types", TokenPlugin.class.getName())
                 .build();
     }
 
@@ -38,7 +38,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("features", new String[]{"fox", "quick", "the"});
         parameters.put("field", "text");
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", "native", "vector", parameters).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
         double[] vector = (double[]) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         assertThat(vector.length, equalTo(3));
         assertThat(vector[0], equalTo(1.0));
@@ -58,7 +58,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         parameters.put("field", "text");
         boolean fieldDataFields = randomBoolean();
         parameters.put("fieldDataFields", fieldDataFields);
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", "native", "sparse_vector", parameters).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("sparse_vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         int[] vector = (int[]) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("indices");
         assertThat(vector.length, equalTo(3));
@@ -97,7 +97,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         parameters.put("type", "params");
         parameters.put("id", "test_params");
         parameters.put("field", "text");
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", "native", NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, parameters).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
@@ -108,7 +108,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                         .endObject()
         ).get();
         refresh();
-        searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParameters.SCRIPT_NAME, parameters).get();
+        searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(SVMModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 
@@ -136,7 +136,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
         if (randomBoolean()) {
             parameters.put("fieldDataFields", true);
         }
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", "native", NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
@@ -147,7 +147,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                         .endObject()
         ).get();
         refresh();
-        searchResponse = client().prepareSearch("index").addScriptField("svm", "native", SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+        searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
@@ -176,9 +176,8 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             parameters.put("fieldDataFields", true);
         }
         client().prepareUpdate().setId("1").setIndex("index").setType("type")
-                .setScriptParams(parameters)
-                .setScript(NaiveBayesUpdateScript.SCRIPT_NAME, ScriptService.ScriptType.INLINE)
-                .setScriptLang("native").get();
+                .setScript(new Script(NaiveBayesUpdateScript.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters))
+                .get();
 
         GetResponse getResponse = client().prepareGet().setId("1").setIndex("index").setType("type").get();
         assertNotNull(getResponse.getSource().get("label"));

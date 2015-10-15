@@ -1,23 +1,15 @@
 package org.elasticsearch.script;
 
-import org.apache.lucene.index.Fields;
 import org.apache.spark.mllib.classification.ClassificationModel;
 import org.apache.spark.mllib.linalg.Vectors;
-import org.elasticsearch.action.admin.indices.analyze.AnalyzeRequestBuilder;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.index.fielddata.ScriptDocValues;
-import org.elasticsearch.index.settings.IndexSettings;
-import org.elasticsearch.index.termvectors.ShardTermVectorService;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,6 +63,11 @@ public class NaiveBayesUpdateScript extends AbstractSearchScript {
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             return new NaiveBayesUpdateScript(params, node.client());
+        }
+
+        @Override
+        public boolean needsScores() {
+            return false;
         }
     }
 
