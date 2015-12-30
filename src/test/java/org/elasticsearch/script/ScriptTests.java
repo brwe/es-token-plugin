@@ -1,14 +1,49 @@
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.elasticsearch.script;
 
+import org.apache.spark.mllib.classification.SVMModel;
+import org.apache.spark.mllib.linalg.DenseVector;
+import org.dmg.pmml.FieldName;
+import org.dmg.pmml.PMML;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.test.ESIntegTestCase;
+import org.jpmml.evaluator.Evaluator;
+import org.jpmml.evaluator.ModelEvaluatorFactory;
+import org.jpmml.evaluator.ProbabilityDistribution;
+import org.jpmml.model.ImportFilter;
+import org.jpmml.model.JAXBUtil;
 import org.junit.Test;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.bind.JAXBException;
+import javax.xml.transform.Source;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -181,7 +216,61 @@ public class ScriptTests extends ESIntegTestCase {
 
         GetResponse getResponse = client().prepareGet().setId("1").setIndex("index").setType("type").get();
         assertNotNull(getResponse.getSource().get("label"));
+    }
 
+    @Test
+    // only just checks that nothing crashes
+    public void testPMMLBasic() throws IOException, JAXBException, SAXException {
+        for (int i = 0; i< 1000; i++) {
+
+            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
+            String pmmlString = "<PMML xmlns=\"http://www.dmg.org/PMML-4_2\">\n" +
+                    "    <Header description=\"linear SVM\">\n" +
+                    "        <Application name=\"Apache Spark MLlib\" version=\"1.5.2\"/>\n" +
+                    "        <Timestamp>2015-12-30T13:51:42</Timestamp>\n" +
+                    "    </Header>\n" +
+                    "    <DataDictionary numberOfFields=\"4\">\n" +
+                    "        <DataField name=\"field_0\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"field_1\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"field_2\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"target\" optype=\"categorical\" dataType=\"string\"/>\n" +
+                    "    </DataDictionary>\n" +
+                    "    <RegressionModel modelName=\"linear SVM\" functionName=\"classification\" normalizationMethod=\"none\">\n" +
+                    "        <MiningSchema>\n" +
+                    "            <MiningField name=\"field_0\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"field_1\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"field_2\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"target\" usageType=\"target\"/>\n" +
+                    "        </MiningSchema>\n" +
+                    "        <RegressionTable intercept=\"0.1\" targetCategory=\"1\">\n" +
+                    "            <NumericPredictor name=\"field_0\" coefficient=\"" + modelParams[0] + "\"/>\n" +
+                    "            <NumericPredictor name=\"field_1\" coefficient=\"" + modelParams[1] + "\"/>\n" +
+                    "            <NumericPredictor name=\"field_2\" coefficient=\"" + modelParams[2] + "\"/>\n" +
+                    "        </RegressionTable>\n" +
+                    "        <RegressionTable intercept=\"0.0\" targetCategory=\"0\"/>\n" +
+                    "    </RegressionModel>\n" +
+                    "</PMML>";
+            client().prepareIndex("test", "type", "1").setSource(jsonBuilder().startObject().field("pmml", pmmlString).endObject()).get();
+            GetResponse doc = client().prepareGet("test", "type", "1").get();
+            PMML pmml;
+            try (InputStream is = new ByteArrayInputStream(doc.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
+                Source transformedSource = ImportFilter.apply(new InputSource(is));
+                pmml = JAXBUtil.unmarshalPMML(transformedSource);
+            }
+            ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
+            Evaluator evaluator = modelEvaluatorFactory.newModelManager(pmml);
+            evaluator.verify();
+            Map<FieldName, Object> params = new HashMap<>();
+            double[] vals = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            params.put(new FieldName("field_0"), new Double(vals[0]));
+            params.put(new FieldName("field_1"), new Double(vals[1]));
+            params.put(new FieldName("field_2"), new Double(vals[2]));
+            Map<FieldName, ?> result = evaluator.evaluate(params);
+            double mllibResult = svmm.predict(new DenseVector(vals));
+            String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
+            assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
+        }
     }
 
     void createIndexWithTermVectors() throws IOException {

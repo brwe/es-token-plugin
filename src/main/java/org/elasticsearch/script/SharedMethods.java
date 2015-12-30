@@ -20,6 +20,7 @@ package org.elasticsearch.script;/*
 
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -43,7 +44,7 @@ public class SharedMethods {
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator();
         BytesRef t;
-        DocsEnum docsEnum = null;
+        PostingsEnum docsEnum = null;
 
         int numTerms = 0;
         indices.clear();
@@ -52,12 +53,12 @@ public class SharedMethods {
             Integer termIndex  = wordMap.get(t.utf8ToString());
             if (termIndex != null) {
                 indices.add(termIndex);
-                docsEnum = termsEnum.docs(null, docsEnum);
+                docsEnum = termsEnum.postings(docsEnum, PostingsEnum.FREQS);
                 int nextDoc = docsEnum.nextDoc();
-                assert nextDoc != DocsEnum.NO_MORE_DOCS;
+                assert nextDoc != PostingsEnum.NO_MORE_DOCS;
                 values.add(docsEnum.freq());
                 nextDoc = docsEnum.nextDoc();
-                assert nextDoc == DocsEnum.NO_MORE_DOCS;
+                assert nextDoc == PostingsEnum.NO_MORE_DOCS;
                 numTerms++;
             }
         }
