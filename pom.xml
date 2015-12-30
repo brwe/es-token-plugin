@@ -108,13 +108,19 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_2.10</artifactId>
-            <version>1.1.0</version>
-        </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-mllib_2.10</artifactId>
+        <version>1.5.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.lucene</groupId>
+        <artifactId>lucene-core</artifactId>
+        <version>${lucene.maven.version}</version>
+        <scope>compile</scope>
+      </dependency>
 
-        <dependency>
+      <dependency>
             <groupId>com.github.fommil.netlib</groupId>
             <artifactId>core</artifactId>
             <version>1.1.2</version>
@@ -125,8 +131,28 @@
             <version>1.0.2</version>
         </dependency>
 
+      <dependency>
+        <groupId>org.jpmml</groupId>
+        <artifactId>pmml-evaluator</artifactId>
+        <version>1.2.8</version>
+      </dependency>
+<!--
+      <dependency>
+        <groupId>org.jpmml</groupId>
+        <artifactId>pmml-model</artifactId>
+        <version>1.2-SNAPSHOT</version>
+      </dependency>
+
+
+ -->
+      <dependency>
+        <groupId>org.jpmml</groupId>
+        <artifactId>pmml-model</artifactId>
+        <version>1.2.8</version>
+      </dependency>
 
     </dependencies>
+
 
     <build>
         <resources>
@@ -274,6 +300,49 @@
                     </execution>
                 </executions>
             </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>2.4.2</version>
+            <executions>
+              <execution>
+                <id>shade</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>shade</goal>
+                </goals>
+                <configuration>
+                  <filters>
+                    <filter>
+                      <artifact>*:*</artifact>
+                      <excludes>
+                        <exclude>META-INF/*.SF</exclude>
+                        <exclude>META-INF/*.DSA</exclude>
+                        <exclude>META-INF/*.RSA</exclude>
+                      </excludes>
+                    </filter>
+                  </filters>
+                  <!-- Conflicts with JPMML 1.1.x in Spark, so shade -->
+                  <relocations>
+                    <relocation>
+                      <pattern>org.jpmml</pattern>
+                      <shadedPattern>oryx.org.jpmml</shadedPattern>
+                      <includes>
+                        <include>org.jpmml.**</include>
+                      </includes>
+                    </relocation>
+                    <relocation>
+                      <pattern>org.dmg</pattern>
+                      <shadedPattern>oryx.org.dmg</shadedPattern>
+                      <includes>
+                        <include>org.dmg.**</include>
+                      </includes>
+                    </relocation>
+                  </relocations>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
     </build>
 </project>
