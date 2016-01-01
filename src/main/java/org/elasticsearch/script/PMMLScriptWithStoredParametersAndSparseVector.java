@@ -1,14 +1,10 @@
 package org.elasticsearch.script;
 
-import org.apache.lucene.index.Fields;
-import org.apache.spark.mllib.classification.ClassificationModel;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.node.Node;
@@ -28,10 +24,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Script for predicting a class based on a text field with an SVM model. This needs the parameters "weights" and "intercept"
