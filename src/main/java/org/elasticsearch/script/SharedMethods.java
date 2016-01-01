@@ -23,9 +23,12 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.spark.mllib.classification.ClassificationModel;
+import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.Vectors;
+import org.dmg.pmml.FieldName;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
@@ -113,6 +116,19 @@ public class SharedMethods {
         }
         return new SVMModel(Vectors.dense(weights), intercept.doubleValue());
     }
+    static LogisticRegressionModel initializeLRModel(ArrayList features, String field, GetResponse getResponse) {
+        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
+        double[] weights = new double[weightsArrayList.size()];
+        for (int i = 0; i < weightsArrayList.size(); i++) {
+            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
+        }
+        Number intercept = (Number) getResponse.getSource().get("intercept");
+        features.addAll((ArrayList) getResponse.getSource().get("features"));
+        if (field == null || features == null || weightsArrayList == null || intercept == null) {
+            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
+        }
+        return new LogisticRegressionModel(Vectors.dense(weights), intercept.doubleValue());
+    }
 
     static NaiveBayesModel initializeNaiveBayesModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList piAsArrayList = (ArrayList) getResponse.getSource().get("pi");
@@ -187,5 +203,17 @@ public class SharedMethods {
         }
         indicesAndValues = new Tuple<>(indicesArray, valuesArray);
         return indicesAndValues;
+    }
+
+    public static Map<FieldName, Double> getFieldNamesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues, Map<FieldName, Double> nullMap) {
+        Map<FieldName, Double> fieldNamesAndValues = new HashMap<>();
+        fieldNamesAndValues.putAll(nullMap);
+        for (String value : docValues.getValues()) {
+            Integer index = wordMap.get(value);
+            if (index != null) {
+                fieldNamesAndValues.put(new FieldName("field_" + index.toString()), new Double(1));
+            }
+        }
+        return fieldNamesAndValues;
     }
 }

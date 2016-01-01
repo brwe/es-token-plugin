@@ -1,5 +1,6 @@
 package org.elasticsearch.script;
 
+import org.apache.spark.mllib.classification.LogisticRegressionModel;
 import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.DenseVector;
 import org.dmg.pmml.FieldName;
@@ -201,8 +202,8 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
 
     @Test
     // only just checks that nothing crashes
-    public void testPMMLBasic() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i< 1000; i++) {
+    public void testPMMLSVM() throws IOException, JAXBException, SAXException {
+        for (int i = 0; i < 10; i++) {
 
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
@@ -232,8 +233,11 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                     "        <RegressionTable intercept=\"0.0\" targetCategory=\"0\"/>\n" +
                     "    </RegressionModel>\n" +
                     "</PMML>";
-            client().prepareIndex("test", "type", "1").setSource(jsonBuilder().startObject().field("pmml", pmmlString).endObject()).get();
-            GetResponse doc = client().prepareGet("test", "type", "1").get();
+            client().prepareIndex("model", "params", "test_params").setSource(jsonBuilder().startObject()
+                    .field("pmml", pmmlString)
+                    .field("features", new String[]{"fox", "quick", "the", "zonk"})
+                    .endObject()).get();
+            GetResponse doc = client().prepareGet("model", "params", "test_params").get();
             PMML pmml;
             try (InputStream is = new ByteArrayInputStream(doc.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
                 Source transformedSource = ImportFilter.apply(new InputSource(is));
@@ -243,16 +247,137 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             Evaluator evaluator = modelEvaluatorFactory.newModelManager(pmml);
             evaluator.verify();
             Map<FieldName, Object> params = new HashMap<>();
-            double[] vals = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
             Map<FieldName, ?> result = evaluator.evaluate(params);
-            double mllibResult = svmm.predict(new DenseVector(vals));
+            double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
             String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
             assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
+            // now try the same with pmml script
+            String text = "";
+            for (int j = 0; j < vals[2]; j++) {
+                text = text + "quick ";
+            }
+            for (int j = 0; j < vals[1]; j++) {
+                text = text + "the ";
+            }
+            for (int j = 0; j < vals[0]; j++) {
+                text = text + "fox ";
+            }
+            client().prepareIndex("test_index", "type", "1").setSource(jsonBuilder().startObject().field("text", text).endObject()).get();
+            refresh();
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("index", "model");
+            parameters.put("type", "params");
+            parameters.put("id", "test_params");
+            parameters.put("field", "text");
+            parameters.put("fieldDataFields", true);
+            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            assertSearchResponse(searchResponse);
+
+            Double label = (Double) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            assertThat(label, equalTo(mllibResult));
         }
     }
+
+
+    @Test
+    // only just checks that nothing crashes
+    public void testPMMLLR() throws IOException, JAXBException, SAXException {
+        for (int i = 0; i < 10; i++) {
+
+            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), 0.1);
+            String pmmlString = "<PMML xmlns=\"http://www.dmg.org/PMML-4_2\">\n" +
+                    "    <Header description=\"logistic regression\">\n" +
+                    "        <Application name=\"Apache Spark MLlib\" version=\"1.5.2\"/>\n" +
+                    "        <Timestamp>2016-01-02T03:57:37</Timestamp>\n" +
+                    "    </Header>\n" +
+                    "    <DataDictionary numberOfFields=\"4\">\n" +
+                    "        <DataField name=\"field_0\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"field_1\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"field_2\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"target\" optype=\"categorical\" dataType=\"string\"/>\n" +
+                    "    </DataDictionary>\n" +
+                    "    <RegressionModel modelName=\"logistic regression\" functionName=\"classification\" normalizationMethod=\"logit\">\n" +
+                    "        <MiningSchema>\n" +
+                    "            <MiningField name=\"field_0\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"field_1\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"field_2\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"target\" usageType=\"target\"/>\n" +
+                    "        </MiningSchema>\n" +
+                    "        <RegressionTable intercept=\"0.1\" targetCategory=\"1\">\n" +
+                    "            <NumericPredictor name=\"field_0\" coefficient=\"" + modelParams[0] + "\"/>\n" +
+                    "            <NumericPredictor name=\"field_1\" coefficient=\"" + modelParams[1] + "\"/>\n" +
+                    "            <NumericPredictor name=\"field_2\" coefficient=\"" + modelParams[2] + "\"/>\n" +
+                    "        </RegressionTable>\n" +
+                    "        <RegressionTable intercept=\"-0.0\" targetCategory=\"0\"/>\n" +
+                    "    </RegressionModel>\n" +
+                    "</PMML>";
+            client().prepareIndex("model", "params", "test_params").setSource(jsonBuilder().startObject()
+                    .field("pmml", pmmlString)
+                    .field("features", new String[]{"fox", "quick", "the", "zonk"})
+                    .endObject()).get();
+            GetResponse doc = client().prepareGet("model", "params", "test_params").get();
+            PMML pmml;
+            try (InputStream is = new ByteArrayInputStream(doc.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
+                Source transformedSource = ImportFilter.apply(new InputSource(is));
+                pmml = JAXBUtil.unmarshalPMML(transformedSource);
+            }
+            ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
+            Evaluator evaluator = modelEvaluatorFactory.newModelManager(pmml);
+            evaluator.verify();
+            Map<FieldName, Object> params = new HashMap<>();
+            int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
+            params.put(new FieldName("field_0"), new Double(vals[0]));
+            params.put(new FieldName("field_1"), new Double(vals[1]));
+            params.put(new FieldName("field_2"), new Double(vals[2]));
+            Map<FieldName, ?> result = evaluator.evaluate(params);
+            double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
+            String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
+            assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
+            // now try the same with pmml script
+            String text = "";
+            for (int j = 0; j < vals[2]; j++) {
+                text = text + "quick ";
+            }
+            for (int j = 0; j < vals[1]; j++) {
+                text = text + "the ";
+            }
+            for (int j = 0; j < vals[0]; j++) {
+                text = text + "fox ";
+            }
+            client().prepareIndex("test_index", "type", "1").setSource(jsonBuilder().startObject().field("text", text).endObject()).get();
+            refresh();
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("index", "model");
+            parameters.put("type", "params");
+            parameters.put("id", "test_params");
+            parameters.put("field", "text");
+            parameters.put("fieldDataFields", true);
+            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            assertSearchResponse(searchResponse);
+
+            Double label = (Double) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            assertThat(label, equalTo(mllibResult));
+
+            // test mllib lr script
+            client().prepareIndex("model", "params", "test_params").setSource(
+                    jsonBuilder().startObject()
+                            .field("weights", modelParams)
+                            .field("intercept", 0.1)
+                            .field("features", new String[]{"fox", "quick", "the"})
+                            .endObject()
+            ).get();
+            refresh();
+            searchResponse = client().prepareSearch("test_index").addScriptField("lr", "native", LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            assertSearchResponse(searchResponse);
+            label = (Double) (searchResponse.getHits().getAt(0).field("lr").values().get(0));
+        }
+    }
+
 
     void createIndexWithTermVectors() throws IOException {
         XContentBuilder mapping = jsonBuilder();

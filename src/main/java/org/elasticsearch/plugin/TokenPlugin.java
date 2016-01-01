@@ -75,5 +75,7 @@ public class TokenPlugin extends AbstractPlugin {
         module.registerScript(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, NaiveBayesModelScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, SVMModelScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
+        module.registerScript(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, PMMLScriptWithStoredParametersAndSparseVector.Factory.class);
+        module.registerScript(LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, LogisticRegressionModelScriptWithStoredParametersAndSparseVector.Factory.class);
     }
 }
