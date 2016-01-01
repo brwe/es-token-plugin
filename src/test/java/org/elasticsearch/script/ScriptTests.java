@@ -288,7 +288,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
     public void testPMMLLR() throws IOException, JAXBException, SAXException {
         for (int i = 0; i < 10; i++) {
 
-            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), 0.1);
             String pmmlString = "<PMML xmlns=\"http://www.dmg.org/PMML-4_2\">\n" +
                     "    <Header description=\"logistic regression\">\n" +
@@ -299,6 +299,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                     "        <DataField name=\"field_0\" optype=\"continuous\" dataType=\"double\"/>\n" +
                     "        <DataField name=\"field_1\" optype=\"continuous\" dataType=\"double\"/>\n" +
                     "        <DataField name=\"field_2\" optype=\"continuous\" dataType=\"double\"/>\n" +
+                    "        <DataField name=\"field_3\" optype=\"continuous\" dataType=\"double\"/>\n" +
                     "        <DataField name=\"target\" optype=\"categorical\" dataType=\"string\"/>\n" +
                     "    </DataDictionary>\n" +
                     "    <RegressionModel modelName=\"logistic regression\" functionName=\"classification\" normalizationMethod=\"logit\">\n" +
@@ -306,12 +307,14 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                     "            <MiningField name=\"field_0\" usageType=\"active\"/>\n" +
                     "            <MiningField name=\"field_1\" usageType=\"active\"/>\n" +
                     "            <MiningField name=\"field_2\" usageType=\"active\"/>\n" +
+                    "            <MiningField name=\"field_3\" usageType=\"active\"/>\n" +
                     "            <MiningField name=\"target\" usageType=\"target\"/>\n" +
                     "        </MiningSchema>\n" +
                     "        <RegressionTable intercept=\"0.1\" targetCategory=\"1\">\n" +
                     "            <NumericPredictor name=\"field_0\" coefficient=\"" + modelParams[0] + "\"/>\n" +
                     "            <NumericPredictor name=\"field_1\" coefficient=\"" + modelParams[1] + "\"/>\n" +
                     "            <NumericPredictor name=\"field_2\" coefficient=\"" + modelParams[2] + "\"/>\n" +
+                    "            <NumericPredictor name=\"field_3\" coefficient=\"" + modelParams[3] + "\"/>\n" +
                     "        </RegressionTable>\n" +
                     "        <RegressionTable intercept=\"-0.0\" targetCategory=\"0\"/>\n" +
                     "    </RegressionModel>\n" +
@@ -334,8 +337,9 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
+            params.put(new FieldName("field_3"), new Double(vals[3]));
             Map<FieldName, ?> result = evaluator.evaluate(params);
-            double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
+            double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
             String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
             assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
             // now try the same with pmml script
@@ -368,7 +372,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
                     jsonBuilder().startObject()
                             .field("weights", modelParams)
                             .field("intercept", 0.1)
-                            .field("features", new String[]{"fox", "quick", "the"})
+                            .field("features", new String[]{"fox", "quick", "the", "zonk"})
                             .endObject()
             ).get();
             refresh();

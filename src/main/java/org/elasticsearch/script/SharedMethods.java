@@ -205,9 +205,8 @@ public class SharedMethods {
         return indicesAndValues;
     }
 
-    public static Map<FieldName, Double> getFieldNamesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues, Map<FieldName, Double> nullMap) {
+    public static Map<FieldName, Double> getFieldNamesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {
         Map<FieldName, Double> fieldNamesAndValues = new HashMap<>();
-        fieldNamesAndValues.putAll(nullMap);
         for (String value : docValues.getValues()) {
             Integer index = wordMap.get(value);
             if (index != null) {

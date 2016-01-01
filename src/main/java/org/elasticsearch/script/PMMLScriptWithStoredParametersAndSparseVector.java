@@ -13,14 +13,25 @@ import org.jpmml.evaluator.ModelEvaluatorFactory;
 import org.jpmml.evaluator.ProbabilityDistribution;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.transform.Source;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,7 +94,6 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
     ArrayList<String> features = new ArrayList();
     Map<String, Integer> wordMap;
     private boolean fieldDataFields;
-    Map<FieldName, Double> nullMap;
 
     /**
      * Factory that is registered in
@@ -128,7 +138,42 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
     private PMMLScriptWithStoredParametersAndSparseVector(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
         GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         PMML pmml;
-        try (InputStream is = new ByteArrayInputStream(getResponse.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
+        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder docBuilder = null;
+        try {
+            docBuilder = docFactory.newDocumentBuilder();
+        } catch (ParserConfigurationException e) {
+            throw new ScriptException("could not parse pmml xml");
+        }
+        Document doc = docBuilder.parse(new ByteArrayInputStream(getResponse.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset())));
+
+        NodeList miningFields = doc.getElementsByTagName("MiningField");
+        for (int j = 0; j < miningFields.getLength(); j++) {
+            Element miningField = (Element) miningFields.item(j);
+            if (miningField.getAttribute("name").equals("target") == false) {
+                if (miningField.hasAttribute("missingValueReplacement") == false) {
+                    miningField.setAttribute("missingValueReplacement", "0");
+                }
+            }
+        }
+        TransformerFactory transFactory = TransformerFactory.newInstance();
+        Transformer transformer = null;
+        try {
+            transformer = transFactory.newTransformer();
+        } catch (TransformerConfigurationException e) {
+            throw new ScriptException("could not create transformer to write manipulated pmml xml");
+        }
+        StringWriter buffer = new StringWriter();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        try {
+            transformer.transform(new DOMSource(doc),
+                    new StreamResult(buffer));
+        } catch (TransformerException e) {
+            throw new ScriptException("could not write manipulated pmml xml");
+        }
+        String finalPMML = buffer.toString();
+
+        try (InputStream is = new ByteArrayInputStream(finalPMML.getBytes(Charset.defaultCharset()))) {
             Source transformedSource = ImportFilter.apply(new InputSource(is));
             pmml = JAXBUtil.unmarshalPMML(transformedSource);
         }
@@ -140,11 +185,6 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         features.addAll((ArrayList) getResponse.getSource().get("features"));
         wordMap = new HashMap<>();
         SharedMethods.fillWordIndexMap(features, wordMap);
-        nullMap = new HashMap<>();
-        for (int i = 0; i<features.size(); i++) {
-            nullMap.put(new FieldName("field_" + i), 0.0);
-        }
-
     }
 
     @Override
@@ -155,7 +195,7 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
             throw new UnsupportedOperationException("term vectors not implemented for PMML");
         } else {
             ScriptDocValues<String> docValues = docFieldStrings(field);
-            fieldNamesAndValues = SharedMethods.getFieldNamesAndValuesFromFielddataFields(wordMap, docValues, nullMap);
+            fieldNamesAndValues = SharedMethods.getFieldNamesAndValuesFromFielddataFields(wordMap, docValues);
         }
         /** until here **/
         Map<FieldName, ?> result = model.evaluate(fieldNamesAndValues);
