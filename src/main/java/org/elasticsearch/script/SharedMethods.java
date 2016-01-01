@@ -33,9 +33,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class SharedMethods {
@@ -164,19 +162,28 @@ public class SharedMethods {
 
     static Tuple<int[], double[]> getIndicesAndValuesFromAnalyzedTokens(Map<String, Integer> wordMap, List<AnalyzeResponse.AnalyzeToken> tokens) {
         Tuple<int[], double[]> indicesAndValues;
-        List<Integer> indices = new ArrayList<>();
+        Map<Integer, Double> indicesAndValuesMap = new HashMap<>();
 
         for (AnalyzeResponse.AnalyzeToken value : tokens) {
             Integer index = wordMap.get(value.getTerm());
             if (index != null) {
-                indices.add(index);
+                Double tf = indicesAndValuesMap.get(index);
+                if (tf != null) {
+                    indicesAndValuesMap.put(index, tf + 1.0);
+                } else {
+                    indicesAndValuesMap.put(index, 1.0);
+                }
             }
         }
-        int[] indicesArray = new int[indices.size()];
-        double[] valuesArray = new double[indices.size()];
-        for (int i = 0; i < indices.size(); i++) {
-            indicesArray[i] = indices.get(i).intValue();
-            valuesArray[i] = 1;
+        int[] indicesArray = new int[indicesAndValuesMap.size()];
+        double[] valuesArray = new double[indicesAndValuesMap.size()];
+        SortedSet<Integer> keys = new TreeSet<>(indicesAndValuesMap.keySet());
+        int i = 0;
+        for (Integer key : keys) {
+            Double value = indicesAndValuesMap.get(key);
+            indicesArray[i] = key;
+            valuesArray[i] = value;
+            i++;
         }
         indicesAndValues = new Tuple<>(indicesArray, valuesArray);
         return indicesAndValues;
