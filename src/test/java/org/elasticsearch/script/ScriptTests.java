@@ -222,10 +222,9 @@ public class ScriptTests extends ESIntegTestCase {
     // only just checks that nothing crashes
     // compares to mllib and fails every now and then because we do not consider the margin
     public void testPMMLSVM() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
 
             double[] modelParams = {randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
-            logger.info("{}", modelParams);
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
             String pmmlString = "<PMML xmlns=\"http://www.dmg.org/PMML-4_2\">\n" +
                     "    <Header description=\"linear SVM\">\n" +
@@ -269,7 +268,7 @@ public class ScriptTests extends ESIntegTestCase {
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
-            String result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0,1,2}, new double[]{vals[0], vals[1], vals[2]}));
+            String result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(result)));
             // now try the same with pmml script
@@ -294,8 +293,7 @@ public class ScriptTests extends ESIntegTestCase {
             SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
 
-            Double label = Double.parseDouble((String)searchResponse.getHits().getAt(0).field("pmml").values().get(0));
-            logger.info("i is :{}", i);
+            Double label = Double.parseDouble((String) searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             assertThat(label, equalTo(mllibResult));
         }
     }
@@ -347,7 +345,7 @@ public class ScriptTests extends ESIntegTestCase {
                 Source transformedSource = ImportFilter.apply(new InputSource(is));
                 pmml = JAXBUtil.unmarshalPMML(transformedSource);
             }
-            EsLogisticRegressionModel esLogisticRegressionModel = new EsLogisticRegressionModel((RegressionModel)(pmml.getModels().get(0)));
+            EsLogisticRegressionModel esLogisticRegressionModel = new EsLogisticRegressionModel((RegressionModel) (pmml.getModels().get(0)));
             Map<FieldName, Object> params = new HashMap<>();
             int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
             params.put(new FieldName("field_0"), new Double(vals[0]));
@@ -355,7 +353,7 @@ public class ScriptTests extends ESIntegTestCase {
             params.put(new FieldName("field_2"), new Double(vals[2]));
             params.put(new FieldName("field_3"), new Double(vals[3]));
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0,1,2}, new double[]{vals[0], vals[1], vals[2]}));
+            String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(result)));
             // now try the same with pmml script
             String text = "";
@@ -379,7 +377,7 @@ public class ScriptTests extends ESIntegTestCase {
             SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
 
-            Double label = Double.parseDouble((String)(searchResponse.getHits().getAt(0).field("pmml").values().get(0)));
+            Double label = Double.parseDouble((String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0)));
             assertThat(label, equalTo(mllibResult));
 
             // test mllib lr script
@@ -393,7 +391,7 @@ public class ScriptTests extends ESIntegTestCase {
             refresh();
             searchResponse = client().prepareSearch("test_index").addScriptField("lr", "native", LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
-            label = (Double)searchResponse.getHits().getAt(0).field("lr").values().get(0);
+            label = (Double) searchResponse.getHits().getAt(0).field("lr").values().get(0);
         }
     }
 
