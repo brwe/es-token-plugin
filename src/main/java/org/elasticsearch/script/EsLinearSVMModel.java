@@ -13,7 +13,6 @@ public class EsLinearSVMModel extends EsModelEvaluator {
     @Override
     public String evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
-        ESLoggerFactory.getRootLogger().info("value is for svm: {}", val);
         return val > 0.0 ? classes.v1() : classes.v2();
     }
 }
