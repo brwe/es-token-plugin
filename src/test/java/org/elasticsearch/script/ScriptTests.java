@@ -24,15 +24,14 @@ import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.DenseVector;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;
+import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.jpmml.evaluator.Evaluator;
-import org.jpmml.evaluator.ModelEvaluatorFactory;
-import org.jpmml.evaluator.ProbabilityDistribution;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.junit.Test;
@@ -264,18 +263,15 @@ public class ScriptTests extends ESIntegTestCase {
                 Source transformedSource = ImportFilter.apply(new InputSource(is));
                 pmml = JAXBUtil.unmarshalPMML(transformedSource);
             }
-            ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
-            Evaluator evaluator = modelEvaluatorFactory.newModelManager(pmml);
-            evaluator.verify();
+            EsLinearSVMModel esLinearSVMModel = new EsLinearSVMModel((RegressionModel) pmml.getModels().get(0));
             Map<FieldName, Object> params = new HashMap<>();
             int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
-            Map<FieldName, ?> result = evaluator.evaluate(params);
+            String result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0,1,2}, new double[]{vals[0], vals[1], vals[2]}));
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
-            String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
-            assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
+            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
             // now try the same with pmml script
             String text = "";
             for (int j = 0; j < vals[2]; j++) {
@@ -351,19 +347,16 @@ public class ScriptTests extends ESIntegTestCase {
                 Source transformedSource = ImportFilter.apply(new InputSource(is));
                 pmml = JAXBUtil.unmarshalPMML(transformedSource);
             }
-            ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
-            Evaluator evaluator = modelEvaluatorFactory.newModelManager(pmml);
-            evaluator.verify();
+            EsLogisticRegressionModel esLogisticRegressionModel = new EsLogisticRegressionModel((RegressionModel)(pmml.getModels().get(0)));
             Map<FieldName, Object> params = new HashMap<>();
             int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
             params.put(new FieldName("field_3"), new Double(vals[3]));
-            Map<FieldName, ?> result = evaluator.evaluate(params);
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
-            assertThat(mllibResult, equalTo(Double.parseDouble(pmmlResult)));
+            String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0,1,2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
             // now try the same with pmml script
             String text = "";
             for (int j = 0; j < vals[2]; j++) {
