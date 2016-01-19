@@ -202,10 +202,12 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
 
     @Test
     // only just checks that nothing crashes
+    // compares to mllib and fails every now and then because we do not consider the margin
     public void testPMMLSVM() throws IOException, JAXBException, SAXException {
         for (int i = 0; i < 1000; i++) {
 
-            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            double[] modelParams = {randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            logger.info("{}", modelParams);
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
             String pmmlString = "<PMML xmlns=\"http://www.dmg.org/PMML-4_2\">\n" +
                     "    <Header description=\"linear SVM\">\n" +
@@ -277,7 +279,8 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
 
-            Double label = (Double) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            Double label = Double.parseDouble((String)searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            logger.info("i is :{}", i);
             assertThat(label, equalTo(mllibResult));
         }
     }

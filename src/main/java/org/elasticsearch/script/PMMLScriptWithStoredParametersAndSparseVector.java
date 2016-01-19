@@ -2,10 +2,8 @@ package org.elasticsearch.script;
 
 
 import org.dmg.pmml.Model;
-import org.dmg.pmml.NumericPredictor;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
-import org.dmg.pmml.RegressionTable;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
@@ -26,7 +24,6 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,7 +31,7 @@ import java.util.Map;
  * to be stored in a document elasticsearch together with the relevant features (words).
  * This script expects that term vectors are stored. You can use the same thing without term
  * vectors with SVMModelScriptWithStoredParameters but that is very slow.
- * <p/>
+ * <p>
  * Say for example the parameters are stored as
  * <pre>
  *     @code
@@ -52,12 +49,12 @@ import java.util.Map;
  *     }
  *
  * </pre>
- * <p/>
+ * <p>
  * Then a request to classify documents would look like this:
- * <p/>
- * <p/>
- * <p/>
- * <p/>
+ * <p>
+ * <p>
+ * <p>
+ * <p>
  * <pre>
  *  @code
  * GET twitter/tweets/_search
@@ -137,8 +134,10 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         }
 
         Model model = pmml.getModels().get(0);
-        if(model.getModelName().equals("logistic regression")) {
-            initLogisticRegression(model);
+        if (model.getModelName().equals("logistic regression")) {
+            initLogisticRegression((RegressionModel) model);
+        } else if (model.getModelName().equals("linear SVM")) {
+            initLinearSVM((RegressionModel) model);
         } else {
             throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
         }
@@ -149,18 +148,12 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         SharedMethods.fillWordIndexMap(features, wordMap);
     }
 
-    private void initLogisticRegression(Model pmmlModel) {
-        RegressionModel regressionModel = (RegressionModel) pmmlModel;
-        RegressionTable regressionTable = regressionModel.getRegressionTables().get(0);
-        List<NumericPredictor> numericPredictors = regressionTable.getNumericPredictors();
-        double[] coefficients = new double[numericPredictors.size()];
-        int i = 0;
-        for (NumericPredictor numericPredictor : numericPredictors) {
-            coefficients[i] = numericPredictor.getCoefficient();
-            i++;
-        }
-        model = new EsLogisticRegressionModel(coefficients, regressionTable.getIntercept(),new Tuple<String, String>(((RegressionModel) pmmlModel).getRegressionTables().get(0).getTargetCategory(), ((RegressionModel) pmmlModel).getRegressionTables().get(1).getTargetCategory()));
+    private void initLogisticRegression(RegressionModel pmmlModel) {
+        model = new EsLogisticRegressionModel(pmmlModel);
+    }
 
+    private void initLinearSVM(RegressionModel pmmlModel) {
+        model = new EsLinearSVMModel(pmmlModel);
     }
 
     @Override
