@@ -203,7 +203,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
     @Test
     // only just checks that nothing crashes
     public void testPMMLSVM() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
 
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
@@ -364,7 +364,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
 
-            Double label = (Double) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            Double label = Double.parseDouble((String)(searchResponse.getHits().getAt(0).field("pmml").values().get(0)));
             assertThat(label, equalTo(mllibResult));
 
             // test mllib lr script
@@ -378,7 +378,7 @@ public class ScriptTests extends ElasticsearchIntegrationTest {
             refresh();
             searchResponse = client().prepareSearch("test_index").addScriptField("lr", "native", LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
             assertSearchResponse(searchResponse);
-            label = (Double) (searchResponse.getHits().getAt(0).field("lr").values().get(0));
+            label = (Double)searchResponse.getHits().getAt(0).field("lr").values().get(0);
         }
     }
 

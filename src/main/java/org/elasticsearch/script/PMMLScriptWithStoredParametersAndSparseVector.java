@@ -1,40 +1,32 @@
 package org.elasticsearch.script;
 
-import org.dmg.pmml.FieldName;
+
+import org.dmg.pmml.Model;
+import org.dmg.pmml.NumericPredictor;
 import org.dmg.pmml.PMML;
+import org.dmg.pmml.RegressionModel;
+import org.dmg.pmml.RegressionTable;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.node.Node;
-import org.jpmml.evaluator.Evaluator;
-import org.jpmml.evaluator.ModelEvaluatorFactory;
-import org.jpmml.evaluator.ProbabilityDistribution;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.ls.DOMImplementationLS;
-import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.Source;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,7 +81,7 @@ import java.util.Map;
 public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearchScript {
 
     final static public String SCRIPT_NAME = "pmml_model_stored_parameters_sparse_vectors";
-    Evaluator model = null;
+    EsModelEvaluator model = null;
     String field = null;
     ArrayList<String> features = new ArrayList();
     Map<String, Integer> wordMap;
@@ -138,48 +130,18 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
     private PMMLScriptWithStoredParametersAndSparseVector(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
         GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         PMML pmml;
-        DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder docBuilder = null;
-        try {
-            docBuilder = docFactory.newDocumentBuilder();
-        } catch (ParserConfigurationException e) {
-            throw new ScriptException("could not parse pmml xml");
-        }
-        Document doc = docBuilder.parse(new ByteArrayInputStream(getResponse.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset())));
 
-        NodeList miningFields = doc.getElementsByTagName("MiningField");
-        for (int j = 0; j < miningFields.getLength(); j++) {
-            Element miningField = (Element) miningFields.item(j);
-            if (miningField.getAttribute("name").equals("target") == false) {
-                if (miningField.hasAttribute("missingValueReplacement") == false) {
-                    miningField.setAttribute("missingValueReplacement", "0");
-                }
-            }
-        }
-        TransformerFactory transFactory = TransformerFactory.newInstance();
-        Transformer transformer = null;
-        try {
-            transformer = transFactory.newTransformer();
-        } catch (TransformerConfigurationException e) {
-            throw new ScriptException("could not create transformer to write manipulated pmml xml");
-        }
-        StringWriter buffer = new StringWriter();
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        try {
-            transformer.transform(new DOMSource(doc),
-                    new StreamResult(buffer));
-        } catch (TransformerException e) {
-            throw new ScriptException("could not write manipulated pmml xml");
-        }
-        String finalPMML = buffer.toString();
-
-        try (InputStream is = new ByteArrayInputStream(finalPMML.getBytes(Charset.defaultCharset()))) {
+        try (InputStream is = new ByteArrayInputStream(getResponse.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
             Source transformedSource = ImportFilter.apply(new InputSource(is));
             pmml = JAXBUtil.unmarshalPMML(transformedSource);
         }
-        ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
-        model = modelEvaluatorFactory.newModelManager(pmml);
-        model.verify();
+
+        Model model = pmml.getModels().get(0);
+        if(model.getModelName().equals("logistic regression")) {
+            initLogisticRegression(model);
+        } else {
+            throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
+        }
         field = (String) params.get("field");
         fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
         features.addAll((ArrayList) getResponse.getSource().get("features"));
@@ -187,19 +149,31 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         SharedMethods.fillWordIndexMap(features, wordMap);
     }
 
+    private void initLogisticRegression(Model pmmlModel) {
+        RegressionModel regressionModel = (RegressionModel) pmmlModel;
+        RegressionTable regressionTable = regressionModel.getRegressionTables().get(0);
+        List<NumericPredictor> numericPredictors = regressionTable.getNumericPredictors();
+        double[] coefficients = new double[numericPredictors.size()];
+        int i = 0;
+        for (NumericPredictor numericPredictor : numericPredictors) {
+            coefficients[i] = numericPredictor.getCoefficient();
+            i++;
+        }
+        model = new EsLogisticRegressionModel(coefficients, regressionTable.getIntercept(),new Tuple<String, String>(((RegressionModel) pmmlModel).getRegressionTables().get(0).getTargetCategory(), ((RegressionModel) pmmlModel).getRegressionTables().get(1).getTargetCategory()));
+
+    }
+
     @Override
     public Object run() {
         /** here be the vectorizer **/
-        Map<FieldName, Double> fieldNamesAndValues;
+        Tuple<int[], double[]> fieldNamesAndValues;
         if (fieldDataFields == false) {
             throw new UnsupportedOperationException("term vectors not implemented for PMML");
         } else {
             ScriptDocValues<String> docValues = docFieldStrings(field);
-            fieldNamesAndValues = SharedMethods.getFieldNamesAndValuesFromFielddataFields(wordMap, docValues);
+            fieldNamesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
         }
         /** until here **/
-        Map<FieldName, ?> result = model.evaluate(fieldNamesAndValues);
-        String pmmlResult = (String) ((ProbabilityDistribution) result.get(new FieldName("target"))).getResult();
-        return Double.parseDouble(pmmlResult);
+        return model.evaluate(fieldNamesAndValues);
     }
 }
