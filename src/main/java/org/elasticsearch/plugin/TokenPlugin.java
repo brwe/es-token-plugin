@@ -28,9 +28,11 @@ import org.elasticsearch.indices.IndicesModule;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
+import org.elasticsearch.script.LogisticRegressionModelScriptWithStoredParametersAndSparseVector;
 import org.elasticsearch.script.NaiveBayesModelScriptWithStoredParameters;
 import org.elasticsearch.script.NaiveBayesModelScriptWithStoredParametersAndSparseVector;
 import org.elasticsearch.script.NaiveBayesUpdateScript;
+import org.elasticsearch.script.PMMLScriptWithStoredParametersAndSparseVector;
 import org.elasticsearch.script.SVMModelScriptWithStoredParameters;
 import org.elasticsearch.script.SVMModelScriptWithStoredParametersAndSparseVector;
 import org.elasticsearch.script.ScriptModule;
@@ -65,6 +67,7 @@ public class TokenPlugin extends Plugin {
         module.registerScript(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, PMMLScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, LogisticRegressionModelScriptWithStoredParametersAndSparseVector.Factory.class);
     }
+
     public void onModule(ActionModule module) {
         ActionModule actionModule = (ActionModule) module;
         actionModule.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,

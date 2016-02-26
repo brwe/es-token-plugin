@@ -21,10 +21,13 @@ package org.elasticsearch.action.allterms;
 
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.TokenPlugin;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.PluginsService;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.junit.annotations.TestLogging;
 import org.junit.Test;
+
+import java.util.Collection;
 
 import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 
@@ -36,12 +39,10 @@ import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 public class AllTermsTests extends ESIntegTestCase {
 
     @Override
-    protected Settings nodeSettings(int nodeOrdinal) {
-        return settingsBuilder()
-                .put(super.nodeSettings(nodeOrdinal))
-                .put("plugin.types", TokenPlugin.class.getName())
-                .build();
+    protected Collection<Class<? extends Plugin>> nodePlugins() {
+        return pluginList(TokenPlugin.class);
     }
+
 
     @Test
     public void testSimpleTestOneDoc() throws Exception {

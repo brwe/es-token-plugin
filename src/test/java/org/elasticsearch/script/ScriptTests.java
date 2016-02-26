@@ -27,10 +27,12 @@ import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
@@ -44,6 +46,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,6 +66,11 @@ public class ScriptTests extends ESIntegTestCase {
                 .put(super.nodeSettings(nodeOrdinal))
                 .put("plugin.types", TokenPlugin.class.getName())
                 .build();
+    }
+
+    @Override
+    protected Collection<Class<? extends Plugin>> nodePlugins() {
+        return pluginList(TokenPlugin.class);
     }
 
     @Test
@@ -132,7 +140,7 @@ public class ScriptTests extends ESIntegTestCase {
         parameters.put("type", "params");
         parameters.put("id", "test_params");
         parameters.put("field", "text");
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", new Script(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
@@ -143,7 +151,7 @@ public class ScriptTests extends ESIntegTestCase {
                         .endObject()
         ).get();
         refresh();
-        searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(SVMModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(SVMModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 
@@ -171,7 +179,7 @@ public class ScriptTests extends ESIntegTestCase {
         if (randomBoolean()) {
             parameters.put("fieldDataFields", true);
         }
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", new Script(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
@@ -182,7 +190,7 @@ public class ScriptTests extends ESIntegTestCase {
                         .endObject()
         ).get();
         refresh();
-        searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
         label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
@@ -290,7 +298,7 @@ public class ScriptTests extends ESIntegTestCase {
             parameters.put("id", "test_params");
             parameters.put("field", "text");
             parameters.put("fieldDataFields", true);
-            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", new Script(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
             assertSearchResponse(searchResponse);
 
             Double label = Double.parseDouble((String) searchResponse.getHits().getAt(0).field("pmml").values().get(0));
@@ -374,7 +382,7 @@ public class ScriptTests extends ESIntegTestCase {
             parameters.put("id", "test_params");
             parameters.put("field", "text");
             parameters.put("fieldDataFields", true);
-            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", "native", PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", new Script(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
             assertSearchResponse(searchResponse);
 
             Double label = Double.parseDouble((String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0)));
@@ -389,7 +397,7 @@ public class ScriptTests extends ESIntegTestCase {
                             .endObject()
             ).get();
             refresh();
-            searchResponse = client().prepareSearch("test_index").addScriptField("lr", "native", LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, parameters).get();
+            searchResponse = client().prepareSearch("test_index").addScriptField("lr", new Script(LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
             assertSearchResponse(searchResponse);
             label = (Double) searchResponse.getHits().getAt(0).field("lr").values().get(0);
         }
