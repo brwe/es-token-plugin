@@ -11,23 +11,14 @@
     <inceptionYear>2015</inceptionYear>
     <groupId>org.elasticsearch</groupId>
     <parent>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-plugin</artifactId>
+        <groupId>org.elasticsearch.module</groupId>
+        <artifactId>modules</artifactId>
         <version>2.2.0</version>
-
     </parent>
 
     <properties>
         <elasticsearch.plugin.classname>org.elasticsearch.plugin.TokenPlugin</elasticsearch.plugin.classname>
-        <elasticsearch.version>2.2.0</elasticsearch.version>
-        <lucene.maven.version>4.10.4</lucene.maven.version>
-        <lucene.version>4.10.4</lucene.version>
-        <poi.version>3.10.1</poi.version>
-        <tests.jvms>1</tests.jvms>
-        <tests.shuffle>true</tests.shuffle>
-        <tests.output>onerror</tests.output>
-        <tests.client.ratio></tests.client.ratio>
-        <es.logger.level>INFO</es.logger.level>
+
     </properties>
 
 
@@ -55,22 +46,13 @@
 
 
     <dependencies>
-        <!-- elasticsearch and its test framework -->
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-test-framework</artifactId>
-            <scope>test</scope>
-        </dependency>
+
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.10</artifactId>
             <version>1.1.0</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
