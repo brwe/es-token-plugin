@@ -37,10 +37,6 @@ public class AllTermsShardRequest extends SingleShardRequest<AllTermsShardReques
     int size = 0;
     private long minDocFreq = 0;
 
-    AllTermsShardRequest() {
-
-    }
-
     @Override
     public ActionRequestValidationException validate() {
         return null;
@@ -53,6 +49,10 @@ public class AllTermsShardRequest extends SingleShardRequest<AllTermsShardReques
         this.size = size;
         this.from = from;
         this.minDocFreq = minDocFreq;
+    }
+
+    public AllTermsShardRequest() {
+
     }
 
     public int shardId() {
