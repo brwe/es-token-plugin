@@ -21,6 +21,7 @@ package org.elasticsearch.index.mapper.token;
 
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.collect.HppcMaps;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
@@ -66,9 +67,17 @@ public class AnalyzedTextTests extends ESIntegTestCase {
         client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
         client().prepareIndex("index", "type", "1").setSource("text", "I i am sam").get();
         refresh();
+        flush();
         GetResponse getResponse = client().prepareGet("index", "type", "1").setFields("text").get();
         String[] expected = {"i", "i", "am", "sam"};
-        assertArrayEquals(getResponse.getField("text").getValues().toArray(new String[getResponse.getField("text").getValues().size()]), expected);
+        List<Object> values = getResponse.getField("text").getValues();
+        String[] stringValues = new String[values.size()];
+        int i = 0;
+        for (Object o : values) {
+            stringValues[i] = o.toString();
+            i++;
+        }
+        assertArrayEquals(stringValues, expected);
         SearchResponse searchResponse = client().prepareSearch("index").addAggregation(terms("terms").field("text")).get();
         List<Terms.Bucket> terms = ((Terms) searchResponse.getAggregations().get("terms")).getBuckets();
         for (Terms.Bucket bucket : terms) {

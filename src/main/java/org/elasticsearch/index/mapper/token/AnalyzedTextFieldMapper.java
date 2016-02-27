@@ -23,12 +23,15 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
+import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.mapper.MappedFieldType;
 import org.elasticsearch.index.mapper.Mapper;
 import org.elasticsearch.index.mapper.MapperParsingException;
@@ -45,6 +48,15 @@ import java.util.Map;
  * to a field.  In most ways the mapper acts just like an {@link org.elasticsearch.index.mapper.core.StringFieldMapper}.
  */
 public class AnalyzedTextFieldMapper extends StringFieldMapper {
+
+
+    static StringFieldType DEFAULT_FIELD_TYPE = new StringFieldType();
+    static {
+        DEFAULT_FIELD_TYPE.setTokenized(false);
+        DEFAULT_FIELD_TYPE.setHasDocValues(true);
+        DEFAULT_FIELD_TYPE.setOmitNorms(false);
+        DEFAULT_FIELD_TYPE.setHasDocValues(true);
+    }
     public static final String CONTENT_TYPE = "analyzed_text";
 
     public static class TypeParser extends StringFieldMapper.TypeParser {
@@ -58,19 +70,22 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
 
     public static class Builder extends Mapper.Builder {
 
+        private final StringFieldMapper.Builder stringBuilder;
+
         public Builder(StringFieldMapper.Builder builder) {
             super(builder.name());
-            this.builder = builder;
+            this.stringBuilder = builder;
         }
 
         @Override
         public AnalyzedTextFieldMapper build(BuilderContext context) {
-            StringFieldMapper mapper = (StringFieldMapper) builder.build(context);
+            StringFieldMapper mapper = stringBuilder.build(context);
             MappedFieldType fieldType = mapper.fieldType().clone();
             fieldType.setTokenized(false);
-            fieldType.setDocValuesType(DocValuesType.SORTED);
-            AnalyzedTextFieldMapper fieldMapper = new AnalyzedTextFieldMapper(mapper.simpleName(), fieldType, fieldType,
-                    mapper.getPositionIncrementGap(), mapper.getIgnoreAbove(), context.indexSettings(), null, null);
+            fieldType.setHasDocValues(true);
+            fieldType.setOmitNorms(false);
+            AnalyzedTextFieldMapper fieldMapper = new AnalyzedTextFieldMapper(mapper.simpleName(), fieldType, DEFAULT_FIELD_TYPE,
+                    mapper.getPositionIncrementGap(), mapper.getIgnoreAbove(), context.indexSettings(), new MultiFields.Builder().build(stringBuilder, context), null);
             return fieldMapper;
         }
 
@@ -99,14 +114,20 @@ public class AnalyzedTextFieldMapper extends StringFieldMapper {
         List<String> analyzedText = getAnalyzedText(namedAnalyzer.tokenStream(name(), valueAndBoost.value()));
         for (String s : analyzedText) {
             boolean added = false;
-
+            if (fieldType().indexOptions() != IndexOptions.NONE || fieldType().stored()) {
+                Field field = new Field(fieldType().names().indexName(), s, fieldType());
+                field.setBoost(valueAndBoost.boost());
+                fields.add(field);
+                added = true;
+            }
             if (hasDocValues()) {
-                fields.add(new SortedSetDocValuesField(name(), new BytesRef(s)));
+                fields.add(new SortedSetDocValuesField(fieldType().names().indexName(), new BytesRef(s)));
                 added = true;
             }
             if (added == false) {
                 context.ignoredValue(name(), s);
             }
+
         }
     }
 
