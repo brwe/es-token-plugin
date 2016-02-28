@@ -103,7 +103,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         }
     }
 
-    protected void getTerms(AllTermsShardRequest request, List<String> terms, List<LeafReaderContext> leaves) {
+    protected static void getTerms(AllTermsShardRequest request, List<String> terms, List<LeafReaderContext> leaves) {
         List<TermsEnum> termIters = getTermsEnums(request, leaves);
         CharsRefBuilder spare = new CharsRefBuilder();
         BytesRef lastTerm = null;
@@ -120,24 +120,19 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
             findNMoreTerms(request, terms, termIters, spare, lastTerm, exhausted);
         } catch (IOException e) {
         }
-
-        logger.trace("final terms list: {}", terms);
     }
 
-    protected void findNMoreTerms(AllTermsShardRequest request, List<String> terms, List<TermsEnum> termIters, CharsRefBuilder spare, BytesRef lastTerm, int[] exhausted) {
+    protected static void findNMoreTerms(AllTermsShardRequest request, List<String> terms, List<TermsEnum> termIters, CharsRefBuilder spare, BytesRef lastTerm, int[] exhausted) {
         if (getDocFreq(termIters, lastTerm, exhausted) >= request.minDocFreq()) {
             spare.copyUTF8Bytes(lastTerm);
             terms.add(spare.toString());
         }
-        BytesRef bytesRef = new BytesRef(Arrays.copyOf(lastTerm.bytes, lastTerm.bytes.length));
+        BytesRef bytesRef = new BytesRef(lastTerm.utf8ToString());
         lastTerm = bytesRef;
-
         while (terms.size() < request.size() && lastTerm != null) {
             moveIterators(exhausted, termIters, lastTerm);
             lastTerm = findMinimum(exhausted, termIters);
-
             if (lastTerm != null) {
-
                 if (getDocFreq(termIters, lastTerm, exhausted) >= request.minDocFreq()) {
                     spare.copyUTF8Bytes(lastTerm);
                     terms.add(spare.toString());
@@ -148,7 +143,6 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
 
     protected static List<TermsEnum> getTermsEnums(AllTermsShardRequest request, List<LeafReaderContext> leaves) {
         List<TermsEnum> termIters = new ArrayList<>();
-
         try {
             for (LeafReaderContext reader : leaves) {
                 termIters.add(reader.reader().terms(request.field()).iterator());
@@ -210,7 +204,8 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return docFreq;
     }
 
-    private BytesRef findMinimum(int[] exhausted, List<TermsEnum> termIters) {
+    // returns  copy of the lexicographically smallest term found
+    protected static BytesRef findMinimum(int[] exhausted, List<TermsEnum> termIters) {
         BytesRef minTerm = null;
         for (int i = 0; i < termIters.size(); i++) {
             if (exhausted[i] == 1) {
@@ -225,54 +220,33 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
                 minTerm = candidate;
 
             } else {
-                //it is actually smaller, so we add it
+                //it is actually smaller, so we use it
                 if (minTerm.compareTo(candidate) > 0) {
                     minTerm = candidate;
-                    if (logger.isTraceEnabled()) {
-                        CharsRefBuilder toiString = new CharsRefBuilder();
-                        toiString.copyUTF8Bytes(minTerm);
-                        logger.trace(" Setting min to  {} from segment {}", toiString.toString(), i);
-                    }
                 }
             }
-
         }
         if (minTerm != null) {
-            if (logger.isTraceEnabled()) {
-                CharsRefBuilder toiString = new CharsRefBuilder();
-                toiString.copyUTF8Bytes(minTerm);
-                logger.trace("final min term {}", toiString.toString());
-            }
-            BytesRef ret = new BytesRef(Arrays.copyOf(minTerm.bytes, minTerm.bytes.length));
+            BytesRef ret = new BytesRef(minTerm.utf8ToString());
             return ret;
         }
         return null;
     }
 
-    private static void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm) {
+    // last term is expected to be a copy of a term not just some reference into a terms iterator
+    protected static void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm) {
         try {
             for (int i = 0; i < termIters.size(); i++) {
                 if (exhausted[i] == 1) {
                     continue;
                 }
-                CharsRefBuilder toiString = new CharsRefBuilder();
-                toiString.copyUTF8Bytes(lastTerm);
-                BytesRef candidate;
                 if (termIters.get(i).term().compareTo(lastTerm) == 0) {
-                    candidate = termIters.get(i).next();
-                } else {
-                    //it must stand on one that is greater so we just get it
-                    candidate = termIters.get(i).term();
-                }
-                if (candidate == null) {
-                    exhausted[i] = 1;
-                } else {
-                    toiString = new CharsRefBuilder();
-                    toiString.copyUTF8Bytes(candidate.clone());
+                    if (termIters.get(i).next() == null) {
+                        exhausted[i] = 1;
+                    }
                 }
             }
         } catch (IOException e) {
-
         }
     }
 }
