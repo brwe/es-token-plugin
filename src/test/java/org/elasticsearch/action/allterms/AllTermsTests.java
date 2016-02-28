@@ -185,4 +185,18 @@ public class AllTermsTests extends ESTestCase {
             return termsIters;
         }
     }
+
+    public void testDocFreqForExistingTerm() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
+        BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(2l));
+    }
+
+    public void testDocFreqForNotExistingTerm() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
+        BytesRef smallestTerm = new BytesRef("do");
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(0l));
+    }
 }
