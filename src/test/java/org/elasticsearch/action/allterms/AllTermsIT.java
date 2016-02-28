@@ -22,14 +22,11 @@ package org.elasticsearch.action.allterms;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.plugins.PluginsService;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.junit.annotations.TestLogging;
 import org.junit.Test;
 
 import java.util.Collection;
-
-import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 
 
 /**
@@ -65,8 +62,8 @@ public class AllTermsIT extends ESIntegTestCase {
         indexDocs();
         refresh();
         AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("careful").execute().actionGet(10000);
-        String[] expected = {"careful", "don't", "ever", "forget"};
-        assertArrayEquals(response.allTerms.toArray(new String[4]), expected);
+        String[] expected = {"don't", "ever", "forget"};
+        assertArrayEquals(response.allTerms.toArray(new String[3]), expected);
 
         response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("ces").execute().actionGet(10000);
         String[] expected2 = {"don't", "ever", "forget"};

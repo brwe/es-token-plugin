@@ -19,14 +19,16 @@
 
 package org.elasticsearch.action.allterms;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.test.ESTestCase;
@@ -34,6 +36,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.elasticsearch.action.allterms.TransportAllTermsShardAction.getTermsEnums;
@@ -47,12 +50,14 @@ public class AllTermsTests extends ESTestCase {
     private Directory dir;
     private IndexWriter w;
     private DirectoryReader reader;
-    private IndexSearcher searcher;
 
     @Before
     public void initSearcher() throws IOException {
         dir = newDirectory();
-        w = new IndexWriter(dir, newIndexWriterConfig(new StandardAnalyzer()));
+        IndexWriterConfig indexWriterConfig = newIndexWriterConfig(new WhitespaceAnalyzer());
+        indexWriterConfig.setMergeScheduler(NoMergeScheduler.INSTANCE);
+        indexWriterConfig.setMergePolicy(NoMergePolicy.INSTANCE);
+        w = new IndexWriter(dir, indexWriterConfig);
         Document d = new Document();
         d.add(new TextField(FIELD, "don't  be", Field.Store.YES));
         d.add(new TextField("_uid", "1", Field.Store.YES));
@@ -74,13 +79,13 @@ public class AllTermsTests extends ESTestCase {
         w.addDocument(d);
         w.commit();
         reader = DirectoryReader.open(w, true);
-        searcher = newSearcher(reader);
     }
 
     @After
     public void closeAllTheReaders() throws IOException {
-        reader.close();
+
         w.close();
+        reader.close();
         dir.close();
     }
 
@@ -98,7 +103,7 @@ public class AllTermsTests extends ESTestCase {
         for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
             i++;
             if (exhausted[i] == 1) {
-                numExhausted ++;
+                numExhausted++;
             } else {
                 assertThat(termsEnum.term().utf8ToString().compareTo("careful"), greaterThan(0));
             }
@@ -117,7 +122,7 @@ public class AllTermsTests extends ESTestCase {
         for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
             i++;
             if (exhausted[i] == 1) {
-                numExhausted ++;
+                numExhausted++;
             } else {
                 assertThat(termsEnum.term().utf8ToString().compareTo("always"), greaterThanOrEqualTo(0));
             }
@@ -135,7 +140,7 @@ public class AllTermsTests extends ESTestCase {
         for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
             i++;
             if (exhausted[i] == 1) {
-                numExhausted ++;
+                numExhausted++;
             } else {
                 assertThat(termsEnum.term().utf8ToString().compareTo("foo"), greaterThanOrEqualTo(0));
             }
@@ -148,10 +153,11 @@ public class AllTermsTests extends ESTestCase {
         BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
         int[] exhausted = smallestTermAndExhausted.getExhausted();
         assertThat(smallestTerm, equalTo(null));
-        for (int i = 0 ; i< 4; i++) {
+        for (int i = 0; i < 4; i++) {
             assertThat(exhausted[i], equalTo(1));
         }
     }
+
     private SmallestTermAndExhausted getSmallestTermAndExhausted(String from) throws IOException {
         AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 1, from, 0);
         List<TermsEnum> termIters = getTermsEnums(request, reader.leaves());
@@ -174,7 +180,8 @@ public class AllTermsTests extends ESTestCase {
         public int[] getExhausted() {
             return exhausted;
         }
-        SmallestTermAndExhausted (BytesRef smallestTerm, int[] exhausted, List<TermsEnum> termsIters) {
+
+        SmallestTermAndExhausted(BytesRef smallestTerm, int[] exhausted, List<TermsEnum> termsIters) {
 
             this.smallestTerm = smallestTerm;
             this.exhausted = exhausted;
@@ -198,5 +205,64 @@ public class AllTermsTests extends ESTestCase {
         BytesRef smallestTerm = new BytesRef("do");
         int[] exhausted = smallestTermAndExhausted.getExhausted();
         assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(0l));
+    }
+
+    public void testMoveIterators() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("a");
+        BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
+        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(), smallestTerm);
+        for (int i = 0; i < 4; i++) {
+            assertThat(smallestTermAndExhausted.getTermsIters().get(i).term(), greaterThan(smallestTerm));
+        }
+    }
+
+    public void testMoveIteratorsWithSomeExhaustion() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
+        BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
+        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(), smallestTerm);
+        int exhausted = 0;
+        for (int i = 0; i < 4; i++) {
+            if (smallestTermAndExhausted.getExhausted()[i] != 1) {
+                assertThat(smallestTermAndExhausted.getTermsIters().get(i).term(), greaterThan(smallestTerm));
+            } else {
+                exhausted++;
+            }
+        }
+        assertThat(exhausted, equalTo(2));
+    }
+
+    public void testFindSmallestTerm() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
+        BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
+        BytesRef newSmallestTerm = TransportAllTermsShardAction.findMinimum(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters());
+        assertThat(newSmallestTerm.utf8ToString(), equalTo(smallestTerm.utf8ToString()));
+    }
+
+    public void testGetAllTermsFromBeginning() throws IOException {
+        AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 10, null, 0);
+        List<String> terms = new ArrayList<>();
+        TransportAllTermsShardAction.getTerms(request, terms, reader.leaves());
+        assertArrayEquals(terms.toArray(new String[6]), new String[]{"always", "be", "careful", "don't", "ever", "forget"});
+    }
+
+    public void testGetAllTermsFromBeginningExact() throws IOException {
+        AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 6, null, 0);
+        List<String> terms = new ArrayList<>();
+        TransportAllTermsShardAction.getTerms(request, terms, reader.leaves());
+        assertArrayEquals(terms.toArray(new String[6]), new String[]{"always", "be", "careful", "don't", "ever", "forget"});
+    }
+
+    public void testGetSomeTerms() throws IOException {
+        AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 3, null, 0);
+        List<String> terms = new ArrayList<>();
+        TransportAllTermsShardAction.getTerms(request, terms, reader.leaves());
+        assertArrayEquals(terms.toArray(new String[3]), new String[]{"always", "be", "careful"});
+    }
+
+    public void testGetSomeTermsFrom() throws IOException {
+        AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 3, "careful", 0);
+        List<String> terms = new ArrayList<>();
+        TransportAllTermsShardAction.getTerms(request, terms, reader.leaves());
+        assertArrayEquals(terms.toArray(new String[3]), new String[]{"don't", "ever", "forget"});
     }
 }
