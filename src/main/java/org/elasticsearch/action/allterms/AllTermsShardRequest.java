@@ -42,7 +42,7 @@ public class AllTermsShardRequest extends SingleShardRequest<AllTermsShardReques
         return null;
     }
 
-    AllTermsShardRequest(AllTermsRequest request, String index, int shardId, String field, int size, String from, long minDocFreq) {
+    protected AllTermsShardRequest(AllTermsRequest request, String index, int shardId, String field, int size, String from, long minDocFreq) {
         super(request, index);
         this.shardId = shardId;
         this.field = field;

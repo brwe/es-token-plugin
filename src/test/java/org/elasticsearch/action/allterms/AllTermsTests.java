@@ -19,77 +19,170 @@
 
 package org.elasticsearch.action.allterms;
 
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.plugin.TokenPlugin;
-import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.plugins.PluginsService;
-import org.elasticsearch.test.ESIntegTestCase;
-import org.elasticsearch.test.junit.annotations.TestLogging;
-import org.junit.Test;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.elasticsearch.test.ESTestCase;
+import org.junit.After;
+import org.junit.Before;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.util.List;
 
-import static org.elasticsearch.common.settings.Settings.settingsBuilder;
+import static org.elasticsearch.action.allterms.TransportAllTermsShardAction.getTermsEnums;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.core.IsEqual.equalTo;
 
+public class AllTermsTests extends ESTestCase {
 
-/**
- *
- */
-@ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE, transportClientRatio = 0)
-public class AllTermsTests extends ESIntegTestCase {
+    private static final String FIELD = "field";
+    private Directory dir;
+    private IndexWriter w;
+    private DirectoryReader reader;
+    private IndexSearcher searcher;
 
-    @Override
-    protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+    @Before
+    public void initSearcher() throws IOException {
+        dir = newDirectory();
+        w = new IndexWriter(dir, newIndexWriterConfig(new StandardAnalyzer()));
+        Document d = new Document();
+        d.add(new TextField(FIELD, "don't  be", Field.Store.YES));
+        d.add(new TextField("_uid", "1", Field.Store.YES));
+        w.addDocument(d);
+        w.commit();
+        d = new Document();
+        d.add(new TextField(FIELD, "ever always forget  be", Field.Store.YES));
+        d.add(new TextField("_uid", "2", Field.Store.YES));
+        w.addDocument(d);
+        w.commit();
+        d = new Document();
+        d.add(new TextField(FIELD, "careful careful", Field.Store.YES));
+        d.add(new TextField("_uid", "3", Field.Store.YES));
+        w.addDocument(d);
+        w.commit();
+        d = new Document();
+        d.add(new TextField(FIELD, "ever always careful careful don't be forget be", Field.Store.YES));
+        d.add(new TextField("_uid", "4", Field.Store.YES));
+        w.addDocument(d);
+        w.commit();
+        reader = DirectoryReader.open(w, true);
+        searcher = newSearcher(reader);
+    }
+
+    @After
+    public void closeAllTheReaders() throws IOException {
+        reader.close();
+        w.close();
+        dir.close();
+    }
+
+    public void testReader() {
+        assertThat(reader.leaves().size(), equalTo(4));
+    }
+
+    public void testFindSmallestTermAfterExistingTerm() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
+        BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(smallestTerm.utf8ToString(), equalTo("don't"));
+        int i = -1;
+        int numExhausted = 0;
+        for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
+            i++;
+            if (exhausted[i] == 1) {
+                numExhausted ++;
+            } else {
+                assertThat(termsEnum.term().utf8ToString().compareTo("careful"), greaterThan(0));
+            }
+        }
+        assertThat(numExhausted, equalTo(1));
     }
 
 
-    @Test
-    public void testSimpleTestOneDoc() throws Exception {
-        indexDocs();
-        refresh();
-        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).execute().actionGet(1000000);
-        String[] expected = {"always", "be", "careful", "don't", "ever", "forget"};
-        assertArrayEquals(response.allTerms.toArray(new String[2]), expected);
+    public void testFindSmallestTermFromBeginning() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted(null);
+        BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(smallestTerm.utf8ToString(), equalTo("always"));
+        int i = -1;
+        int numExhausted = 0;
+        for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
+            i++;
+            if (exhausted[i] == 1) {
+                numExhausted ++;
+            } else {
+                assertThat(termsEnum.term().utf8ToString().compareTo("always"), greaterThanOrEqualTo(0));
+            }
+        }
+        assertThat(numExhausted, equalTo(0));
     }
 
-    private void indexDocs() {
-        client().prepareIndex("test", "type", "1").setSource("field", "don't  be").execute().actionGet();
-        client().prepareIndex("test", "type", "2").setSource("field", "ever always forget  be").execute().actionGet();
-        client().prepareIndex("test", "type", "3").setSource("field", "careful careful").execute().actionGet();
-        client().prepareIndex("test", "type", "4").setSource("field", "ever always careful careful don't be forget be").execute().actionGet();
+    public void testFindSmallestTermFromNotExistentTerm() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("foo");
+        BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(smallestTerm.utf8ToString(), equalTo("forget"));
+        int i = -1;
+        int numExhausted = 0;
+        for (TermsEnum termsEnum : smallestTermAndExhausted.getTermsIters()) {
+            i++;
+            if (exhausted[i] == 1) {
+                numExhausted ++;
+            } else {
+                assertThat(termsEnum.term().utf8ToString().compareTo("foo"), greaterThanOrEqualTo(0));
+            }
+        }
+        assertThat(numExhausted, equalTo(2));
     }
 
-    @Test
-    public void testSimpleTestOneDocWithFrom() throws Exception {
-        indexDocs();
-        refresh();
-        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("careful").execute().actionGet(10000);
-        String[] expected = {"careful", "don't", "ever", "forget"};
-        assertArrayEquals(response.allTerms.toArray(new String[4]), expected);
-
-        response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("ces").execute().actionGet(10000);
-        String[] expected2 = {"don't", "ever", "forget"};
-        assertArrayEquals(response.allTerms.toArray(new String[3]), expected2);
+    public void testFindSmallestAllExhausted() throws IOException {
+        SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("zonk");
+        BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
+        int[] exhausted = smallestTermAndExhausted.getExhausted();
+        assertThat(smallestTerm, equalTo(null));
+        for (int i = 0 ; i< 4; i++) {
+            assertThat(exhausted[i], equalTo(1));
+        }
+    }
+    private SmallestTermAndExhausted getSmallestTermAndExhausted(String from) throws IOException {
+        AllTermsShardRequest request = new AllTermsShardRequest(new AllTermsRequest(), "index", 0, "field", 1, from, 0);
+        List<TermsEnum> termIters = getTermsEnums(request, reader.leaves());
+        assertThat(termIters.size(), equalTo(4));
+        BytesRef smallestTerm = null;
+        int[] exhausted = new int[termIters.size()];
+        smallestTerm = TransportAllTermsShardAction.findSmallestTermAfter(request, termIters, smallestTerm, exhausted);
+        return new SmallestTermAndExhausted(smallestTerm, exhausted, termIters);
     }
 
-    @Test
-    @TestLogging("org.elasticsearch.action.allterms:TRACE")
-    public void testSimpleTestOneDocWithFromAndMinDocFreq() throws Exception {
-        createIndex();
-        indexDocs();
-        refresh();
-        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from(" be").minDocFreq(3).execute().actionGet(10000);
-        String[] expected = {"be"};
-        assertArrayEquals(response.allTerms.toArray(new String[1]), expected);
+    private class SmallestTermAndExhausted {
+        private BytesRef smallestTerm;
+        private int[] exhausted;
+        private List<TermsEnum> termsIters;
 
-        response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).minDocFreq(3).from("arg").execute().actionGet(10000);
-        String[] expected2 = {"be"};
-        assertArrayEquals(response.allTerms.toArray(new String[1]), expected2);
-    }
+        public BytesRef getSmallestTerm() {
+            return smallestTerm;
+        }
 
-    private void createIndex() {
-        client().admin().indices().prepareCreate("test").setSettings(Settings.settingsBuilder().put("index.number_of_shards", 1)).get();
-        ensureYellow("test");
+        public int[] getExhausted() {
+            return exhausted;
+        }
+        SmallestTermAndExhausted (BytesRef smallestTerm, int[] exhausted, List<TermsEnum> termsIters) {
+
+            this.smallestTerm = smallestTerm;
+            this.exhausted = exhausted;
+            this.termsIters = termsIters;
+        }
+
+        public List<TermsEnum> getTermsIters() {
+            return termsIters;
+        }
     }
 }
