@@ -55,7 +55,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
 
     @Inject
     public TransportAllTermsShardAction(Settings settings, ClusterService clusterService, TransportService transportService,
-                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters,  IndexNameExpressionResolver indexNameExpressionResolver) {
+                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters, IndexNameExpressionResolver indexNameExpressionResolver) {
         super(settings, ACTION_NAME, threadPool, clusterService, transportService, actionFilters, indexNameExpressionResolver, AllTermsShardRequest.class, ThreadPool.Names.GENERIC);
         this.indicesService = indicesService;
     }
@@ -95,71 +95,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
             if (leaves.size() == 0) {
                 return new AllTermsSingleShardResponse(terms);
             }
-            List<TermsEnum> termIters = new ArrayList<>();
-
-            try {
-                for (LeafReaderContext reader : leaves) {
-                    termIters.add(reader.reader().terms(request.field()).iterator());
-                }
-            } catch (IOException e) {
-            }
-            CharsRefBuilder spare = new CharsRefBuilder();
-            BytesRef lastTerm = null;
-            int[] exhausted = new int[termIters.size()];
-            for (int i = 0; i < exhausted.length; i++) {
-                exhausted[i] = 0;
-            }
-            try {
-                //first find smallest term
-                for (int i = 0; i < termIters.size(); i++) {
-                    BytesRef curTerm = null;
-                    if (request.from() != null) {
-                        TermsEnum.SeekStatus seekStatus = termIters.get(i).seekCeil(new BytesRef(request.from()));
-                        if (seekStatus.equals(TermsEnum.SeekStatus.END) == false) {
-                            curTerm = termIters.get(i).term();
-                        }
-                    } else {
-                        curTerm = termIters.get(i).next();
-                    }
-
-                    if (lastTerm == null) {
-                        lastTerm = curTerm;
-                        if (lastTerm == null || lastTerm.length == 0) {
-                            lastTerm = null;
-                            exhausted[i] = 1;
-                        }
-                    } else {
-                        if (curTerm.compareTo(lastTerm) < 0) {
-                            lastTerm = curTerm;
-                        }
-                    }
-                }
-                if (lastTerm == null) {
-                    return new AllTermsSingleShardResponse(terms);
-                }
-                if (getDocFreq(termIters, lastTerm, request.field(), exhausted) >= request.minDocFreq()) {
-                    spare.copyUTF8Bytes(lastTerm);
-                    terms.add(spare.toString());
-                }
-                BytesRef bytesRef = new BytesRef(Arrays.copyOf(lastTerm.bytes, lastTerm.bytes.length));
-                lastTerm = bytesRef;
-
-                while (terms.size() < request.size() && lastTerm != null) {
-                    moveIterators(exhausted, termIters, lastTerm, shardId);
-                    lastTerm = findMinimum(exhausted, termIters, shardId);
-
-                    if (lastTerm != null) {
-
-                        if (getDocFreq(termIters, lastTerm, request.field(), exhausted) >= request.minDocFreq()) {
-                            spare.copyUTF8Bytes(lastTerm);
-                            terms.add(spare.toString());
-                        }
-                    }
-                }
-            } catch (IOException e) {
-            }
-
-            logger.trace("[{}], final terms list: {}", shardId, terms);
+            getTerms(request, terms, leaves);
 
             return new AllTermsSingleShardResponse(terms);
         } finally {
@@ -167,7 +103,99 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         }
     }
 
-    private long getDocFreq(List<TermsEnum> termIters, BytesRef lastTerm, String field, int[] exhausted) {
+    protected void getTerms(AllTermsShardRequest request, List<String> terms, List<LeafReaderContext> leaves) {
+        List<TermsEnum> termIters = getTermsEnums(request, leaves);
+        CharsRefBuilder spare = new CharsRefBuilder();
+        BytesRef lastTerm = null;
+        int[] exhausted = new int[termIters.size()];
+        for (int i = 0; i < exhausted.length; i++) {
+            exhausted[i] = 0;
+        }
+        try {
+            lastTerm = findSmallestTermAfter(request, termIters, lastTerm, exhausted);
+
+            if (lastTerm == null) {
+                return;
+            }
+            findNMoreTerms(request, terms, termIters, spare, lastTerm, exhausted);
+        } catch (IOException e) {
+        }
+
+        logger.trace("final terms list: {}", terms);
+    }
+
+    protected void findNMoreTerms(AllTermsShardRequest request, List<String> terms, List<TermsEnum> termIters, CharsRefBuilder spare, BytesRef lastTerm, int[] exhausted) {
+        if (getDocFreq(termIters, lastTerm, exhausted) >= request.minDocFreq()) {
+            spare.copyUTF8Bytes(lastTerm);
+            terms.add(spare.toString());
+        }
+        BytesRef bytesRef = new BytesRef(Arrays.copyOf(lastTerm.bytes, lastTerm.bytes.length));
+        lastTerm = bytesRef;
+
+        while (terms.size() < request.size() && lastTerm != null) {
+            moveIterators(exhausted, termIters, lastTerm);
+            lastTerm = findMinimum(exhausted, termIters);
+
+            if (lastTerm != null) {
+
+                if (getDocFreq(termIters, lastTerm, exhausted) >= request.minDocFreq()) {
+                    spare.copyUTF8Bytes(lastTerm);
+                    terms.add(spare.toString());
+                }
+            }
+        }
+    }
+
+    protected static List<TermsEnum> getTermsEnums(AllTermsShardRequest request, List<LeafReaderContext> leaves) {
+        List<TermsEnum> termIters = new ArrayList<>();
+
+        try {
+            for (LeafReaderContext reader : leaves) {
+                termIters.add(reader.reader().terms(request.field()).iterator());
+            }
+        } catch (IOException e) {
+        }
+        return termIters;
+    }
+
+    protected static BytesRef findSmallestTermAfter(AllTermsShardRequest request, List<TermsEnum> termIters, BytesRef lastTerm, int[] exhausted) throws IOException {
+        for (int i = 0; i < termIters.size(); i++) {
+            BytesRef curTerm = null;
+            if (request.from() != null) {
+                // move to the term we want to start after
+                TermsEnum.SeekStatus seekStatus = termIters.get(i).seekCeil(new BytesRef(request.from()));
+                if (seekStatus.equals(TermsEnum.SeekStatus.END)) {
+                    exhausted[i] = 1;
+                } else if (seekStatus.equals(TermsEnum.SeekStatus.FOUND)) {
+                    curTerm = termIters.get(i).next();
+                    if (curTerm == null) {
+                        exhausted[i] = 1;
+                    }
+                } else {
+                    curTerm =  termIters.get(i).term(); // otherwise we are good
+                }
+
+            } else {
+                curTerm = termIters.get(i).next();
+                if (curTerm == null) {
+                    exhausted[i] = 1;// which means there were no terms at all which is odd but I am not sure this cannot happen
+                }
+            }
+            // see it it is the smallest term
+            if (exhausted[i] != 1) {
+                if (lastTerm == null) {
+                    lastTerm = curTerm;
+                } else {
+                    if (curTerm.compareTo(lastTerm) < 0) {
+                        lastTerm = curTerm;
+                    }
+                }
+            }
+        }
+        return lastTerm;
+    }
+
+    private long getDocFreq(List<TermsEnum> termIters, BytesRef lastTerm, int[] exhausted) {
         long docFreq = 0;
         if (logger.isTraceEnabled()) {
             CharsRefBuilder b = new CharsRefBuilder();
@@ -195,7 +223,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return docFreq;
     }
 
-    private BytesRef findMinimum(int[] exhausted, List<TermsEnum> termIters, ShardId shardId) {
+    private BytesRef findMinimum(int[] exhausted, List<TermsEnum> termIters) {
         BytesRef minTerm = null;
         for (int i = 0; i < termIters.size(); i++) {
             if (exhausted[i] == 1) {
@@ -216,7 +244,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
                     if (logger.isTraceEnabled()) {
                         CharsRefBuilder toiString = new CharsRefBuilder();
                         toiString.copyUTF8Bytes(minTerm);
-                        logger.trace("{} Setting min to  {} from segment {}", shardId, toiString.toString(), i);
+                        logger.trace(" Setting min to  {} from segment {}", toiString.toString(), i);
                     }
                 }
             }
@@ -226,7 +254,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
             if (logger.isTraceEnabled()) {
                 CharsRefBuilder toiString = new CharsRefBuilder();
                 toiString.copyUTF8Bytes(minTerm);
-                logger.trace("{} final min term {}", shardId, toiString.toString());
+                logger.trace("final min term {}", toiString.toString());
             }
             BytesRef ret = new BytesRef(Arrays.copyOf(minTerm.bytes, minTerm.bytes.length));
             return ret;
@@ -234,7 +262,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return null;
     }
 
-    private void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm, ShardId shardId) {
+    private void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm) {
 
         try {
             for (int i = 0; i < termIters.size(); i++) {
@@ -243,23 +271,23 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
                 }
                 CharsRefBuilder toiString = new CharsRefBuilder();
                 toiString.copyUTF8Bytes(lastTerm);
-                logger.trace("{} lastTerm is {}", shardId, toiString.toString());
+                logger.trace("lastTerm is {}", toiString.toString());
                 BytesRef candidate;
                 if (termIters.get(i).term().compareTo(lastTerm) == 0) {
                     candidate = termIters.get(i).next();
 
-                    logger.trace("{} Moving segment {}", shardId, i);
+                    logger.trace(" Moving segment {}", i);
                 } else {
                     //it must stand on one that is greater so we just get it
                     candidate = termIters.get(i).term();
-                    logger.trace("{} Not moving segment {}", shardId, i);
+                    logger.trace(" Not moving segment {}", i);
                 }
                 if (candidate == null) {
                     exhausted[i] = 1;
                 } else {
                     toiString = new CharsRefBuilder();
                     toiString.copyUTF8Bytes(candidate.clone());
-                    logger.trace("{} Segment is now on {}", shardId, toiString.toString());
+                    logger.trace("Segment is now on {}", toiString.toString());
                 }
             }
         } catch (IOException e) {

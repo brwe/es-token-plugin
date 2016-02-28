@@ -19,71 +19,54 @@
 
 package org.elasticsearch.index.mapper.token;
 
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.collect.HppcMaps;
-import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.compress.CompressedXContent;
+import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.plugin.TokenPlugin;
-import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
+import org.elasticsearch.index.IndexService;
+import org.elasticsearch.index.mapper.DocumentMapper;
+import org.elasticsearch.index.mapper.DocumentMapperParser;
+import org.elasticsearch.index.mapper.FieldMapper;
+import org.elasticsearch.index.mapper.Mapper;
+import org.elasticsearch.index.mapper.MetadataFieldMapper;
+import org.elasticsearch.indices.mapper.MapperRegistry;
+import org.elasticsearch.test.ESSingleNodeTestCase;
+import org.junit.Before;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 
-import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.hamcrest.Matchers.equalTo;
 
-/**
- *
- */
-@ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
-public class AnalyzedTextTests extends ESIntegTestCase {
+public class AnalyzedTextTests extends ESSingleNodeTestCase {
 
-    @Override
-    protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+    MapperRegistry mapperRegistry;
+    IndexService indexService;
+    DocumentMapperParser parser;
+
+    @Before
+    public void before() {
+        indexService = createIndex("test");
+        mapperRegistry = new MapperRegistry(
+                Collections.<String, Mapper.TypeParser>singletonMap(AnalyzedTextFieldMapper.CONTENT_TYPE, new AnalyzedTextFieldMapper.TypeParser()),
+                Collections.<String, MetadataFieldMapper.TypeParser>emptyMap());
+        parser = new DocumentMapperParser(indexService.indexSettings(), indexService.mapperService(),
+                indexService.analysisService(), indexService.similarityService().similarityLookupService(),
+                null, mapperRegistry);
     }
 
-
-    @Test
-    public void testAnalyzedText() throws IOException {
-        XContentBuilder mapping = jsonBuilder();
-        mapping.startObject()
-                .startObject("type")
-                .startObject("properties")
-                .startObject("text")
+    public void testDefaults() throws Exception {
+        String mapping = jsonBuilder().startObject().startObject("type")
+                .startObject("properties").startObject("field")
                 .field("type", "analyzed_text")
-                .field("store", true)
-                .endObject()
-                .endObject()
-                .endObject()
-                .endObject();
-        client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
-        client().prepareIndex("index", "type", "1").setSource("text", "I i am sam").get();
-        refresh();
-        flush();
-        GetResponse getResponse = client().prepareGet("index", "type", "1").setFields("text").get();
-        String[] expected = {"i", "i", "am", "sam"};
-        List<Object> values = getResponse.getField("text").getValues();
-        String[] stringValues = new String[values.size()];
-        int i = 0;
-        for (Object o : values) {
-            stringValues[i] = o.toString();
-            i++;
-        }
-        assertArrayEquals(stringValues, expected);
-        SearchResponse searchResponse = client().prepareSearch("index").addAggregation(terms("terms").field("text")).get();
-        List<Terms.Bucket> terms = ((Terms) searchResponse.getAggregations().get("terms")).getBuckets();
-        for (Terms.Bucket bucket : terms) {
-            if (bucket.getKey().equals("i")) {
-                assertThat(bucket.getDocCount(), equalTo(1l));
-            }
-        }
+                .endObject().endObject().endObject().endObject().string();
+        DocumentMapper mapper = parser.parse("type", new CompressedXContent(mapping));
+
+        FieldMapper analyzedTextMapper = mapper.mappers().getMapper("field");
+        assertThat(analyzedTextMapper.fieldType().hasDocValues(), equalTo(true));
+        XContentBuilder builder = jsonBuilder();
+        builder.startObject();
+        mapper.toXContent(builder, ToXContent.EMPTY_PARAMS);
+        builder.endObject();
+        assertThat(builder.string(), equalTo(mapping));
     }
 }
