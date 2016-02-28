@@ -172,7 +172,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
                         exhausted[i] = 1;
                     }
                 } else {
-                    curTerm =  termIters.get(i).term(); // otherwise we are good
+                    curTerm = termIters.get(i).term(); // otherwise we are good
                 }
 
             } else {
@@ -195,28 +195,15 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return lastTerm;
     }
 
-    private long getDocFreq(List<TermsEnum> termIters, BytesRef lastTerm, int[] exhausted) {
+    protected static long getDocFreq(List<TermsEnum> termIters, BytesRef lastTerm, int[] exhausted) {
         long docFreq = 0;
-        if (logger.isTraceEnabled()) {
-            CharsRefBuilder b = new CharsRefBuilder();
-            b.copyUTF8Bytes(lastTerm);
-            logger.trace("Compute doc freq for {}", b.toString());
-        }
-
         for (int i = 0; i < termIters.size(); i++) {
             if (exhausted[i] == 0) {
                 try {
-                    if (logger.isTraceEnabled()) {
-                        CharsRefBuilder b = new CharsRefBuilder();
-                        b.copyUTF8Bytes(termIters.get(i).term());
-                        logger.trace("Doc freq on seg {} for term {} is {}", i, b.toString(), termIters.get(i).docFreq());
-                    }
-
                     if (termIters.get(i).term().compareTo(lastTerm) == 0) {
                         docFreq += termIters.get(i).docFreq();
                     }
                 } catch (IOException e) {
-
                 }
             }
         }
@@ -262,8 +249,7 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return null;
     }
 
-    private void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm) {
-
+    private static void moveIterators(int[] exhausted, List<TermsEnum> termIters, BytesRef lastTerm) {
         try {
             for (int i = 0; i < termIters.size(); i++) {
                 if (exhausted[i] == 1) {
@@ -271,23 +257,18 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
                 }
                 CharsRefBuilder toiString = new CharsRefBuilder();
                 toiString.copyUTF8Bytes(lastTerm);
-                logger.trace("lastTerm is {}", toiString.toString());
                 BytesRef candidate;
                 if (termIters.get(i).term().compareTo(lastTerm) == 0) {
                     candidate = termIters.get(i).next();
-
-                    logger.trace(" Moving segment {}", i);
                 } else {
                     //it must stand on one that is greater so we just get it
                     candidate = termIters.get(i).term();
-                    logger.trace(" Not moving segment {}", i);
                 }
                 if (candidate == null) {
                     exhausted[i] = 1;
                 } else {
                     toiString = new CharsRefBuilder();
                     toiString.copyUTF8Bytes(candidate.clone());
-                    logger.trace("Segment is now on {}", toiString.toString());
                 }
             }
         } catch (IOException e) {
