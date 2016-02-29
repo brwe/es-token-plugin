@@ -27,6 +27,7 @@ import org.elasticsearch.test.junit.annotations.TestLogging;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Collections;
 
 
 /**
@@ -40,6 +41,9 @@ public class AllTermsIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
+    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
+        return pluginList(TokenPlugin.class);
+    }
 
     @Test
     public void testSimpleTestOneDoc() throws Exception {
