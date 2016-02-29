@@ -19,19 +19,30 @@
 
 package org.elasticsearch.script;
 
-import org.dmg.pmml.RegressionModel;
+import org.dmg.pmml.NaiveBayesModel;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 
-public class EsLinearSVMModel extends EsRegressionModelEvaluator {
+public class EsNaiveBayesModel implements EsModelEvaluator {
 
-    public EsLinearSVMModel(RegressionModel regressionModel) {
-        super(regressionModel);
+    private double[][] thetas;
+    private double[] pis;
+    private String[] labels;
+
+    public EsNaiveBayesModel(NaiveBayesModel regressionModel) {
+        throw new UnsupportedOperationException("not imeplemented yet");
+    }
+
+    public EsNaiveBayesModel(double thetas[][], double[] pis, String[] labels) {
+        this.thetas = thetas;
+        this.pis = pis;
+        this.labels = labels;
     }
 
     @Override
     public String evaluate(Tuple<int[], double[]> featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
-        return val > 0.0 ? classes.v1() : classes.v2();
+
+        double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
+        double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
+        return valClass0 > valClass1 ? labels[0] : labels[1];
     }
 }

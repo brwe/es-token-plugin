@@ -21,6 +21,7 @@ package org.elasticsearch.script;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.mllib.classification.LogisticRegressionModel;
+import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.DenseVector;
 import org.dmg.pmml.FieldName;
@@ -91,6 +92,25 @@ public class ModelTests extends ESTestCase {
             params.put(new FieldName("field_3"), new Double(vals[3]));
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
             String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+        }
+    }
+
+    @Test
+    // only just checks that nothing crashes
+    public void testMLLibVsEsNB() throws IOException, JAXBException, SAXException {
+        for (int i = 0; i < 1000; i++) {
+
+            double[][] thetas = new double[][]{{randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)},
+                    {randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)}};
+            double[] pis = new double[]{randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)};
+            String[] labels = {"0", "1"};
+            double[] labelsAsDoubles = {0.0d, 1.0d};
+            NaiveBayesModel nb = new NaiveBayesModel(labelsAsDoubles, pis, thetas);
+            EsModelEvaluator esNaiveBayesModel = new EsNaiveBayesModel(thetas, pis, labels);
+            int[] vals = {randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10)};
+            double mllibResult = nb.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
+            String result = esNaiveBayesModel.evaluate(new Tuple<>(new int[]{0, 1, 2, 3}, new double[]{vals[0], vals[1], vals[2], vals[3]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(result)));
         }
     }

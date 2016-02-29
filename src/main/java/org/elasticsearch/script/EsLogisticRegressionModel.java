@@ -22,7 +22,7 @@ package org.elasticsearch.script;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
 
-public class EsLogisticRegressionModel extends EsModelEvaluator {
+public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 
     public EsLogisticRegressionModel(RegressionModel model) {
         super(model);
