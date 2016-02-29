@@ -46,7 +46,7 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-mllib_2.10</artifactId>
             <version>1.5.2</version>
-            <!-- <scope>test</scope> -->
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jpmml</groupId>
