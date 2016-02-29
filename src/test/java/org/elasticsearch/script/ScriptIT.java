@@ -146,6 +146,7 @@ public class ScriptIT extends ESIntegTestCase {
         client().prepareIndex("model", "params", "test_params").setSource(
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
+                        .field("labels", new double[]{0, 1})
                         .field("intercept", 0.5)
                         .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
@@ -186,6 +187,7 @@ public class ScriptIT extends ESIntegTestCase {
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
                         .field("intercept", 0.5)
+                        .field("labels", new double[]{0, 1})
                         .field("features", new String[]{"fox", "quick", "the"})
                         .endObject()
         ).get();
@@ -385,21 +387,23 @@ public class ScriptIT extends ESIntegTestCase {
             SearchResponse searchResponse = client().prepareSearch("test_index").addScriptField("pmml", new Script(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
             assertSearchResponse(searchResponse);
 
-            Double label = Double.parseDouble((String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0)));
-            assertThat(label, equalTo(mllibResult));
+            String pmmlLabel = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            assertThat(Double.parseDouble(pmmlLabel), equalTo(mllibResult));
 
             // test mllib lr script
             client().prepareIndex("model", "params", "test_params").setSource(
                     jsonBuilder().startObject()
                             .field("weights", modelParams)
                             .field("intercept", 0.1)
+                            .field("labels", new double[]{1, 0})
                             .field("features", new String[]{"fox", "quick", "the", "zonk"})
                             .endObject()
             ).get();
             refresh();
             searchResponse = client().prepareSearch("test_index").addScriptField("lr", new Script(LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
             assertSearchResponse(searchResponse);
-            label = (Double) searchResponse.getHits().getAt(0).field("lr").values().get(0);
+            String label = (String) searchResponse.getHits().getAt(0).field("lr").values().get(0);
+            assertThat(Double.parseDouble(label), equalTo(Double.parseDouble(pmmlLabel)));
         }
     }
 

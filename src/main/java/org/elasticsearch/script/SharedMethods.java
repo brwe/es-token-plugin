@@ -100,30 +100,40 @@ public class SharedMethods {
 
     static EsLinearSVMModel initializeSVMModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
+        ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
+        Number intercept = (Number) getResponse.getSource().get("intercept");
+        if (field == null || features == null || weightsArrayList == null || intercept == null || labelsAsArrayList == null) {
+            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, intercept, labels");
+        }
+        features.addAll((ArrayList) getResponse.getSource().get("features"));
         double[] weights = new double[weightsArrayList.size()];
         for (int i = 0; i < weightsArrayList.size(); i++) {
             weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
         }
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        if (field == null || features == null || weightsArrayList == null || intercept == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
+        double[] labels = new double[labelsAsArrayList.size()];
+        for (int i = 0; i < labelsAsArrayList.size(); i++) {
+            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
         }
-        return new EsLinearSVMModel(weights, intercept.doubleValue(), new String[]{"0", "1"});
+        return new EsLinearSVMModel(weights, intercept.doubleValue(), new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
     }
 
     static EsLogisticRegressionModel initializeLRModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
+        Number intercept = (Number) getResponse.getSource().get("intercept");
+        ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
+        if (field == null || features == null || weightsArrayList == null || intercept == null || labelsAsArrayList == null) {
+            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, intercept, labels");
+        }
+        features.addAll((ArrayList) getResponse.getSource().get("features"));
         double[] weights = new double[weightsArrayList.size()];
         for (int i = 0; i < weightsArrayList.size(); i++) {
             weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
         }
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        if (field == null || features == null || weightsArrayList == null || intercept == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
+        double[] labels = new double[labelsAsArrayList.size()];
+        for (int i = 0; i < labelsAsArrayList.size(); i++) {
+            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
         }
-        return new EsLogisticRegressionModel(weights, intercept.doubleValue(), new String[]{"0", "1"});
+        return new EsLogisticRegressionModel(weights, intercept.doubleValue(), new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
     }
 
     static EsNaiveBayesModel initializeNaiveBayesModel(ArrayList features, String field, GetResponse getResponse) {
@@ -149,7 +159,7 @@ public class SharedMethods {
                 thetas[i][j] = ((Number) thetaRow.get(j)).doubleValue();
             }
         }
-        return new EsNaiveBayesModel(thetas, pi, new String[]{Double.toString(labels[0]), Double.toString(labels[0])});
+        return new EsNaiveBayesModel(thetas, pi, new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
     }
 
     static Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {

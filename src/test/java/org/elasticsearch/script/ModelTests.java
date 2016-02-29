@@ -71,6 +71,10 @@ public class ModelTests extends ESTestCase {
             String result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+
+            EsModelEvaluator esSVMModel = new EsLinearSVMModel(modelParams, 0.1, new String[]{"1", "0"});
+            String esLabel = esSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble(esLabel)));
         }
     }
 
@@ -93,6 +97,11 @@ public class ModelTests extends ESTestCase {
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
             String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+
+            EsModelEvaluator esLLRModel = new EsLogisticRegressionModel(modelParams, 0.1, new String[]{"1", "0"});
+            String esLabel = esLLRModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble(esLabel)));
+
         }
     }
 
