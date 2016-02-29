@@ -21,6 +21,7 @@ package org.elasticsearch.script;
 
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 
 public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 
@@ -36,6 +37,7 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
     @Override
     public String evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
+        ESLoggerFactory.getRootLogger().info("value is {}",new Exception(), val);
         double prob = 1 / (1 + Math.exp(-1.0 * val));
         return prob > 0.5 ? classes[0] : classes[1];
     }
