@@ -33,7 +33,14 @@
         <developerConnection>scm:git:git@github.com:brwe/es-token-plugin.git</developerConnection>
         <url>http://github.com/brwe/es-token-plugin</url>
     </scm>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
         <dependency>
             <groupId>org.apache.spark</groupId>
