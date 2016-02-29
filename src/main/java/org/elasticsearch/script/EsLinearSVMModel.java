@@ -21,7 +21,6 @@ package org.elasticsearch.script;
 
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 
 public class EsLinearSVMModel extends EsRegressionModelEvaluator {
 
@@ -29,9 +28,20 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
         super(regressionModel);
     }
 
+    public EsLinearSVMModel(double[] coefficients,
+                            double intercept, String[] classes) {
+        super(coefficients, intercept, classes);
+    }
+
     @Override
     public String evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
-        return val > 0.0 ? classes.v1() : classes.v2();
+        return val > 0.0 ? classes[0] : classes[1];
+    }
+
+    @Override
+    public String evaluate(double[] featureValues) {
+        double val = linearFunction(featureValues, intercept, coefficients);
+        return val > 0.0 ? classes[0] : classes[1];
     }
 }

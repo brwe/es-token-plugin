@@ -19,8 +19,6 @@
 
 package org.elasticsearch.script;
 
-import org.apache.spark.mllib.classification.ClassificationModel;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
@@ -31,7 +29,6 @@ import org.elasticsearch.node.Node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,12 +37,10 @@ import java.util.Map;
 public class NaiveBayesUpdateScript extends AbstractSearchScript {
 
     final static public String SCRIPT_NAME = "naive_bayes_update_script";
-    ClassificationModel model = null;
+    EsNaiveBayesModel model = null;
     String field = null;
     ArrayList features = new ArrayList();
     Map<String, Integer> wordMap;
-    List<Integer> indices = new ArrayList<>();
-    List<Integer> values = new ArrayList<>();
     boolean fieldDataFields = false;
     Map<String, Object> context;
     Client client;
@@ -112,7 +107,7 @@ public class NaiveBayesUpdateScript extends AbstractSearchScript {
         Tuple<int[], double[]> indicesAndValues;
         indicesAndValues = SharedMethods.getIndicesAndValuesFromAnalyzedTokens(wordMap, analyzeResponse.getTokens());
         /** until here **/
-        double label = model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
+        String label = model.evaluate(indicesAndValues);
         ((Map<String, Object>) (context.get("_source"))).put("label", label);
         return label;
     }

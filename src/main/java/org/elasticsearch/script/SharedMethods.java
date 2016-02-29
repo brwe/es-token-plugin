@@ -18,17 +18,11 @@ package org.elasticsearch.script;/*
  */
 
 
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.spark.mllib.classification.ClassificationModel;
-import org.apache.spark.mllib.classification.LogisticRegressionModel;
-import org.apache.spark.mllib.classification.NaiveBayesModel;
-import org.apache.spark.mllib.classification.SVMModel;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.dmg.pmml.FieldName;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
@@ -51,7 +45,7 @@ public class SharedMethods {
         indices.clear();
         values.clear();
         while ((t = termsEnum.next()) != null) {
-            Integer termIndex  = wordMap.get(t.utf8ToString());
+            Integer termIndex = wordMap.get(t.utf8ToString());
             if (termIndex != null) {
                 indices.add(termIndex);
                 docsEnum = termsEnum.postings(docsEnum, PostingsEnum.FREQS);
@@ -65,7 +59,7 @@ public class SharedMethods {
         }
         int[] indicesArray = new int[numTerms];
         double[] valuesArray = new double[numTerms];
-        for (int i = 0; i< numTerms ; i++) {
+        for (int i = 0; i < numTerms; i++) {
             indicesArray[i] = indices.get(i);
             valuesArray[i] = values.get(i);
         }
@@ -104,7 +98,7 @@ public class SharedMethods {
         }
     }
 
-    static SVMModel initializeSVMModel(ArrayList features, String field, GetResponse getResponse) {
+    static EsLinearSVMModel initializeSVMModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
         double[] weights = new double[weightsArrayList.size()];
         for (int i = 0; i < weightsArrayList.size(); i++) {
@@ -115,23 +109,24 @@ public class SharedMethods {
         if (field == null || features == null || weightsArrayList == null || intercept == null) {
             throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
         }
-        return new SVMModel(Vectors.dense(weights), intercept.doubleValue());
-    }
-    static LogisticRegressionModel initializeLRModel(ArrayList features, String field, GetResponse getResponse) {
-        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
-        double[] weights = new double[weightsArrayList.size()];
-        for (int i = 0; i < weightsArrayList.size(); i++) {
-            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
-        }
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        if (field == null || features == null || weightsArrayList == null || intercept == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
-        }
-        return new LogisticRegressionModel(Vectors.dense(weights), intercept.doubleValue());
+        return new EsLinearSVMModel(weights, intercept.doubleValue(), new String[]{"0", "1"});
     }
 
-    static NaiveBayesModel initializeNaiveBayesModel(ArrayList features, String field, GetResponse getResponse) {
+    static EsLogisticRegressionModel initializeLRModel(ArrayList features, String field, GetResponse getResponse) {
+        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
+        double[] weights = new double[weightsArrayList.size()];
+        for (int i = 0; i < weightsArrayList.size(); i++) {
+            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
+        }
+        Number intercept = (Number) getResponse.getSource().get("intercept");
+        features.addAll((ArrayList) getResponse.getSource().get("features"));
+        if (field == null || features == null || weightsArrayList == null || intercept == null) {
+            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, weights, intercept");
+        }
+        return new EsLogisticRegressionModel(weights, intercept.doubleValue(), new String[]{"0", "1"});
+    }
+
+    static EsNaiveBayesModel initializeNaiveBayesModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList piAsArrayList = (ArrayList) getResponse.getSource().get("pi");
         ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
         ArrayList thetasAsArrayList = (ArrayList) getResponse.getSource().get("thetas");
@@ -154,7 +149,7 @@ public class SharedMethods {
                 thetas[i][j] = ((Number) thetaRow.get(j)).doubleValue();
             }
         }
-        return new NaiveBayesModel(labels, pi, thetas);
+        return new EsNaiveBayesModel(thetas, pi, new String[]{Double.toString(labels[0]), Double.toString(labels[0])});
     }
 
     static Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {
