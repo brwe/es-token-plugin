@@ -7,7 +7,7 @@
     <includeBaseDirectory>false</includeBaseDirectory>
     <dependencySets>
         <dependencySet>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>.</outputDirectory>
             <useProjectArtifact>true</useProjectArtifact>
             <useTransitiveFiltering>true</useTransitiveFiltering>
             <excludes>
