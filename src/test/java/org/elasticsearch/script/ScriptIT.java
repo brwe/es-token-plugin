@@ -58,7 +58,7 @@ import static org.hamcrest.Matchers.equalTo;
 /**
  */
 @ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
-public class ScriptTests extends ESIntegTestCase {
+public class ScriptIT extends ESIntegTestCase {
 
     @Override
     protected Settings nodeSettings(int nodeOrdinal) {
