@@ -152,19 +152,7 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
         PMML pmml;
 
-        try (InputStream is = new ByteArrayInputStream(getResponse.getSourceAsMap().get("pmml").toString().getBytes(Charset.defaultCharset()))) {
-            Source transformedSource = ImportFilter.apply(new InputSource(is));
-            pmml = JAXBUtil.unmarshalPMML(transformedSource);
-        }
-
-        Model model = pmml.getModels().get(0);
-        if (model.getModelName().equals("logistic regression")) {
-            initLogisticRegression((RegressionModel) model);
-        } else if (model.getModelName().equals("linear SVM")) {
-            initLinearSVM((RegressionModel) model);
-        } else {
-            throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
-        }
+        model = initModel(getResponse.getSourceAsMap().get("pmml").toString());
         field = (String) params.get("field");
         fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
         features.addAll((ArrayList) getResponse.getSource().get("features"));
@@ -172,12 +160,29 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         SharedMethods.fillWordIndexMap(features, wordMap);
     }
 
-    private void initLogisticRegression(RegressionModel pmmlModel) {
-        model = new EsLogisticRegressionModel(pmmlModel);
+    protected static EsModelEvaluator initModel(String pmmlString) throws IOException, SAXException, JAXBException {
+        PMML pmml;
+        try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+            Source transformedSource = ImportFilter.apply(new InputSource(is));
+            pmml = JAXBUtil.unmarshalPMML(transformedSource);
+        }
+
+        Model model = pmml.getModels().get(0);
+        if (model.getModelName().equals("logistic regression")) {
+            return initLogisticRegression((RegressionModel) model);
+        } else if (model.getModelName().equals("linear SVM")) {
+            return initLinearSVM((RegressionModel) model);
+        } else {
+            throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
+        }
     }
 
-    private void initLinearSVM(RegressionModel pmmlModel) {
-        model = new EsLinearSVMModel(pmmlModel);
+    protected static EsModelEvaluator initLogisticRegression(RegressionModel pmmlModel) {
+        return new EsLogisticRegressionModel(pmmlModel);
+    }
+
+    protected static  EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
+        return new EsLinearSVMModel(pmmlModel);
     }
 
     @Override
