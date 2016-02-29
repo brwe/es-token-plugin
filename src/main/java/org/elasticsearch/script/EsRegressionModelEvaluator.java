@@ -27,10 +27,11 @@ import org.elasticsearch.common.collect.Tuple;
 import java.util.List;
 
 
-public abstract class EsRegressionModelEvaluator implements EsModelEvaluator{
+public abstract class EsRegressionModelEvaluator implements EsModelEvaluator {
     double[] coefficients;
     double intercept;
-    Tuple<String, String> classes;
+    String[] classes;
+
     public EsRegressionModelEvaluator(RegressionModel regressionModel) {
         RegressionTable regressionTable = regressionModel.getRegressionTables().get(0);
         List<NumericPredictor> numericPredictors = regressionTable.getNumericPredictors();
@@ -42,15 +43,31 @@ public abstract class EsRegressionModelEvaluator implements EsModelEvaluator{
         }
         this.coefficients = coefficients;
         this.intercept = regressionTable.getIntercept();
-        this.classes = new Tuple<>(regressionModel.getRegressionTables().get(0).getTargetCategory(), regressionModel.getRegressionTables().get(1).getTargetCategory());
+        this.classes = new String[]{regressionModel.getRegressionTables().get(0).getTargetCategory(), regressionModel.getRegressionTables().get(1).getTargetCategory()};
     }
-    abstract  public String evaluate(Tuple<int[], double[]> featureValues);
+
+    public EsRegressionModelEvaluator(double[] coefficients, double intercept, String[] classes) {
+        this.coefficients = coefficients;
+        this.intercept = intercept;
+        this.classes = classes;
+    }
+
+    abstract public String evaluate(Tuple<int[], double[]> featureValues);
 
     protected static double linearFunction(Tuple<int[], double[]> featureValues, double intercept, double[] coefficients) {
         double val = 0.0;
         val += intercept;
         for (int i = 0; i < featureValues.v1().length; i++) {
             val += featureValues.v2()[i] * coefficients[featureValues.v1()[i]];
+        }
+        return val;
+    }
+
+    protected static double linearFunction(double[] featureValues, double intercept, double[] coefficients) {
+        double val = 0.0;
+        val += intercept;
+        for (int i = 0; i < featureValues.length; i++) {
+            val += featureValues[i] * coefficients[i];
         }
         return val;
     }

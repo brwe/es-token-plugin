@@ -28,10 +28,22 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
         super(model);
     }
 
+    public EsLogisticRegressionModel(double[] coefficients,
+            double intercept, String[] classes) {
+        super(coefficients,  intercept, classes);
+    }
+
     @Override
     public String evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
         double prob = 1 / (1 + Math.exp(-1.0 * val));
-        return prob > 0.5 ? classes.v1() : classes.v2();
+        return prob > 0.5 ? classes[0] : classes[1];
+    }
+
+    @Override
+    public String evaluate(double[] featureValues) {
+        double val = linearFunction(featureValues, intercept, coefficients);
+        double prob = 1 / (1 + Math.exp(-1.0 * val));
+        return prob > 0.5 ? classes[0] : classes[1];
     }
 }

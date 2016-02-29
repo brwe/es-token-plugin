@@ -45,4 +45,10 @@ public class EsNaiveBayesModel implements EsModelEvaluator {
         double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
         return valClass0 > valClass1 ? labels[0] : labels[1];
     }
+
+    public String evaluate(double[] featureValues) {
+        double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
+        double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
+        return valClass0 > valClass1 ? labels[0] : labels[1];
+    }
 }

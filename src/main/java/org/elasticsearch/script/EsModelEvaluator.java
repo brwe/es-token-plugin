@@ -24,6 +24,7 @@ import org.elasticsearch.common.collect.Tuple;
 
 interface EsModelEvaluator {
     String evaluate(Tuple<int[], double[]> featureValues);
+    String evaluate(double[] featureValues);
 }
 
 

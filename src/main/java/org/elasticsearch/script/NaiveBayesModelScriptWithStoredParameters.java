@@ -19,8 +19,6 @@
 
 package org.elasticsearch.script;
 
-import org.apache.spark.mllib.classification.NaiveBayesModel;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
@@ -39,7 +37,7 @@ import java.util.Map;
  */
 public class NaiveBayesModelScriptWithStoredParameters extends AbstractSearchScript {
 
-    NaiveBayesModel model = null;
+    EsNaiveBayesModel model = null;
     String field = null;
     double[] tfs = null;
     ArrayList features = new ArrayList();
@@ -101,7 +99,7 @@ public class NaiveBayesModelScriptWithStoredParameters extends AbstractSearchScr
                 tfs[i] = indexTermField.tf();
             }
             /** until here **/
-            return model.predict(Vectors.dense(tfs));
+            return model.evaluate(tfs);
         } catch (IOException ex) {
             throw new ScriptException("Model prediction failed: ", ex);
         }

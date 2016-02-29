@@ -20,8 +20,6 @@
 package org.elasticsearch.script;
 
 import org.apache.lucene.index.Fields;
-import org.apache.spark.mllib.classification.ClassificationModel;
-import org.apache.spark.mllib.linalg.Vectors;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
@@ -89,7 +87,7 @@ import java.util.Map;
 public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractSearchScript {
 
     final static public String SCRIPT_NAME = "svm_model_stored_parameters_sparse_vectors";
-    ClassificationModel model = null;
+    EsLinearSVMModel model = null;
     String field = null;
     ArrayList features = new ArrayList();
     Map<String, Integer> wordMap;
@@ -160,7 +158,7 @@ public class SVMModelScriptWithStoredParametersAndSparseVector extends AbstractS
                 indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
             }
             /** until here **/
-            return model.predict(Vectors.sparse(features.size(), indicesAndValues.v1(), indicesAndValues.v2()));
+            return model.evaluate(indicesAndValues);
         } catch (IOException ex) {
             throw new ScriptException("Model prediction failed: ", ex);
         }

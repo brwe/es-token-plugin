@@ -142,7 +142,7 @@ public class ScriptIT extends ESIntegTestCase {
         parameters.put("field", "text");
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", new Script(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
-        double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
+        String label = (String) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
@@ -152,7 +152,7 @@ public class ScriptIT extends ESIntegTestCase {
         ).get();
         refresh();
         searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(SVMModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
-        label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
+        label = (String) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 
     @Test
@@ -181,7 +181,7 @@ public class ScriptIT extends ESIntegTestCase {
         }
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", new Script(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
-        double label = (Double) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
+        String label = (String) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
         client().prepareIndex("model", "params", "test_params").setSource(
                 jsonBuilder().startObject()
                         .field("weights", new double[]{1, 2, 3})
@@ -192,7 +192,7 @@ public class ScriptIT extends ESIntegTestCase {
         refresh();
         searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
-        label = (Double) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
+        label = (String) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 
     @Test
