@@ -20,5 +20,5 @@
 grant {
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
-  
+
 };

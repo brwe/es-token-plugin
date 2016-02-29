@@ -23,6 +23,7 @@ package org.elasticsearch.script;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
@@ -41,6 +42,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +53,7 @@ import java.util.Map;
  * to be stored in a document elasticsearch together with the relevant features (words).
  * This script expects that term vectors are stored. You can use the same thing without term
  * vectors with SVMModelScriptWithStoredParameters but that is very slow.
- * <p>
+ * <p/>
  * Say for example the parameters are stored as
  * <pre>
  *     @code
@@ -68,12 +71,12 @@ import java.util.Map;
  *     }
  *
  * </pre>
- * <p>
+ * <p/>
  * Then a request to classify documents would look like this:
- * <p>
- * <p>
- * <p>
- * <p>
+ * <p/>
+ * <p/>
+ * <p/>
+ * <p/>
  * <pre>
  *  @code
  * GET twitter/tweets/_search
@@ -160,13 +163,23 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         SharedMethods.fillWordIndexMap(features, wordMap);
     }
 
-    protected static EsModelEvaluator initModel(String pmmlString) throws IOException, SAXException, JAXBException {
-        PMML pmml;
-        try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-            Source transformedSource = ImportFilter.apply(new InputSource(is));
-            pmml = JAXBUtil.unmarshalPMML(transformedSource);
-        }
+    protected static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
+        // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
+        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+            public PMML run() {
+                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                    Source transformedSource = ImportFilter.apply(new InputSource(is));
+                    return JAXBUtil.unmarshalPMML(transformedSource);
+                } catch (SAXException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (JAXBException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (IOException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                }
 
+            }
+        });
         Model model = pmml.getModels().get(0);
         if (model.getModelName().equals("logistic regression")) {
             return initLogisticRegression((RegressionModel) model);
@@ -181,7 +194,7 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         return new EsLogisticRegressionModel(pmmlModel);
     }
 
-    protected static  EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
+    protected static EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
         return new EsLinearSVMModel(pmmlModel);
     }
 
