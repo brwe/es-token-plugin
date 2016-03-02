@@ -23,21 +23,14 @@ import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
+import org.elasticsearch.action.preparespec.PrepareSpecAction;
+import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.index.mapper.token.AnalyzedTextFieldMapper;
 import org.elasticsearch.indices.IndicesModule;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
-import org.elasticsearch.script.LogisticRegressionModelScriptWithStoredParametersAndSparseVector;
-import org.elasticsearch.script.NaiveBayesModelScriptWithStoredParameters;
-import org.elasticsearch.script.NaiveBayesModelScriptWithStoredParametersAndSparseVector;
-import org.elasticsearch.script.NaiveBayesUpdateScript;
-import org.elasticsearch.script.PMMLScriptWithStoredParametersAndSparseVector;
-import org.elasticsearch.script.SVMModelScriptWithStoredParameters;
-import org.elasticsearch.script.SVMModelScriptWithStoredParametersAndSparseVector;
-import org.elasticsearch.script.ScriptModule;
-import org.elasticsearch.script.SparseVectorizerScript;
-import org.elasticsearch.script.VectorizerScript;
+import org.elasticsearch.script.*;
 
 /**
  *
@@ -69,15 +62,15 @@ public class TokenPlugin extends Plugin {
     }
 
     public void onModule(ActionModule module) {
-        ActionModule actionModule = (ActionModule) module;
-        actionModule.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
+        module.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
                 TransportAllTermsShardAction.class);
+        module.registerAction(PrepareSpecAction.INSTANCE, TransportPrepareSpecAction.class);
     }
 
     public void onModule(RestModule module) {
-        RestModule restModule = (RestModule) module;
-        restModule.addRestAction(RestAllTermsAction.class);
+        module.addRestAction(RestAllTermsAction.class);
     }
+
     public void onModule(IndicesModule indicesModule) {
         indicesModule.registerMapper(AnalyzedTextFieldMapper.CONTENT_TYPE, new AnalyzedTextFieldMapper.TypeParser());
     }

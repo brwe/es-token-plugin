@@ -131,6 +131,75 @@ Result:
 }
 ```
 
+Prepare spec request - THIS IS NOT DONE YET
+--------
+
+In order to convert a document into a numeric vector we need some specification how is is supposed to work.
+This specification can then be used to either retrieve vectors for each document or to apply a PMML model to a document.
+
+To generate a specification, use the following endpoint:
+
+```
+POST INDEX/TYPE/_prepare_spec
+{
+  HERE BE THE REQUEST
+}
+```
+
+The request accepts a map of String: Object where the string is a field name that must be present in the mapping of INDEX/TYPE and the object describes what to do with the field.
+
+Text fields are converted to numeric vectors by looking up the occurrences or the term frequencies of a token in the field. The selection of tokens that should be used have to be given in advance.
+
+There are three options on how these tokens can be given:
+
+1. Significant terms aggregation
+
+
+```
+ POST INDEX/TYPE/_prepare_spec
+ {
+   "NAME_OF_TEXT_FIELD": {
+      "tokens": "significant_terms",
+      "request": "source of the significant_terms request"
+   }
+ }
+```
+
+This will execute a significant terms aggregation as specified in the "request" field and use all tokens that are returned by significant_terms.
+
+1. All terms
+
+
+```
+ POST INDEX/TYPE/_prepare_spec
+ {
+   "NAME_OF_TEXT_FIELD": {
+      "tokens": "all_terms",
+      "min_doc_freq": "minimum document frequency"
+   }
+ }
+```
+
+This will use all terms in the index that exceed the minimum document frequency given.
+
+1. Given
+
+
+```
+ POST INDEX/TYPE/_prepare_spec
+ {
+   "NAME_OF_TEXT_FIELD": {
+      "tokens": "given",
+      "token_list": ["token_1", "token_2",...]
+   }
+ }
+```
+
+This will use the tokens given in the "token_list".
+
+
+
+
 License
 -------
 
