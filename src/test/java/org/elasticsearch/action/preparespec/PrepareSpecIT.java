@@ -27,10 +27,12 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import static org.elasticsearch.action.preparespec.PrepareSpecTests.getBasicTextFieldRequestSource;
+import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithAllTerms;
+import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithSignificnatTerms;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 
@@ -51,16 +53,27 @@ public class PrepareSpecIT extends ESIntegTestCase {
     }
 
     @Test
-    public void testSimpleRequest() throws Exception {
+    public void testSimpleTextFieldRequestWithSignificantTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getBasicTextFieldRequestSource().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
 
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         assertThat(spec.getSourceAsMap().get("text"), instanceOf(Map.class));
-        assertThat((String)((Map<String, Object>)spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
-        //  assertThat((String)spec.getSourceAsMap().get("text)).getValue(), equalTo("tf"));
+        assertThat((String) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
         logger.info("indexed spec is : {}", spec.getSourceAsString());
+    }
+
+    @Test
+    public void testSimpleTextFieldRequestWithAllTerms() throws Exception {
+        indexDocs();
+        refresh();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithAllTerms().string()).get();
+
+        GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
+        assertThat(spec.getSourceAsMap().get("text"), instanceOf(Map.class));
+        assertThat((String) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
+        assertThat(((ArrayList) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("terms")).size(), equalTo(6));
     }
 
     private void indexDocs() {

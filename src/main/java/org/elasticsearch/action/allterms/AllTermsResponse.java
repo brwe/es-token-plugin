@@ -33,6 +33,10 @@ import java.util.List;
 
 public class AllTermsResponse extends ActionResponse implements ToXContent {
 
+    public List<String> getAllTerms() {
+        return allTerms;
+    }
+
     List<String> allTerms = new ArrayList<>();
 
     public AllTermsResponse() {
@@ -118,6 +122,7 @@ public class AllTermsResponse extends ActionResponse implements ToXContent {
             }
         }
     }
+
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {

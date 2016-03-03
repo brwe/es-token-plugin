@@ -33,7 +33,21 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class PrepareSpecTests extends ESTestCase {
 
-    public void testParseFieldSpecRequests() throws IOException {
+    public void testParseFieldSpecRequestsWithSignificantTemrs() throws IOException {
+        MappingMetaData mappingMetaData = getMappingMetaData();
+        XContentBuilder source = getTextFieldRequestSourceWithSignificnatTerms();
+        List<FieldSpecRequest> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string(), mappingMetaData);
+        assertThat(fieldSpecRequests.size(), equalTo(1));
+    }
+
+    public void testParseFieldSpecRequestsWithAllTerms() throws IOException {
+        MappingMetaData mappingMetaData = getMappingMetaData();
+        XContentBuilder source = getTextFieldRequestSourceWithAllTerms();
+        List<FieldSpecRequest> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string(), mappingMetaData);
+        assertThat(fieldSpecRequests.size(), equalTo(1));
+    }
+
+    private MappingMetaData getMappingMetaData() throws IOException {
         XContentBuilder mapping = jsonBuilder();
         mapping.startObject();
         mapping.startObject("type");
@@ -46,13 +60,10 @@ public class PrepareSpecTests extends ESTestCase {
         mapping.endObject();
 
         XContentParser parser = XContentFactory.xContent(mapping.bytes()).createParser(mapping.bytes());
-        MappingMetaData mappingMetaData = new MappingMetaData("type", parser.mapOrdered());
-        XContentBuilder source = getBasicTextFieldRequestSource();
-        List<FieldSpecRequest> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string(), mappingMetaData);
-        assertThat(fieldSpecRequests.size(), equalTo(1));
+        return new MappingMetaData("type", parser.mapOrdered());
     }
 
-    protected static XContentBuilder getBasicTextFieldRequestSource() throws IOException {
+    protected static XContentBuilder getTextFieldRequestSourceWithSignificnatTerms() throws IOException {
         XContentBuilder source = jsonBuilder();
         XContentBuilder request = jsonBuilder();
 
@@ -79,6 +90,18 @@ public class PrepareSpecTests extends ESTestCase {
                 .field("tokens", "significant_terms")
                 .field("request", request.string())
                 .field("index", "index")
+                .field("number", "tf")
+                .endObject().endObject();
+        return source;
+    }
+
+    protected static XContentBuilder getTextFieldRequestSourceWithAllTerms() throws IOException {
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startObject("text")
+                .field("tokens", "all_terms")
+                .field("index", "index")
+                .field("min_doc_freq", 2)
                 .field("number", "tf")
                 .endObject().endObject();
         return source;
