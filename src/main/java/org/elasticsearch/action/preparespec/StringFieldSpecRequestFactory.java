@@ -25,8 +25,9 @@ import java.util.Map;
 
 public class StringFieldSpecRequestFactory {
 
-    public static FieldSpecRequest createStringFieldSpecRequest(Map<String, Object> parameters, String field) {
-        assert field != null;
+    public static FieldSpecRequest createStringFieldSpecRequest(Map<String, Object> parameters) {
+        assert parameters.get("field") != null;
+        String field = (String) parameters.remove("field");
         if (TokenGenerateMethod.fromString((String) parameters.get("tokens")).equals(TokenGenerateMethod.SIGNIFICANT_TERMS)) {
             parameters.remove("tokens");
             String searchRequest = (String) parameters.remove("request");

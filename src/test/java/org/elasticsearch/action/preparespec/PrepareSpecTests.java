@@ -20,6 +20,7 @@
 package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -36,15 +37,22 @@ public class PrepareSpecTests extends ESTestCase {
     public void testParseFieldSpecRequestsWithSignificantTemrs() throws IOException {
         MappingMetaData mappingMetaData = getMappingMetaData();
         XContentBuilder source = getTextFieldRequestSourceWithSignificnatTerms();
-        List<FieldSpecRequest> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string(), mappingMetaData);
-        assertThat(fieldSpecRequests.size(), equalTo(1));
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     public void testParseFieldSpecRequestsWithAllTerms() throws IOException {
         MappingMetaData mappingMetaData = getMappingMetaData();
         XContentBuilder source = getTextFieldRequestSourceWithAllTerms();
-        List<FieldSpecRequest> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string(), mappingMetaData);
-        assertThat(fieldSpecRequests.size(), equalTo(1));
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        assertThat(fieldSpecRequests.v2().size(), equalTo(1));
+    }
+
+    public void testParseFieldSpecRequestsWithGivenTerms() throws IOException {
+        MappingMetaData mappingMetaData = getMappingMetaData();
+        XContentBuilder source = getTextFieldRequestSourceWithGivenTerms();
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     private MappingMetaData getMappingMetaData() throws IOException {
@@ -86,35 +94,53 @@ public class PrepareSpecTests extends ESTestCase {
                 .endObject()
                 .endObject();
         source.startObject()
-                .startObject("text")
+                .startArray("features")
+                .startObject()
+                .field("type", "string")
+                .field("field", "text")
                 .field("tokens", "significant_terms")
                 .field("request", request.string())
                 .field("index", "index")
                 .field("number", "tf")
-                .endObject().endObject();
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
         return source;
     }
 
     protected static XContentBuilder getTextFieldRequestSourceWithAllTerms() throws IOException {
         XContentBuilder source = jsonBuilder();
         source.startObject()
-                .startObject("text")
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
                 .field("tokens", "all_terms")
                 .field("index", "index")
                 .field("min_doc_freq", 2)
                 .field("number", "tf")
-                .endObject().endObject();
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
         return source;
     }
 
     protected static XContentBuilder getTextFieldRequestSourceWithGivenTerms() throws IOException {
         XContentBuilder source = jsonBuilder();
         source.startObject()
-                .startObject("text")
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
                 .field("tokens", "given")
                 .field("terms", new String[]{"a", "b", "c"})
                 .field("number", "tf")
-                .endObject().endObject();
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
         return source;
     }
 }
