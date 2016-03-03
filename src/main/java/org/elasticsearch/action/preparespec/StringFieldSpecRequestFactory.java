@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.preparespec;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -41,6 +42,13 @@ public class StringFieldSpecRequestFactory {
             long min_doc_freq = ((Number) parameters.remove("min_doc_freq")).longValue();
             assertParametersEmpty(parameters);
             return new StringFieldAllTermsSpecRequest(min_doc_freq, index, number, field);
+        }
+        if (TokenGenerateMethod.fromString((String) parameters.get("tokens")).equals(TokenGenerateMethod.GIVEN)) {
+            parameters.remove("tokens");
+            String number = (String) parameters.remove("number");
+            ArrayList<String> terms = (ArrayList<String>) parameters.remove("terms");
+            assertParametersEmpty(parameters);
+            return new StringFieldGivenTermsSpecRequest(terms.toArray(new String[terms.size()]), number, field);
         }
         throw new UnsupportedOperationException("Have not implemented given yet!");
     }

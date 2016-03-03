@@ -106,4 +106,15 @@ public class PrepareSpecTests extends ESTestCase {
                 .endObject().endObject();
         return source;
     }
+
+    protected static XContentBuilder getTextFieldRequestSourceWithGivenTerms() throws IOException {
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startObject("text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"a", "b", "c"})
+                .field("number", "tf")
+                .endObject().endObject();
+        return source;
+    }
 }
