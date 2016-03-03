@@ -20,7 +20,11 @@
 
 package org.elasticsearch.script;
 
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.node.Node;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.search.lookup.IndexField;
 import org.elasticsearch.search.lookup.IndexFieldTerm;
@@ -48,6 +52,14 @@ public class VectorizerScript extends AbstractSearchScript {
      * method when the plugin is loaded.
      */
     public static class Factory implements NativeScriptFactory {
+        final Node node;
+
+        @Inject
+        public Factory(Node node) {
+            // Node is not fully initialized here
+            // All we can do is save a reference to it for future use
+            this.node = node;
+        }
 
         /**
          * This method is called for every search on every shard.
@@ -57,7 +69,7 @@ public class VectorizerScript extends AbstractSearchScript {
          */
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
-            return new VectorizerScript(params);
+            return new VectorizerScript(params, node.client());
         }
 
         @Override
@@ -71,10 +83,16 @@ public class VectorizerScript extends AbstractSearchScript {
      *               them here.
      * @throws ScriptException
      */
-    private VectorizerScript(Map<String, Object> params) throws ScriptException {
+    private VectorizerScript(Map<String, Object> params, Client client) throws ScriptException {
         params.entrySet();
         // get the terms
-        features = (ArrayList<String>) params.get("features");
+        String id = (String) params.get("spec_id");
+        String type = (String) params.get("spec_type");
+        String index = (String) params.get("spec_index");
+        GetResponse getResponse = client.prepareGet(index, type, id).get();
+        assert getResponse.isExists() == true;
+
+        features = (ArrayList<String>) params.get("spec_id");
         // get the field
         field = (String) params.get("field");
         if (field == null || features == null) {
