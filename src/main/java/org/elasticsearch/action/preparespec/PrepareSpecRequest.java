@@ -32,6 +32,14 @@ public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
     private String source;
     private String index;
     private String type;
+    public PrepareSpecRequest() {
+
+    }
+    public PrepareSpecRequest(String source, String index, String type) {
+        this.source = source;
+        this.index = index;
+        this.type = type;
+    }
 
     @Override
     public ActionRequestValidationException validate() {

@@ -19,22 +19,32 @@
 
 package org.elasticsearch.script;
 
+import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
+import org.elasticsearch.search.lookup.LeafDocLookup;
+import org.elasticsearch.search.lookup.LeafFieldsLookup;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class VectorEntries extends ArrayList<String> {
+public class VectorEntries  {
 
-     boolean sparse;
+    public boolean isSparse() {
+        return sparse;
+    }
+
+    boolean sparse;
     List<FeatureEntries> features = new ArrayList<>();
-    private AbstractSearchScript script;
 
+    public List<FeatureEntries> getEntries() {
+        return features;
+    }
     // number of entries
-    public VectorEntries(Map<String, Object> source, AbstractSearchScript script) {
-        this.script = script;
+    public VectorEntries(Map<String, Object> source) {
         assert source.get("sparse") == null || source.get("sparse") instanceof Boolean;
-        sparse = source.get("sparse") == null ? true : (source.get("sparse").equals(false) ? false : true);
+        sparse = TransportPrepareSpecAction.getSparse(source.get("sparse"));
         assert (source.containsKey("features"));
         ArrayList<Map<String, Object>> featuresArray = (ArrayList<Map<String, Object>>) source.get("features");
         int offset = 0;
@@ -68,12 +78,12 @@ public class VectorEntries extends ArrayList<String> {
         return finalTerms;
     }
 
-    public Object vector() {
+    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
         if (sparse) {
             int length = 0;
             List<EsSparseVector> entries = new ArrayList<>();
             for (FeatureEntries fieldEntry : features) {
-                EsSparseVector vec = (EsSparseVector) fieldEntry.getVector(script);
+                EsSparseVector vec = (EsSparseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec);
                 length += vec.values.v1().length;
             }
@@ -97,7 +107,7 @@ public class VectorEntries extends ArrayList<String> {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
             for (FeatureEntries fieldEntry : features) {
-                EsDenseVector vec = (EsDenseVector) fieldEntry.getVector(script);
+                EsDenseVector vec = (EsDenseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec.values);
                 length += vec.values.length;
             }
@@ -106,7 +116,7 @@ public class VectorEntries extends ArrayList<String> {
             int curPos = 0;
             for (double[] vals : entries) {
                 int numValues = vals.length;
-                System.arraycopy(values, 0, vals, curPos, numValues);
+                System.arraycopy(vals, 0, values, curPos, numValues);
                 curPos += numValues;
             }
             finalVector.put("values", values);

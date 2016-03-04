@@ -26,6 +26,9 @@ import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.preparespec.PrepareSpecAction;
+import org.elasticsearch.action.preparespec.PrepareSpecRequest;
+import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
@@ -49,6 +52,7 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -60,12 +64,9 @@ import static org.hamcrest.Matchers.equalTo;
 @ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
 public class ScriptIT extends ESIntegTestCase {
 
-    @Override
-    protected Settings nodeSettings(int nodeOrdinal) {
-        return settingsBuilder()
-                .put(super.nodeSettings(nodeOrdinal))
-                .put("plugin.types", TokenPlugin.class.getName())
-                .build();
+
+    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
+        return pluginList(TokenPlugin.class);
     }
 
     @Override
@@ -74,51 +75,76 @@ public class ScriptIT extends ESIntegTestCase {
     }
 
     @Test
-    public void testVectorScript() {
+    public void testVectorScript() throws IOException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
         refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "quick", "the"})
+                .field("number", "tf")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string(), "index", "type")).get();
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("features", new String[]{"fox", "quick", "the"});
-        parameters.put("field", "text");
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
-        double[] vector = (double[]) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
-        assertThat(vector.length, equalTo(3));
-        assertThat(vector[0], equalTo(1.0));
-        assertThat(vector[1], equalTo(2.0));
-        assertThat(vector[2], equalTo(1.0));
+        assertSearchResponse(searchResponse);
+        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
+        double[] values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(1.0));
+        assertThat(values[1], equalTo(2.0));
+        assertThat(values[2], equalTo(1.0));
 
     }
 
     @Test
-    public void testSparseVectorScript() throws IOException {
+    public void testSparseVectorScript() throws IOException, ExecutionException, InterruptedException {
         createIndexWithTermVectors();
-        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown the fox is the quick").get();
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
         refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "lame", "quick", "the"})
+                .field("number", "tf")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", true)
+                .endObject();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string(), "index", "type")).get();
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("features", new String[]{"foo", "fox", "quick", "the"});
-        parameters.put("field", "text");
-        boolean fieldDataFields = randomBoolean();
-        parameters.put("fieldDataFields", fieldDataFields);
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("sparse_vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
-        int[] vector = (int[]) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("indices");
-        assertThat(vector.length, equalTo(3));
-        assertThat(vector[0], equalTo(1));
-        assertThat(vector[1], equalTo(2));
-        assertThat(vector[2], equalTo(3));
-        double[] value = (double[]) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0))).get("values");
-        assertThat(value.length, equalTo(3));
-        if (fieldDataFields) {
-            assertThat(value[0], equalTo(1.0));
-            assertThat(value[1], equalTo(1.0));
-            assertThat(value[2], equalTo(1.0));
-        } else {
-            assertThat(value[0], equalTo(1.0));
-            assertThat(value[1], equalTo(2.0));
-            assertThat(value[2], equalTo(3.0));
-        }
+        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
+        double[] values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(1.0));
+        assertThat(values[1], equalTo(2.0));
+        assertThat(values[2], equalTo(1.0));
+        int[] indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(0));
+        assertThat(indices[1], equalTo(2));
+        assertThat(indices[2], equalTo(3));
     }
 
     @Test

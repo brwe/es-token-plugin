@@ -30,6 +30,18 @@ import java.io.IOException;
 
 public class PrepareSpecResponse extends ActionResponse implements ToXContent {
 
+    public String getIndex() {
+        return index;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getId() {
+        return id;
+    }
+
     String index;
     String type;
     String id;

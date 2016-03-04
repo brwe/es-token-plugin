@@ -33,6 +33,7 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.*;
+import org.elasticsearch.search.aggregations.support.format.ValueParser;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -82,8 +83,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
         Map<String, Object> parsedSource = parser.mapOrdered();
         assert parsedSource.get("features") != null;
-        assert parsedSource.get("sparse") != null || parsedSource.get("sparse") instanceof Boolean;
-        boolean sparse = parsedSource.get("sparse") != null ? true : (Boolean) parsedSource.get("sparse");
+
+        boolean sparse = getSparse(parsedSource.get("sparse"));
         ArrayList<Map<String, Object>> actualFeatures = (ArrayList<Map<String, Object>>) parsedSource.get("features");
         for (Map<String, Object> field : actualFeatures) {
 
@@ -96,6 +97,24 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             }
         }
         return new Tuple<>(sparse, fieldSpecRequests);
+    }
+
+    public static boolean getSparse(Object sparse) {
+        if (sparse == null) {
+            return false;
+        }
+        if (sparse instanceof Boolean) {
+            return (Boolean) sparse;
+        }
+        if (sparse instanceof String) {
+            if (sparse.equals("false")) {
+                return false;
+            }
+            if (sparse.equals("true")) {
+                return true;
+            }
+        }
+        throw new IllegalStateException("don't know what sparse: " + sparse + " means!");
     }
 
     public static class FieldSpecActionListener implements ActionListener<FieldSpec> {

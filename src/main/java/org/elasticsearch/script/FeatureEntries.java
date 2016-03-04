@@ -22,8 +22,7 @@ package org.elasticsearch.script;
 import org.apache.lucene.index.Fields;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
-import org.elasticsearch.search.lookup.IndexField;
-import org.elasticsearch.search.lookup.IndexFieldTerm;
+import org.elasticsearch.search.lookup.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,9 +34,9 @@ public abstract class FeatureEntries {
     int offset;
     String field;
 
-    abstract public EsVector getVector(AbstractSearchScript script);
-
     public abstract int size();
+
+    public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
 
     public static class SparseTermFeatureEntries extends FeatureEntries {
         private String number;
@@ -55,19 +54,19 @@ public abstract class FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(AbstractSearchScript script) {
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             try {
                 /** here be the vectorizer **/
                 Tuple<int[], double[]> indicesAndValues;
                 if (number.equals("tf")) {
-                    Fields fields = script.indexLookup().termVectors();
+                    Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         throw new ScriptException("Term vectors not stored! (We could do it without but Britta has not implemented it yet)");
                     }
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
 
                 } else {
-                    ScriptDocValues<String> docValues = script.docFieldStrings(field);
+                    ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
                 }
                 return new EsSparseVector(indicesAndValues);
@@ -96,13 +95,13 @@ public abstract class FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(AbstractSearchScript script) {
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             double[] tfs = new double[terms.length];
             try {
                 if (number.equals("tf")) {
-                    IndexField indexField = script.indexLookup().get(field);
+                    IndexField indexField = leafIndexLookup.get(field);
                     for (int i = 0; i < terms.length; i++) {
-                        IndexFieldTerm indexTermField = indexField.get(terms.length);
+                        IndexFieldTerm indexTermField = indexField.get(terms[i]);
                         tfs[i] = indexTermField.tf();
                     }
 

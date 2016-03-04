@@ -88,12 +88,12 @@ public class VectorizerScript extends AbstractSearchScript {
         GetResponse getResponse = client.prepareGet(index, type, id).get();
         assert getResponse.isExists() == true;
 
-        features = new VectorEntries(getResponse.getSource(), this);
+        features = new VectorEntries(getResponse.getSource());
 
     }
 
     @Override
     public Object run() {
-        return features.vector();
+        return features.vector(this.doc(), this.fields(), this.indexLookup());
     }
 }

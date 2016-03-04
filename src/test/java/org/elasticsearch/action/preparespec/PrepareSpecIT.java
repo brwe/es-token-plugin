@@ -24,16 +24,14 @@ import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.VectorEntries;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 import static org.elasticsearch.action.preparespec.PrepareSpecTests.*;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 
 
 /**
@@ -58,9 +56,9 @@ public class PrepareSpecIT extends ESIntegTestCase {
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
 
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        assertThat(spec.getSourceAsMap().get("text"), instanceOf(Map.class));
-        assertThat((String) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
-        logger.info("indexed spec is : {}", spec.getSourceAsString());
+        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        assertThat(entries.isSparse(), equalTo(false));
+        assertThat(entries.getEntries().size(), equalTo(1));
     }
 
     @Test
@@ -68,11 +66,10 @@ public class PrepareSpecIT extends ESIntegTestCase {
         indexDocs();
         refresh();
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithAllTerms().string()).get();
-
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        assertThat(spec.getSourceAsMap().get("text"), instanceOf(Map.class));
-        assertThat((String) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
-        assertThat(((ArrayList) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("terms")).size(), equalTo(6));
+        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        assertThat(entries.isSparse(), equalTo(false));
+        assertThat(entries.getEntries().size(), equalTo(1));
     }
 
     @Test
@@ -82,9 +79,9 @@ public class PrepareSpecIT extends ESIntegTestCase {
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithGivenTerms().string()).get();
 
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        assertThat(spec.getSourceAsMap().get("text"), instanceOf(Map.class));
-        assertThat((String) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("number"), equalTo("tf"));
-        assertThat(((ArrayList) ((Map<String, Object>) spec.getSourceAsMap().get("text")).get("terms")).size(), equalTo(3));
+        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        assertThat(entries.isSparse(), equalTo(false));
+        assertThat(entries.getEntries().size(), equalTo(1));
     }
 
     private void indexDocs() {
