@@ -38,9 +38,11 @@ public class StringFieldSpec implements FieldSpec {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder xContentBuilder, Params params) throws IOException {
-        xContentBuilder.startObject(field);
+        xContentBuilder.startObject();
         xContentBuilder.field("number", number);
+        xContentBuilder.field("field", field);
         xContentBuilder.field("terms", terms);
+        xContentBuilder.field("type", "terms");
         xContentBuilder.endObject();
         return xContentBuilder;
     }

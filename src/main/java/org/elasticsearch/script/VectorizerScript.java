@@ -26,11 +26,7 @@ import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugin.TokenPlugin;
-import org.elasticsearch.search.lookup.IndexField;
-import org.elasticsearch.search.lookup.IndexFieldTerm;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -42,7 +38,7 @@ public class VectorizerScript extends AbstractSearchScript {
     // the field containing the terms
     String field = null;
     // the terms for which we need the tfs
-    ArrayList<String> features = null;
+    VectorEntries features = null;
 
     final static public String SCRIPT_NAME = "vector";
 
@@ -92,26 +88,12 @@ public class VectorizerScript extends AbstractSearchScript {
         GetResponse getResponse = client.prepareGet(index, type, id).get();
         assert getResponse.isExists() == true;
 
-        features = (ArrayList<String>) params.get("spec_id");
-        // get the field
-        field = (String) params.get("field");
-        if (field == null || features == null) {
-            throw new ScriptException("cannot initialize " + SCRIPT_NAME + ": field or features parameter missing!");
-        }
+        features = new VectorEntries(getResponse.getSource(), this);
+
     }
 
     @Override
     public Object run() {
-        double[] tfs = new double[features.size()];
-        try {
-            IndexField indexField = this.indexLookup().get(field);
-            for (int i = 0; i < features.size(); i++) {
-                IndexFieldTerm indexTermField = indexField.get(features.get(i));
-                tfs[i] = indexTermField.tf();
-            }
-            return tfs;
-        } catch (IOException ex) {
-            throw new ScriptException("Could not get tf vector: ", ex);
-        }
+        return features.vector();
     }
 }

@@ -29,6 +29,7 @@ import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.*;
@@ -63,46 +64,54 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         assert (indexMetaData != null);
         MappingMetaData typeMapping = indexMetaData.getMappings().get(request.type());
         assert typeMapping != null;
-        List<FieldSpecRequest> fieldSpecRequests = null;
+        Tuple<Boolean, List<FieldSpecRequest>> fieldSpecRequests = null;
         try {
-            fieldSpecRequests = parseFieldSpecRequests(request.source(), typeMapping);
+            fieldSpecRequests = parseFieldSpecRequests(request.source());
         } catch (IOException e) {
             listener.onFailure(e);
         }
 
-        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.size(), listener, client);
-        for (final FieldSpecRequest fieldSpecRequest : fieldSpecRequests) {
+        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener, client, fieldSpecRequests.v1());
+        for (final FieldSpecRequest fieldSpecRequest : fieldSpecRequests.v2()) {
             fieldSpecRequest.process(fieldSpecActionListener, client);
         }
     }
 
-    static List<FieldSpecRequest> parseFieldSpecRequests(String source, MappingMetaData typeMapping) throws IOException {
+    static Tuple<Boolean, List<FieldSpecRequest>> parseFieldSpecRequests(String source) throws IOException {
         List<FieldSpecRequest> fieldSpecRequests = new ArrayList<>();
         XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
         Map<String, Object> parsedSource = parser.mapOrdered();
-        for (Map.Entry<String, Object> field : parsedSource.entrySet()) {
-            String type = (String) ((Map<String, Object>) ((Map<String, Object>) typeMapping.getSourceAsMap().get("properties")).get(field.getKey())).get("type");
+        assert parsedSource.get("features") != null;
+        assert parsedSource.get("sparse") != null || parsedSource.get("sparse") instanceof Boolean;
+        boolean sparse = parsedSource.get("sparse") != null ? true : (Boolean) parsedSource.get("sparse");
+        ArrayList<Map<String, Object>> actualFeatures = (ArrayList<Map<String, Object>>) parsedSource.get("features");
+        for (Map<String, Object> field : actualFeatures) {
+
+            String type = (String) field.remove("type");
+            assert type != null;
             if (type.equals("string")) {
-                fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest((Map<String, Object>) field.getValue(), field.getKey()));
+                fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest(field));
             } else {
                 throw new UnsupportedOperationException("I am working as wquick as I can! But I have not done it for " + type + " yet.");
             }
         }
-        return fieldSpecRequests;
+        return new Tuple<>(sparse, fieldSpecRequests);
     }
 
-    static class FieldSpecActionListener implements ActionListener<FieldSpec> {
+    public static class FieldSpecActionListener implements ActionListener<FieldSpec> {
 
         private int numResponses;
         private ActionListener<PrepareSpecResponse> listener;
         private Client client;
+        private boolean sparse;
         private int currentResponses;
         List<FieldSpec> fieldSpecs = new ArrayList<>();
 
-        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client) {
+        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse) {
             this.numResponses = numResponses;
             this.listener = listener;
             this.client = client;
+            this.sparse = sparse;
         }
 
         @Override
@@ -111,7 +120,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             currentResponses++;
             if (currentResponses == numResponses) {
                 try {
-                    client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs)).execute(new ActionListener<IndexResponse>() {
+                    client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse)).execute(new ActionListener<IndexResponse>() {
                         @Override
                         public void onResponse(IndexResponse indexResponse) {
                             listener.onResponse(new PrepareSpecResponse(indexResponse.getIndex(), indexResponse.getType(), indexResponse.getId()));
@@ -128,12 +137,15 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             }
         }
 
-        private XContentBuilder createSpecSource(List<FieldSpec> fieldSpecs) throws IOException {
+        public static XContentBuilder createSpecSource(List<FieldSpec> fieldSpecs, boolean sparse) throws IOException {
             XContentBuilder sourceBuilder = jsonBuilder();
             sourceBuilder.startObject();
+            sourceBuilder.field("sparse", sparse);
+            sourceBuilder.startArray("features");
             for (FieldSpec fieldSpec : fieldSpecs) {
                 fieldSpec.toXContent(sourceBuilder, ToXContent.EMPTY_PARAMS);
             }
+            sourceBuilder.endArray();
             sourceBuilder.endObject();
             return sourceBuilder;
         }
