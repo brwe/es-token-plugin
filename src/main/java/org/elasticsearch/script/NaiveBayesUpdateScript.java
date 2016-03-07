@@ -91,7 +91,7 @@ public class NaiveBayesUpdateScript extends AbstractSearchScript {
      * @throws org.elasticsearch.script.ScriptException
      */
     private NaiveBayesUpdateScript(Map<String, Object> params, Client client) throws ScriptException {
-        GetResponse parametersDoc = SharedMethods.getStoredParameters(params, client);
+        GetResponse parametersDoc = SharedMethods.getModel(params, client);
         field = (String) params.get("field");
         fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
         model = SharedMethods.initializeNaiveBayesModel(features, field, parametersDoc);

@@ -51,13 +51,8 @@ public class TokenPlugin extends Plugin {
     public void onModule(ScriptModule module) {
         // Register each script that we defined in this plugin
         module.registerScript(VectorizerScript.SCRIPT_NAME, VectorizerScript.Factory.class);
-        module.registerScript(NaiveBayesModelScriptWithStoredParameters.SCRIPT_NAME, NaiveBayesModelScriptWithStoredParameters.Factory.class);
-        module.registerScript(SVMModelScriptWithStoredParameters.SCRIPT_NAME, SVMModelScriptWithStoredParameters.Factory.class);
-        module.registerScript(NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, NaiveBayesModelScriptWithStoredParametersAndSparseVector.Factory.class);
-        module.registerScript(SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, SVMModelScriptWithStoredParametersAndSparseVector.Factory.class);
         module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
-        module.registerScript(PMMLScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, PMMLScriptWithStoredParametersAndSparseVector.Factory.class);
-        module.registerScript(LogisticRegressionModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME, LogisticRegressionModelScriptWithStoredParametersAndSparseVector.Factory.class);
+        module.registerScript(PMMLModel.SCRIPT_NAME, PMMLModel.Factory.class);
     }
 
     public void onModule(ActionModule module) {
