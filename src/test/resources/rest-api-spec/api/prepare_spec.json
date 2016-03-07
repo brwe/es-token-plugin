@@ -1,0 +1,39 @@
+{
+  "prepare_spec": {
+    "documentation": "no doc yet",
+    "methods": ["POST"],
+    "url": {
+      "path": "/_prepare_spec",
+      "paths": ["/_prepare_spec"]
+    },
+    "parts": {
+      "index": {
+        "type" : "string",
+        "required": false,
+        "description" : "A single index from which we want to get the terms in the dictionary."
+      },
+      "field": {
+        "type" : "string",
+        "description" : "The field for which we want tp retrieve the terms from the dictionary"
+      }
+    },
+    "params": {
+      "size": {
+        "type" : "integer",
+        "default" : 10,
+        "description" : "Number of terms we want to get back"
+      },
+      "from": {
+        "type" : "string",
+        "description" : "From where on we want the terms. for exampl, if the term is foo, we will get terms from the next term on that is lexicographically larger."
+      },
+      "min_doc_count": {
+        "type" : "long",
+        "description" : "minimum document frquency a term must have to be retrieved."
+      }
+    },
+    "body": {
+      "description" : "See non existing doc..."
+    }
+  }
+}

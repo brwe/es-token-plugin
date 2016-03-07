@@ -1,0 +1,21 @@
+setup:
+  - do:
+      index:
+          index:  test
+          type:   test
+          id:     1
+          body:   { text: "always be careful" }
+
+  - do:
+      indices.refresh: {}
+
+---
+"Basic allterms request":
+  - do:
+      all_terms:
+        index:  test
+        field:  text
+
+
+  - match:  { terms:     ["always","be", "careful"]  }
+

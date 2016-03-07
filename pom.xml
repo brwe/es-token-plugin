@@ -19,6 +19,8 @@
     <properties>
         <elasticsearch.plugin.classname>org.elasticsearch.plugin.TokenPlugin</elasticsearch.plugin.classname>
         <tests.jarhell.check>false</tests.jarhell.check>
+        <tests.rest.suite>tokenplugin</tests.rest.suite>
+        <tests.rest.load_packaged>false</tests.rest.load_packaged>
     </properties>
 
     <licenses>
