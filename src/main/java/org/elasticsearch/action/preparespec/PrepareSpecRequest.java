@@ -30,15 +30,12 @@ import java.io.IOException;
 public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
 
     private String source;
-    private String index;
-    private String type;
     public PrepareSpecRequest() {
 
     }
-    public PrepareSpecRequest(String source, String index, String type) {
+    public PrepareSpecRequest(String source) {
         this.source = source;
-        this.index = index;
-        this.type = type;
+
     }
 
     @Override
@@ -47,20 +44,12 @@ public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
         if (source == null) {
             validationException = ValidateActions.addValidationError("prepare_spec needs a source", validationException);
         }
-        if (index == null) {
-            validationException = ValidateActions.addValidationError("prepare_spec needs an index", validationException);
-        }
-        if (type == null) {
-            validationException = ValidateActions.addValidationError("prepare_spec needs a type", validationException);
-        }
         return validationException;
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        index = in.readString();
-        type = in.readString();
         source = in.readString();
 
     }
@@ -68,28 +57,10 @@ public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(index);
-        out.writeString(type);
+
         out.writeString(source);
     }
 
-    public PrepareSpecRequest index(String index) {
-        this.index = index;
-        return this;
-    }
-
-    public String index() {
-        return index;
-    }
-
-    public PrepareSpecRequest type(String type) {
-        this.type = type;
-        return this;
-    }
-
-    public String type( ) {
-        return type;
-    }
 
     public PrepareSpecRequest source(String source) {
         this.source = source;

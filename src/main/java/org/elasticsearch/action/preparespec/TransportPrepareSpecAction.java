@@ -46,25 +46,18 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSpecRequest, PrepareSpecResponse> {
 
-    private final ClusterService clusterService;
     private Client client;
 
     @Inject
     public TransportPrepareSpecAction(Settings settings, ThreadPool threadPool, TransportService transportService,
-                                      ClusterService clusterService, ActionFilters actionFilters,
+                                      ActionFilters actionFilters,
                                       IndexNameExpressionResolver indexNameExpressionResolver, Client client) {
         super(settings, PrepareSpecAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver, PrepareSpecRequest.class);
-        this.clusterService = clusterService;
         this.client = client;
     }
 
     @Override
     protected void doExecute(final PrepareSpecRequest request, final ActionListener<PrepareSpecResponse> listener) {
-        ClusterState clusterState = clusterService.state();
-        IndexMetaData indexMetaData = clusterState.getMetaData().index(request.index());
-        assert (indexMetaData != null);
-        MappingMetaData typeMapping = indexMetaData.getMappings().get(request.type());
-        assert typeMapping != null;
         Tuple<Boolean, List<FieldSpecRequest>> fieldSpecRequests = null;
         try {
             fieldSpecRequests = parseFieldSpecRequests(request.source());

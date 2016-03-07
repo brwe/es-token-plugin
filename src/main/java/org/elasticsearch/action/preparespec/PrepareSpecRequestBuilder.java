@@ -28,16 +28,6 @@ public class PrepareSpecRequestBuilder extends ActionRequestBuilder<PrepareSpecR
         super(client, PrepareSpecAction.INSTANCE, new PrepareSpecRequest());
     }
 
-    public PrepareSpecRequestBuilder index(String index) {
-        request.index(index);
-        return this;
-    }
-
-    public PrepareSpecRequestBuilder type(String type) {
-        request.type(type);
-        return this;
-    }
-
     public PrepareSpecRequestBuilder source(String source) {
         request.source(source);
         return this;

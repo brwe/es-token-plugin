@@ -78,7 +78,7 @@ public class ScriptIT extends ESIntegTestCase {
                 .endArray()
                 .field("sparse", false)
                 .endObject();
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string(), "index", "type")).get();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
@@ -113,7 +113,7 @@ public class ScriptIT extends ESIntegTestCase {
                 .endArray()
                 .field("sparse", true)
                 .endObject();
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string(), "index", "type")).get();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
@@ -396,7 +396,7 @@ public class ScriptIT extends ESIntegTestCase {
                 .endArray()
                 .field("sparse", sparse)
                 .endObject();
-        return client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest().index("index").type("type").source(source.string())).get();
+        return client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest().source(source.string())).get();
     }
 
     void createIndexWithTermVectors() throws IOException {

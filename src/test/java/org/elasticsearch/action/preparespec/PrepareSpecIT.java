@@ -53,7 +53,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
     public void testSimpleTextFieldRequestWithSignificantTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
 
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
@@ -65,7 +65,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
     public void testSimpleTextFieldRequestWithAllTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithAllTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).get();
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
         assertThat(entries.isSparse(), equalTo(false));
@@ -76,7 +76,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
     public void testSimpleTextFieldRequestWithGivenTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).index("index").type("type").source(getTextFieldRequestSourceWithGivenTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithGivenTerms().string()).get();
 
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
