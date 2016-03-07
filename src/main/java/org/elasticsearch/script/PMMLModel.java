@@ -99,7 +99,7 @@ import java.util.Map;
 
 public class PMMLModel extends AbstractSearchScript {
 
-    final static public String SCRIPT_NAME = "pmml_model_stored_parameters_sparse_vectors";
+    final static public String SCRIPT_NAME = "pmml";
     EsModelEvaluator model = null;
     String field = null;
     VectorEntries features = null;

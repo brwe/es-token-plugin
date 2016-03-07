@@ -148,26 +148,45 @@ public class ScriptIT extends ESIntegTestCase {
 
     @Test
     // only just checks that nothing crashes
-    public void testModelScriptsWithStoredParams() throws IOException {
+    public void testModelScriptsWithStoredParams() throws IOException, JAXBException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
-        client().prepareIndex("model", "params", "test_params").setSource(
+
+        // store LR Model
+        String llr = generateLRPMMLModel(0.5, new double[]{1, 2, 3}, new double[]{1, 0});
+        // create spec
+        client().prepareIndex("model", "pmml", "1").setSource(
                 jsonBuilder().startObject()
-                        .field("pi", new double[]{1, 2})
-                        .field("thetas", new double[][]{{1, 2, 3}, {3, 2, 1}})
-                        .field("labels", new double[]{0, 1})
-                        .field("features", new String[]{"fox", "quick", "the"})
+                        .field("pmml", llr)
                         .endObject()
         ).get();
         refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "quick", "the"})
+                .field("number", "occurrence")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", true)
+                .endObject();
+        PrepareSpecResponse response = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest().index("index").type("type").source(source.string())).get();
+
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("index", "model");
-        parameters.put("type", "params");
-        parameters.put("id", "test_params");
-        parameters.put("field", "text");
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("nb", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        parameters.put("type", "pmml");
+        parameters.put("id", "1");
+        parameters.put("spec_index", response.getIndex());
+        parameters.put("spec_type", response.getType());
+        parameters.put("spec_id", response.getId());
+        // call PMML script with needed parameters
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         assertSearchResponse(searchResponse);
-        String label = (String) (searchResponse.getHits().getAt(0).field("nb").values().get(0));
+        String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
         logger.info("label: {}", label);
         client().prepareIndex("model", "params", "test_params").setSource(
                 jsonBuilder().startObject()
@@ -178,7 +197,9 @@ public class ScriptIT extends ESIntegTestCase {
                         .endObject()
         ).get();
         refresh();
+        parameters.clear();
         searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        assertSearchResponse(searchResponse);
         label = (String) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
         logger.info("label: {}", label);
     }
@@ -489,7 +510,7 @@ public class ScriptIT extends ESIntegTestCase {
                 "            <MiningField name=\"field_3\" usageType=\"active\"/>\n" +
                 "            <MiningField name=\"target\" usageType=\"target\"/>\n" +
                 "        </MiningSchema>\n" +
-                "        <RegressionTable intercept=\""+Double.toString(intercept)+"\" targetCategory=\"1\">\n" +
+                "        <RegressionTable intercept=\"" + Double.toString(intercept) + "\" targetCategory=\"1\">\n" +
                 "            <NumericPredictor name=\"field_0\" coefficient=\"" + weights[0] + "\"/>\n" +
                 "            <NumericPredictor name=\"field_1\" coefficient=\"" + weights[1] + "\"/>\n" +
                 "            <NumericPredictor name=\"field_2\" coefficient=\"" + weights[2] + "\"/>\n" +
@@ -514,20 +535,87 @@ public class ScriptIT extends ESIntegTestCase {
     public String generateLRPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException {
         PMML pmml = new PMML();
         // create DataDictionary
+        DataDictionary dataDictionary = createDataDictionary(weights);
+        pmml.setDataDictionary(dataDictionary);
+
+        // create model
+        RegressionModel regressionModel = new RegressionModel();
+        regressionModel.setModelName("logistic regression");
+        regressionModel.setFunctionName(MiningFunctionType.CLASSIFICATION);
+        regressionModel.setNormalizationMethod(RegressionNormalizationMethodType.LOGIT);
+        MiningSchema miningSchema = createMiningSchema(weights);
+        regressionModel.setMiningSchema(miningSchema);
+        RegressionTable regressionTable0 = new RegressionTable();
+        regressionTable0.setIntercept(intercept);
+        regressionTable0.setTargetCategory(Double.toString(labels[0]));
+        NumericPredictor[] numericPredictors = createNumericPredictors(weights);
+        regressionTable0.addNumericPredictors(numericPredictors);
+        RegressionTable regressionTable1 = new RegressionTable();
+        regressionTable1.setIntercept(0.0);
+        regressionTable1.setTargetCategory(Double.toString(labels[1]));
+        regressionModel.addRegressionTables(regressionTable0, regressionTable1);
+        pmml.addModels(regressionModel);
+        // marshal
+        return convertPMMLToString(pmml);
+        // write to string
+    }
+
+    public String generateSVMPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException {
+        PMML pmml = new PMML();
+        // create DataDictionary
+        DataDictionary dataDictionary = createDataDictionary(weights);
+        pmml.setDataDictionary(dataDictionary);
+
+        // create model
+        RegressionModel regressionModel = new RegressionModel();
+        regressionModel.setModelName("linear SVM");
+        regressionModel.setFunctionName(MiningFunctionType.CLASSIFICATION);
+        regressionModel.setNormalizationMethod(RegressionNormalizationMethodType.NONE);
+        MiningSchema miningSchema = createMiningSchema(weights);
+        regressionModel.setMiningSchema(miningSchema);
+        RegressionTable regressionTable0 = new RegressionTable();
+        regressionTable0.setIntercept(intercept);
+        regressionTable0.setTargetCategory(Double.toString(labels[0]));
+        NumericPredictor[] numericPredictors = createNumericPredictors(weights);
+        regressionTable0.addNumericPredictors(numericPredictors);
+        RegressionTable regressionTable1 = new RegressionTable();
+        regressionTable1.setIntercept(0.0);
+        regressionTable1.setTargetCategory(Double.toString(labels[1]));
+        regressionModel.addRegressionTables(regressionTable0, regressionTable1);
+        pmml.addModels(regressionModel);
+        // marshal
+        return convertPMMLToString(pmml);
+        // write to string
+    }
+
+
+    public String convertPMMLToString(PMML pmml) throws JAXBException {
+        ByteArrayOutputStream baor = new ByteArrayOutputStream();
+        StreamResult streamResult = new StreamResult();
+        streamResult.setOutputStream(baor);
+        JAXBUtil.marshal(pmml, streamResult);
+        return baor.toString();
+    }
+
+    public DataDictionary createDataDictionary(double[] weights) {
         DataDictionary dataDictionary = new DataDictionary();
         DataField[] dataFields = new DataField[weights.length];
         for (int i = 0; i < weights.length; i++) {
             dataFields[i] = createDataField("field_" + Integer.toString(i), DataType.DOUBLE, OpType.CONTINUOUS);
         }
         dataDictionary.addDataFields(dataFields);
-        pmml.setDataDictionary(dataDictionary);
+        return dataDictionary;
+    }
 
-        // create model
+    public NumericPredictor[] createNumericPredictors(double[] weights) {
+        NumericPredictor[] numericPredictors = new NumericPredictor[weights.length];
+        for (int i = 0; i < weights.length; i++) {
+            numericPredictors[i] = creatNumericPredictor("field_" + Integer.toString(i), weights[i]);
+        }
+        return numericPredictors;
+    }
 
-        RegressionModel regressionModel = new RegressionModel();
-        regressionModel.setModelName("logistic regression");
-        regressionModel.setFunctionName(MiningFunctionType.CLASSIFICATION);
-        regressionModel.setNormalizationMethod(RegressionNormalizationMethodType.LOGIT);
+    public MiningSchema createMiningSchema(double[] weights) {
         MiningSchema miningSchema = new MiningSchema();
         MiningField[] miningFields = new MiningField[weights.length + 1];
         for (int i = 0; i < weights.length; i++) {
@@ -535,30 +623,7 @@ public class ScriptIT extends ESIntegTestCase {
         }
         miningFields[weights.length] = creatMiningField("target", FieldUsageType.TARGET);
         miningSchema.addMiningFields(miningFields);
-
-        regressionModel.setMiningSchema(miningSchema);
-        RegressionTable regressionTable0 = new RegressionTable();
-        regressionTable0.setIntercept(intercept);
-        regressionTable0.setTargetCategory(Double.toString(labels[0]));
-        NumericPredictor[] numericPredictors = new NumericPredictor[weights.length];
-        for (int i = 0; i < weights.length; i++) {
-            numericPredictors[i] = creatNumericPredictor("field_" + Integer.toString(i), weights[i]);
-        }
-        regressionTable0.addNumericPredictors(numericPredictors);
-        RegressionTable regressionTable1 = new RegressionTable();
-        regressionTable1.setIntercept(0.0);
-        regressionTable1.setTargetCategory(Double.toString(labels[1]));
-
-        regressionModel.addRegressionTables(regressionTable0, regressionTable1);
-        pmml.addModels(regressionModel);
-        // marshal
-        ByteArrayOutputStream baor = new ByteArrayOutputStream();
-
-        StreamResult streamResult = new StreamResult();
-        streamResult.setOutputStream(baor);
-        JAXBUtil.marshal(pmml, streamResult);
-        return baor.toString();
-        // write to string
+        return miningSchema;
     }
 
     private NumericPredictor creatNumericPredictor(String name, double coefficient) {
