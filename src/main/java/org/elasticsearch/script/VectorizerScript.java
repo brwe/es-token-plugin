@@ -80,16 +80,8 @@ public class VectorizerScript extends AbstractSearchScript {
      * @throws ScriptException
      */
     private VectorizerScript(Map<String, Object> params, Client client) throws ScriptException {
-        params.entrySet();
-        // get the terms
-        String id = (String) params.get("spec_id");
-        String type = (String) params.get("spec_type");
-        String index = (String) params.get("spec_index");
-        GetResponse getResponse = client.prepareGet(index, type, id).get();
-        assert getResponse.isExists() == true;
-
+        GetResponse getResponse = SharedMethods.getSpec(params, client);
         features = new VectorEntries(getResponse.getSource());
-
     }
 
     @Override

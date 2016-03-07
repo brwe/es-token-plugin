@@ -3,7 +3,7 @@
 "Basic prepare spec":
   - do:
       prepare_spec:
-         body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf"}]}
+         body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf", "type": "string"}]}
 
   - do:
       indices.refresh: {}
@@ -16,5 +16,5 @@
 
   - match: {hits.total: 1}
   - match:  { hits.hits.0._index: pmml  }
-  - match:  { hits.hits.0._index: spec  }
+  - match:  { hits.hits.0._type: spec  }
 

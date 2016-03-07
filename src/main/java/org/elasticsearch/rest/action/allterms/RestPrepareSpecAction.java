@@ -19,6 +19,7 @@
 
 package org.elasticsearch.rest.action.allterms;
 
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.AllTermsRequest;
 import org.elasticsearch.action.allterms.AllTermsResponse;
@@ -52,12 +53,10 @@ public class RestPrepareSpecAction extends BaseRestHandler {
 
     @Override
     public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
-        logger.info("blah blah");
         final PrepareSpecRequest prepareSpecRequest = new PrepareSpecRequest();
-
-        assert request.content() != null;
-
-        logger.info(new String(request.content().toBytes(), Charset.defaultCharset()));
+        if (request.content() == null) {
+            throw new ElasticsearchException("prepare spec request must have a body");
+        }
         prepareSpecRequest.source(new String(request.content().toBytes(), Charset.defaultCharset()));
 
         client.execute(PrepareSpecAction.INSTANCE, prepareSpecRequest, new RestBuilderListener<PrepareSpecResponse>(channel) {

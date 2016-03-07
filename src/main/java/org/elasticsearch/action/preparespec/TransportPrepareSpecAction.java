@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.preparespec;
 
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.ActionFilters;
@@ -75,18 +76,21 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         List<FieldSpecRequest> fieldSpecRequests = new ArrayList<>();
         XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
         Map<String, Object> parsedSource = parser.mapOrdered();
-        assert parsedSource.get("features") != null;
-
+        if (parsedSource.get("features") == null) {
+            throw new ElasticsearchException("reatures are missing in prepare spec request");
+        }
         boolean sparse = getSparse(parsedSource.get("sparse"));
         ArrayList<Map<String, Object>> actualFeatures = (ArrayList<Map<String, Object>>) parsedSource.get("features");
         for (Map<String, Object> field : actualFeatures) {
 
             String type = (String) field.remove("type");
-            assert type != null;
+            if (type == null) {
+                throw new ElasticsearchException("type parameter is missing in prepare spec request");
+            }
             if (type.equals("string")) {
                 fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest(field));
             } else {
-                throw new UnsupportedOperationException("I am working as wquick as I can! But I have not done it for " + type + " yet.");
+                throw new UnsupportedOperationException("I am working as quick as I can! But I have not done it for " + type + " yet.");
             }
         }
         return new Tuple<>(sparse, fieldSpecRequests);
