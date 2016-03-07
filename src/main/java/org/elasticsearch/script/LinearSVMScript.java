@@ -35,14 +35,11 @@ import java.util.Map;
 /**
  * Script for predicting class with a SVM model
  */
-public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
+public class LinearSVMScript extends AbstractSearchScript {
 
     EsLinearSVMModel model = null;
-    String field = null;
-    double[] tfs = null;
-    ArrayList features = new ArrayList();
-
-    final static public String SCRIPT_NAME = "svm_model_stored_parameters";
+    VectorEntries features = null;
+    final static public String SCRIPT_NAME = "linear_svm";
 
     /**
      * Factory that is registered in
@@ -68,7 +65,7 @@ public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
          */
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
-            return new SVMModelScriptWithStoredParameters(params, node.client());
+            return new LinearSVMScript(params, node.client());
         }
 
         @Override
@@ -81,10 +78,11 @@ public class SVMModelScriptWithStoredParameters extends AbstractSearchScript {
      * @param params index, type and id of document containing the parameters. also fieldname.
      * @throws ScriptException
      */
-    private SVMModelScriptWithStoredParameters(Map<String, Object> params, Client client) throws ScriptException {
+    private LinearSVMScript(Map<String, Object> params, Client client) throws ScriptException {
         GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
-        field = (String) params.get("field");
-        model = SharedMethods.initializeSVMModel(features, field, getResponse);
+
+        model = SharedMethods.initializeSVMModel(features);
+        features= new VectorEntries(getResponse.getSource());
         tfs = new double[features.size()];
     }
 

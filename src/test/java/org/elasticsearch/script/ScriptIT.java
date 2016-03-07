@@ -30,9 +30,7 @@ import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.PrepareSpecRequest;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
@@ -54,7 +52,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static org.elasticsearch.common.settings.Settings.settingsBuilder;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertSearchResponse;
 import static org.hamcrest.Matchers.equalTo;
@@ -178,7 +175,7 @@ public class ScriptIT extends ESIntegTestCase {
                         .endObject()
         ).get();
         refresh();
-        searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(SVMModelScriptWithStoredParameters.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        searchResponse = client().prepareSearch("index").addScriptField("svm", new Script(LinearSVMScript.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
         label = (String) (searchResponse.getHits().getAt(0).field("svm").values().get(0));
     }
 
