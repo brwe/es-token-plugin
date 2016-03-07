@@ -133,8 +133,8 @@ public class ScriptIT extends ESIntegTestCase {
         assertThat(indices[2], equalTo(3));
     }
 
-
     @Test
+    @AwaitsFix(bugUrl = "this hangs every now and then. needs debugging")
     public void testNaiveBayesUpdateScript() throws IOException {
 
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
