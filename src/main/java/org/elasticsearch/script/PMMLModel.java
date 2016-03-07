@@ -193,8 +193,11 @@ public class PMMLModel extends AbstractSearchScript {
     @Override
     public Object run() {
         Object vector =  features.vector(this.doc(), this.fields(), this.indexLookup());
-        if (vector instanceof double[]) {
-            return model.evaluate((double[])vector);
+        assert vector instanceof Map;
+        if (features.isSparse() == false) {
+            Map<String, Object> denseVector = (Map<String, Object>)vector;
+            assert(denseVector.get("values") instanceof  double[]);
+            return model.evaluate((double[])denseVector.get("values"));
         } else {
             Map<String, Object> sparseVector = (Map<String, Object>)vector;
             assert(sparseVector.get("indices") instanceof  int[]);
