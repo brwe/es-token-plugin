@@ -97,14 +97,12 @@ import java.util.Map;
  * </pre>
  */
 
-public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearchScript {
+public class PMMLModel extends AbstractSearchScript {
 
     final static public String SCRIPT_NAME = "pmml_model_stored_parameters_sparse_vectors";
     EsModelEvaluator model = null;
     String field = null;
-    ArrayList<String> features = new ArrayList();
-    Map<String, Integer> wordMap;
-    private boolean fieldDataFields;
+    VectorEntries features = null;
 
     /**
      * Factory that is registered in
@@ -131,7 +129,7 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
             try {
-                return new PMMLScriptWithStoredParametersAndSparseVector(params, node.client());
+                return new PMMLModel(params, node.client());
             } catch (IOException e) {
                 throw new ScriptException("pmml prediction failed", e);
             } catch (SAXException e) {
@@ -151,16 +149,11 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
      * @param params terms that a used for classification and model parameters. Initialize model here.
      * @throws ScriptException
      */
-    private PMMLScriptWithStoredParametersAndSparseVector(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
-        GetResponse getResponse = SharedMethods.getStoredParameters(params, client);
-        PMML pmml;
-
+    private PMMLModel(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
+        GetResponse getResponse = SharedMethods.getModel(params, client);
         model = initModel(getResponse.getSourceAsMap().get("pmml").toString());
-        field = (String) params.get("field");
-        fieldDataFields = (params.get("fieldDataFields") == null) ? fieldDataFields : (Boolean) params.get("fieldDataFields");
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        wordMap = new HashMap<>();
-        SharedMethods.fillWordIndexMap(features, wordMap);
+        getResponse = SharedMethods.getSpec(params, client);
+        features= new VectorEntries(getResponse.getSource());
     }
 
     protected static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
@@ -177,7 +170,6 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
                 } catch (IOException e) {
                     throw new ElasticsearchException("could not convert xml to pmml model", e);
                 }
-
             }
         });
         Model model = pmml.getModels().get(0);
@@ -200,15 +192,15 @@ public class PMMLScriptWithStoredParametersAndSparseVector extends AbstractSearc
 
     @Override
     public Object run() {
-        /** here be the vectorizer **/
-        Tuple<int[], double[]> fieldNamesAndValues;
-        if (fieldDataFields == false) {
-            throw new UnsupportedOperationException("term vectors not implemented for PMML");
+        Object vector =  features.vector(this.doc(), this.fields(), this.indexLookup());
+        if (vector instanceof double[]) {
+            return model.evaluate((double[])vector);
         } else {
-            ScriptDocValues<String> docValues = docFieldStrings(field);
-            fieldNamesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
+            Map<String, Object> sparseVector = (Map<String, Object>)vector;
+            assert(sparseVector.get("indices") instanceof  int[]);
+            assert(sparseVector.get("values") instanceof  double[]);
+            Tuple<int[], double[]> indicesAndValues = new Tuple<>(( int[])sparseVector.get("indices"), (double[])sparseVector.get("values"));
+            return model.evaluate(indicesAndValues);
         }
-        /** until here **/
-        return model.evaluate(fieldNamesAndValues);
     }
 }

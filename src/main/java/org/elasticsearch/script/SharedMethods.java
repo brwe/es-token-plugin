@@ -23,7 +23,6 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.dmg.pmml.FieldName;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
@@ -66,23 +65,23 @@ public class SharedMethods {
         return new Tuple<>(indicesArray, valuesArray);
     }
 
-    static GetResponse getStoredParameters(Map<String, Object> params, Client client) {
+    static GetResponse getModel(Map<String, Object> params, Client client) {
         // get the stored parameters
         String index = (String) params.get("index");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": parameter \"index\" missing");
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"index\" missing");
         }
         String type = (String) params.get("type");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": parameter \"type\" missing");
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"type\" missing");
         }
         String id = (String) params.get("id");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": parameter \"id\" missing");
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"id\" missing");
         }
         GetResponse getResponse = client.prepareGet(index, type, id).get();
         if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
         }
         return getResponse;
     }
@@ -98,51 +97,13 @@ public class SharedMethods {
         }
     }
 
-    static EsLinearSVMModel initializeSVMModel(ArrayList features, String field, GetResponse getResponse) {
-        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
-        ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        if (field == null || features == null || weightsArrayList == null || intercept == null || labelsAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, intercept, labels");
-        }
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        double[] weights = new double[weightsArrayList.size()];
-        for (int i = 0; i < weightsArrayList.size(); i++) {
-            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
-        }
-        double[] labels = new double[labelsAsArrayList.size()];
-        for (int i = 0; i < labelsAsArrayList.size(); i++) {
-            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
-        }
-        return new EsLinearSVMModel(weights, intercept.doubleValue(), new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
-    }
-
-    static EsLogisticRegressionModel initializeLRModel(ArrayList features, String field, GetResponse getResponse) {
-        ArrayList weightsArrayList = (ArrayList) getResponse.getSource().get("weights");
-        Number intercept = (Number) getResponse.getSource().get("intercept");
-        ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
-        if (field == null || features == null || weightsArrayList == null || intercept == null || labelsAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + SVMModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, weights, intercept, labels");
-        }
-        features.addAll((ArrayList) getResponse.getSource().get("features"));
-        double[] weights = new double[weightsArrayList.size()];
-        for (int i = 0; i < weightsArrayList.size(); i++) {
-            weights[i] = ((Number) weightsArrayList.get(i)).doubleValue();
-        }
-        double[] labels = new double[labelsAsArrayList.size()];
-        for (int i = 0; i < labelsAsArrayList.size(); i++) {
-            labels[i] = ((Number) labelsAsArrayList.get(i)).doubleValue();
-        }
-        return new EsLogisticRegressionModel(weights, intercept.doubleValue(), new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
-    }
-
     static EsNaiveBayesModel initializeNaiveBayesModel(ArrayList features, String field, GetResponse getResponse) {
         ArrayList piAsArrayList = (ArrayList) getResponse.getSource().get("pi");
         ArrayList labelsAsArrayList = (ArrayList) getResponse.getSource().get("labels");
         ArrayList thetasAsArrayList = (ArrayList) getResponse.getSource().get("thetas");
         features.addAll((ArrayList) getResponse.getSource().get("features"));
         if (field == null || features == null || piAsArrayList == null || labelsAsArrayList == null || thetasAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + NaiveBayesModelScriptWithStoredParametersAndSparseVector.SCRIPT_NAME + ": one of the following parameters missing: field, features, pi, thetas, labels");
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": one of the following parameters missing: field, features, pi, thetas, labels");
         }
         double[] pi = new double[piAsArrayList.size()];
         for (int i = 0; i < piAsArrayList.size(); i++) {
@@ -211,14 +172,26 @@ public class SharedMethods {
         return indicesAndValues;
     }
 
-    public static Map<FieldName, Double> getFieldNamesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {
-        Map<FieldName, Double> fieldNamesAndValues = new HashMap<>();
-        for (String value : docValues.getValues()) {
-            Integer index = wordMap.get(value);
-            if (index != null) {
-                fieldNamesAndValues.put(new FieldName("field_" + index.toString()), new Double(1));
-            }
+    public static GetResponse getSpec(Map<String, Object> params, Client client) {
+
+        // get the stored parameters
+        String index = (String) params.get("spec_index");
+        if (index == null) {
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_index\" missing");
         }
-        return fieldNamesAndValues;
+        String type = (String) params.get("spec_type");
+        if (index == null) {
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_type\" missing");
+        }
+        String id = (String) params.get("spec_id");
+        if (index == null) {
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_id\" missing");
+        }
+        GetResponse getResponse = client.prepareGet(index, type, id).get();
+        if (getResponse.isExists() == false) {
+            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
+        }
+        return getResponse;
+
     }
 }
