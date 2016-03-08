@@ -48,7 +48,7 @@ import static org.hamcrest.Matchers.equalTo;
 /**
  */
 @ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
-public class ScriptIT extends ESIntegTestCase {
+public class ModelIT extends ESIntegTestCase {
 
 
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
@@ -58,79 +58,6 @@ public class ScriptIT extends ESIntegTestCase {
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
         return pluginList(TokenPlugin.class);
-    }
-
-    @Test
-    public void testVectorScript() throws IOException, ExecutionException, InterruptedException {
-        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
-        ensureGreen("index");
-        refresh();
-        XContentBuilder source = jsonBuilder();
-        source.startObject()
-                .startArray("features")
-                .startObject()
-                .field("field", "text")
-                .field("tokens", "given")
-                .field("terms", new String[]{"fox", "quick", "the"})
-                .field("number", "tf")
-                .field("type", "string")
-                .endObject()
-                .endArray()
-                .field("sparse", false)
-                .endObject();
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
-        assertSearchResponse(searchResponse);
-        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
-        double[] values = (double[]) vector.get("values");
-        assertThat(values.length, equalTo(3));
-        assertThat(values[0], equalTo(1.0));
-        assertThat(values[1], equalTo(2.0));
-        assertThat(values[2], equalTo(1.0));
-
-    }
-
-    @Test
-    public void testSparseVectorScript() throws IOException, ExecutionException, InterruptedException {
-        createIndexWithTermVectors();
-        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
-        ensureGreen("index");
-        refresh();
-        XContentBuilder source = jsonBuilder();
-        source.startObject()
-                .startArray("features")
-                .startObject()
-                .field("field", "text")
-                .field("tokens", "given")
-                .field("terms", new String[]{"fox", "lame", "quick", "the"})
-                .field("number", "tf")
-                .field("type", "string")
-                .endObject()
-                .endArray()
-                .field("sparse", true)
-                .endObject();
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
-        assertSearchResponse(searchResponse);
-        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
-        double[] values = (double[]) vector.get("values");
-        assertThat(values.length, equalTo(3));
-        assertThat(values[0], equalTo(1.0));
-        assertThat(values[1], equalTo(2.0));
-        assertThat(values[2], equalTo(1.0));
-        int[] indices = (int[]) vector.get("indices");
-        assertThat(indices.length, equalTo(3));
-        assertThat(indices[0], equalTo(0));
-        assertThat(indices[1], equalTo(2));
-        assertThat(indices[2], equalTo(3));
     }
 
     @Test
