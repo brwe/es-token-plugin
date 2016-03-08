@@ -36,12 +36,8 @@ import java.util.Map;
  */
 public class VectorizerScript extends AbstractSearchScript {
 
-    // the field containing the terms
-    String field = null;
-    // the terms for which we need the tfs
-    VectorEntries features = null;
-
     final static public String SCRIPT_NAME = "vector";
+    private final VectorEntries features;
 
     /**
      * Factory that is registered in
@@ -50,8 +46,8 @@ public class VectorizerScript extends AbstractSearchScript {
      */
     public static class Factory implements NativeScriptFactory {
         final Node node;
+        VectorEntries features = null;
 
-        @Inject
         public Factory(Node node) {
             // Node is not fully initialized here
             // All we can do is save a reference to it for future use
@@ -66,7 +62,11 @@ public class VectorizerScript extends AbstractSearchScript {
          */
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
-            return new VectorizerScript(params, node.client());
+            if (features == null) {
+                GetResponse getResponse = SharedMethods.getSpec(params, node.client(), new HashMap<String, Object>());
+                features = new VectorEntries(getResponse.getSource());
+            }
+            return new VectorizerScript(params, features);
         }
 
         @Override
@@ -80,9 +80,8 @@ public class VectorizerScript extends AbstractSearchScript {
      *               them here.
      * @throws ScriptException
      */
-    private VectorizerScript(Map<String, Object> params, Client client) throws ScriptException {
-        GetResponse getResponse = SharedMethods.getSpec(params, client, new HashMap<String, Object>());
-        features = new VectorEntries(getResponse.getSource());
+    private VectorizerScript(Map<String, Object> params, VectorEntries features) throws ScriptException {
+        this.features = features;
     }
 
     @Override

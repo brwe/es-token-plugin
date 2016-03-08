@@ -120,7 +120,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
@@ -155,7 +155,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
@@ -191,7 +191,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
@@ -228,7 +228,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -263,7 +263,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -299,7 +299,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("spec_type", response.getType());
             parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -336,7 +336,7 @@ public class ModelIT extends ESIntegTestCase {
             parameters.put("type", "pmml");
             parameters.put("id", "1");
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);

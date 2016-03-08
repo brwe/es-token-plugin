@@ -25,11 +25,9 @@ import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.node.Node;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
@@ -44,7 +42,6 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,7 +96,7 @@ import java.util.Map;
 
 public class PMMLModel extends AbstractSearchScript {
 
-    final static public String SCRIPT_NAME = "pmml";
+    final static public String SCRIPT_NAME = "model";
     EsModelEvaluator model = null;
     String field = null;
     VectorEntries features = null;
@@ -112,8 +109,9 @@ public class PMMLModel extends AbstractSearchScript {
     public static class Factory implements NativeScriptFactory {
 
         final Node node;
+        private VectorEntries features;
+        private EsModelEvaluator model;
 
-        @Inject
         public Factory(Node node) {
             // Node is not fully initialized here
             // All we can do is save a reference to it for future use
@@ -128,15 +126,59 @@ public class PMMLModel extends AbstractSearchScript {
          */
         @Override
         public ExecutableScript newScript(@Nullable Map<String, Object> params) throws ScriptException {
-            try {
-                return new PMMLModel(params, node.client());
-            } catch (IOException e) {
-                throw new ScriptException("pmml prediction failed", e);
-            } catch (SAXException e) {
-                throw new ScriptException("pmml prediction failed", e);
-            } catch (JAXBException e) {
-                throw new ScriptException("pmml prediction failed", e);
+            if (features == null) {
+                GetResponse getResponse = SharedMethods.getSpec(params, node.client(), new HashMap<String, Object>());
+                features = new VectorEntries(getResponse.getSource());
             }
+            if (model == null) {
+                GetResponse getResponse = SharedMethods.getModel(params, node.client());
+                try {
+                    model = initModel(getResponse.getSourceAsMap().get("pmml").toString());
+
+
+                } catch (IOException e) {
+                    throw new ScriptException("pmml prediction failed", e);
+                } catch (SAXException e) {
+                    throw new ScriptException("pmml prediction failed", e);
+                } catch (JAXBException e) {
+                    throw new ScriptException("pmml prediction failed", e);
+                }
+            }
+            return new PMMLModel(features, model);
+        }
+
+        protected static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
+            // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
+            PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+                public PMML run() {
+                    try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                        Source transformedSource = ImportFilter.apply(new InputSource(is));
+                        return JAXBUtil.unmarshalPMML(transformedSource);
+                    } catch (SAXException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    } catch (JAXBException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    } catch (IOException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    }
+                }
+            });
+            Model model = pmml.getModels().get(0);
+            if (model.getModelName().equals("logistic regression")) {
+                return initLogisticRegression((RegressionModel) model);
+            } else if (model.getModelName().equals("linear SVM")) {
+                return initLinearSVM((RegressionModel) model);
+            } else {
+                throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
+            }
+        }
+
+        protected static EsModelEvaluator initLogisticRegression(RegressionModel pmmlModel) {
+            return new EsLogisticRegressionModel(pmmlModel);
+        }
+
+        protected static EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
+            return new EsLinearSVMModel(pmmlModel);
         }
 
         @Override
@@ -149,60 +191,25 @@ public class PMMLModel extends AbstractSearchScript {
      * @param params terms that a used for classification and model parameters. Initialize model here.
      * @throws ScriptException
      */
-    private PMMLModel(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
-        GetResponse getResponse = SharedMethods.getModel(params, client);
-        model = initModel(getResponse.getSourceAsMap().get("pmml").toString());
-        getResponse = SharedMethods.getSpec(params, client, getResponse.getSourceAsMap());
-        features= new VectorEntries(getResponse.getSource());
-    }
+    private PMMLModel(VectorEntries features, EsModelEvaluator model) throws ScriptException {
 
-    protected static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
-        // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
-        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
-            public PMML run() {
-                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-                    Source transformedSource = ImportFilter.apply(new InputSource(is));
-                    return JAXBUtil.unmarshalPMML(transformedSource);
-                } catch (SAXException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (JAXBException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (IOException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                }
-            }
-        });
-        Model model = pmml.getModels().get(0);
-        if (model.getModelName().equals("logistic regression")) {
-            return initLogisticRegression((RegressionModel) model);
-        } else if (model.getModelName().equals("linear SVM")) {
-            return initLinearSVM((RegressionModel) model);
-        } else {
-            throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
-        }
-    }
-
-    protected static EsModelEvaluator initLogisticRegression(RegressionModel pmmlModel) {
-        return new EsLogisticRegressionModel(pmmlModel);
-    }
-
-    protected static EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
-        return new EsLinearSVMModel(pmmlModel);
+        this.features = features;
+        this.model = model;
     }
 
     @Override
     public Object run() {
-        Object vector =  features.vector(this.doc(), this.fields(), this.indexLookup());
+        Object vector = features.vector(this.doc(), this.fields(), this.indexLookup());
         assert vector instanceof Map;
         if (features.isSparse() == false) {
-            Map<String, Object> denseVector = (Map<String, Object>)vector;
-            assert(denseVector.get("values") instanceof  double[]);
-            return model.evaluate((double[])denseVector.get("values"));
+            Map<String, Object> denseVector = (Map<String, Object>) vector;
+            assert (denseVector.get("values") instanceof double[]);
+            return model.evaluate((double[]) denseVector.get("values"));
         } else {
-            Map<String, Object> sparseVector = (Map<String, Object>)vector;
-            assert(sparseVector.get("indices") instanceof  int[]);
-            assert(sparseVector.get("values") instanceof  double[]);
-            Tuple<int[], double[]> indicesAndValues = new Tuple<>(( int[])sparseVector.get("indices"), (double[])sparseVector.get("values"));
+            Map<String, Object> sparseVector = (Map<String, Object>) vector;
+            assert (sparseVector.get("indices") instanceof int[]);
+            assert (sparseVector.get("values") instanceof double[]);
+            Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get("values"));
             return model.evaluate(indicesAndValues);
         }
     }

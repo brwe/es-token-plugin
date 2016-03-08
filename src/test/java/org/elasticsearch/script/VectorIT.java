@@ -24,6 +24,7 @@ import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.PrepareSpecRequest;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -81,7 +82,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -116,7 +117,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "pmml", parameters)).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -266,4 +267,28 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject();
         return source;
     }
+
+  /*  @Test
+    public void testWithScroll() throws IOException, ExecutionException, InterruptedException {
+        createIndexWithTermVectors();
+        for (int i = 0; i< 1000; i++) {
+            client().prepareIndex().setIndex("test").setType("type").setSource("text", "a b c").get();
+        }
+        refresh();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(getTextFieldRequestSourceWithGivenTerms().string())).get();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
+        SearchResponse searchResponse = client().prepareSearch("test").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).setScroll("10m").setSize(10).get();
+
+        assertSearchResponse(searchResponse);
+        searchResponse = client().prepareSearchScroll(searchResponse.getScrollId()).setScroll("10m").get();
+        while(searchResponse.getHits().hits().length>0) {
+            logger.info("next scroll request...");
+            searchResponse = client().prepareSearchScroll(searchResponse.getScrollId()).setScroll("10m").get();
+        }
+        client().prepareClearScroll().addScrollId(searchResponse.getScrollId()).get();
+    }*/
+
 }

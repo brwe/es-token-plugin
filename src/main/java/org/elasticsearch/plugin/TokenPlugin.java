@@ -32,6 +32,7 @@ import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.rest.action.allterms.RestPrepareSpecAction;
 import org.elasticsearch.script.*;
+import org.elasticsearch.script.groovy.PMMLScriptEngineService;
 
 /**
  *
@@ -51,9 +52,8 @@ public class TokenPlugin extends Plugin {
 
     public void onModule(ScriptModule module) {
         // Register each script that we defined in this plugin
-        module.registerScript(VectorizerScript.SCRIPT_NAME, VectorizerScript.Factory.class);
         module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
-        module.registerScript(PMMLModel.SCRIPT_NAME, PMMLModel.Factory.class);
+        module.addScriptEngine(PMMLScriptEngineService.class);
     }
 
     public void onModule(ActionModule module) {
