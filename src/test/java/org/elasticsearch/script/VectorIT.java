@@ -235,4 +235,35 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject();
         return source;
     }
+
+    @Test
+    public void testVectorScriptWithGivenTermsSortsTerms() throws IOException, ExecutionException, InterruptedException {
+
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(getTextFieldRequestSourceWithGivenTerms().string())).get();
+        GetResponse spec = client().prepareGet(specResponse.getIndex(), specResponse.getType(), specResponse.getId()).get();
+
+        ArrayList<Map<String, Object>> features = (ArrayList<Map<String, Object>>) spec.getSource().get("features");
+        String lastTerm = "";
+        for (String term : (ArrayList<String>) features.get(0).get("terms")) {
+            assertThat(lastTerm.compareTo(term), lessThan(0));
+            lastTerm = term;
+        }
+    }
+
+    private XContentBuilder getTextFieldRequestSourceWithGivenTerms() throws IOException {
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("type", "string")
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"these", "terms", "are", "not", "ordered"})
+                .field("number", "tf")
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
+        return source;
+    }
 }
