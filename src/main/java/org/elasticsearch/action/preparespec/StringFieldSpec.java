@@ -24,7 +24,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 
-public class StringFieldSpec implements FieldSpec {
+public class StringFieldSpec extends FieldSpec {
     String[] terms;
     String field;
     String number;
@@ -45,5 +45,10 @@ public class StringFieldSpec implements FieldSpec {
         xContentBuilder.field("type", "terms");
         xContentBuilder.endObject();
         return xContentBuilder;
+    }
+
+    @Override
+    public int getLength() {
+        return terms.length;
     }
 }

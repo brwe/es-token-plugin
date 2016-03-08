@@ -51,7 +51,7 @@ public class VectorizerTests extends ESTestCase {
         List<FieldSpec> specs= new ArrayList<>();
         specs.add(new StringFieldSpec( new String[]{"a", "b", "c"}, "tf", "text1"));
         specs.add(new StringFieldSpec( new String[]{"d", "e", "f"}, "occurrence", "text2"));
-        return SourceLookup.sourceAsMap(TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false).bytes());
+        return SourceLookup.sourceAsMap(TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false, 6).bytes());
     }
 
     public void assertParameters(VectorEntries entries) {

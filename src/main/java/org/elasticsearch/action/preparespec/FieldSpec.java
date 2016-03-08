@@ -21,8 +21,8 @@ package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.common.xcontent.ToXContent;
 
-/**
- * Created by britta on 02.03.16.
- */
-public interface FieldSpec extends ToXContent {
+
+public abstract class FieldSpec implements ToXContent {
+
+    public abstract int getLength();
 }

@@ -42,18 +42,24 @@ public class PrepareSpecResponse extends ActionResponse implements ToXContent {
         return id;
     }
 
+    public int getLength() {
+        return length;
+    }
+
     String index;
     String type;
     String id;
+    int length;
 
     public PrepareSpecResponse() {
 
     }
 
-    public PrepareSpecResponse(String index, String type, String id) {
+    public PrepareSpecResponse(String index, String type, String id, int length) {
         this.index = index;
         this.type = type;
         this.id = id;
+        this.length = length;
     }
 
     @Override
@@ -61,6 +67,7 @@ public class PrepareSpecResponse extends ActionResponse implements ToXContent {
         builder.field(Fields.INDEX, index);
         builder.field(Fields.TYPE, type);
         builder.field(Fields.ID, id);
+        builder.field(Fields.LENGTH, length);
         return builder;
     }
 
@@ -68,6 +75,7 @@ public class PrepareSpecResponse extends ActionResponse implements ToXContent {
         static final XContentBuilderString INDEX = new XContentBuilderString("index");
         static final XContentBuilderString TYPE = new XContentBuilderString("type");
         static final XContentBuilderString ID = new XContentBuilderString("id");
+        static final XContentBuilderString LENGTH = new XContentBuilderString("length");
     }
 
     @Override
@@ -76,6 +84,7 @@ public class PrepareSpecResponse extends ActionResponse implements ToXContent {
         index = in.readString();
         type = in.readString();
         id = in.readString();
+        length = in.readInt();
     }
 
     @Override
@@ -84,5 +93,6 @@ public class PrepareSpecResponse extends ActionResponse implements ToXContent {
         out.writeString(index);
         out.writeString(type);
         out.writeString(id);
+        out.writeInt(length);
     }
 }

@@ -116,12 +116,12 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
 
     public static class FieldSpecActionListener implements ActionListener<FieldSpec> {
 
-        private int numResponses;
+        final private int numResponses;
         private ActionListener<PrepareSpecResponse> listener;
-        private Client client;
-        private boolean sparse;
+        final private Client client;
+        final private boolean sparse;
         private int currentResponses;
-        List<FieldSpec> fieldSpecs = new ArrayList<>();
+        final List<FieldSpec> fieldSpecs = new ArrayList<>();
 
         public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse) {
             this.numResponses = numResponses;
@@ -136,10 +136,15 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             currentResponses++;
             if (currentResponses == numResponses) {
                 try {
-                    client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse)).execute(new ActionListener<IndexResponse>() {
+                    int length = 0;
+                    for (FieldSpec fS : fieldSpecs) {
+                        length += fS.getLength();
+                    }
+                    final int finalLength = length;
+                    client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse, length)).execute(new ActionListener<IndexResponse>() {
                         @Override
                         public void onResponse(IndexResponse indexResponse) {
-                            listener.onResponse(new PrepareSpecResponse(indexResponse.getIndex(), indexResponse.getType(), indexResponse.getId()));
+                            listener.onResponse(new PrepareSpecResponse(indexResponse.getIndex(), indexResponse.getType(), indexResponse.getId(), finalLength));
                         }
 
                         @Override
@@ -153,7 +158,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             }
         }
 
-        public static XContentBuilder createSpecSource(List<FieldSpec> fieldSpecs, boolean sparse) throws IOException {
+        public static XContentBuilder createSpecSource(List<FieldSpec> fieldSpecs, boolean sparse, int length) throws IOException {
+
             XContentBuilder sourceBuilder = jsonBuilder();
             sourceBuilder.startObject();
             sourceBuilder.field("sparse", sparse);
@@ -162,6 +168,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                 fieldSpec.toXContent(sourceBuilder, ToXContent.EMPTY_PARAMS);
             }
             sourceBuilder.endArray();
+            sourceBuilder.field("length", Integer.toString(length));
             sourceBuilder.endObject();
             return sourceBuilder;
         }

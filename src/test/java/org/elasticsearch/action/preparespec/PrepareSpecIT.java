@@ -32,11 +32,9 @@ import java.util.Collection;
 
 import static org.elasticsearch.action.preparespec.PrepareSpecTests.*;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 
 
-/**
- *
- */
 @ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE, transportClientRatio = 0)
 public class PrepareSpecIT extends ESIntegTestCase {
 
@@ -54,7 +52,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         indexDocs();
         refresh();
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
-
+        assertThat(prepareSpecResponse.getLength(), greaterThan(0));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
         assertThat(entries.isSparse(), equalTo(false));
@@ -66,6 +64,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         indexDocs();
         refresh();
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).get();
+        assertThat(prepareSpecResponse.getLength(), equalTo(6));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
         assertThat(entries.isSparse(), equalTo(false));
@@ -77,7 +76,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         indexDocs();
         refresh();
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithGivenTerms().string()).get();
-
+        assertThat(prepareSpecResponse.getLength(), equalTo(3));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
         assertThat(entries.isSparse(), equalTo(false));
