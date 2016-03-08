@@ -30,6 +30,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 import org.xml.sax.SAXException;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -102,25 +104,26 @@ public class ModelIT extends ESIntegTestCase {
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             String number = "tf";
             boolean sparse = false;
+            PrepareSpecResponse response = createSpecWithGivenTerms(number, sparse);
+            // get the source for the spec and concatenate later with model string...brrrr...
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+
             // store LR Model
             String llr = PMMLGenerator.generateLRPMMLModel(intercept, modelParams, new double[]{1, 0});
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + llr;
+
             // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms(number, sparse);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
+
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
@@ -139,23 +142,20 @@ public class ModelIT extends ESIntegTestCase {
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             // store LR Model
             String llr = PMMLGenerator.generateLRPMMLModel(intercept, modelParams, new double[]{1, 0});
+            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + llr;
+
             // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
@@ -174,29 +174,27 @@ public class ModelIT extends ESIntegTestCase {
             double intercept = randomFloat();
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             // store LR Model
-            String llr = PMMLGenerator.generateLRPMMLModel(intercept, modelParams, new double[]{1, 0});
+            String svm = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+            PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + svm;
+
             // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml",new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
-            LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
+            SVMModel svmModel = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
-            double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
+            double mllibResult = svmModel.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
             assertThat(mllibResult, equalTo(Double.parseDouble(label)));
         }
     }
@@ -211,24 +209,24 @@ public class ModelIT extends ESIntegTestCase {
             String number = "tf";
             boolean sparse = false;
             // store LR Model
-            String llr = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+            String svm = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+
+            PrepareSpecResponse response = createSpecWithGivenTerms(number, sparse);
+
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + svm;
+
             // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms(number, sparse);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -246,24 +244,24 @@ public class ModelIT extends ESIntegTestCase {
             double intercept = randomFloat();
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             // store LR Model
-            String llr = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+            String svm = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+
+            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
+
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + svm;
+
             // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -283,23 +281,23 @@ public class ModelIT extends ESIntegTestCase {
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             // store LR Model
             String llr = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
-            // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+
+            refresh();
+            PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
+
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + llr;
+
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
+                            .field("script", finalModel)
                             .endObject()
             ).get();
             refresh();
-            PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
-            parameters.put("spec_index", response.getIndex());
-            parameters.put("spec_type", response.getType());
-            parameters.put("spec_id", response.getId());
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
@@ -322,21 +320,21 @@ public class ModelIT extends ESIntegTestCase {
 
             refresh();
             PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
-            // create spec
-            client().prepareIndex("model", "pmml", "1").setSource(
+
+
+            GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
+            String vectorScript = (String) getResponse.getSourceAsMap().get("script");
+            String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + llr;
+
+            client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                     jsonBuilder().startObject()
-                            .field("pmml", llr)
-                            .field("spec_index", response.getIndex())
-                            .field("spec_type", response.getType())
-                            .field("spec_id", response.getId())
+                            .field("script", finalModel)
                             .endObject()
             ).get();
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("index", "model");
-            parameters.put("type", "pmml");
-            parameters.put("id", "1");
+            refresh();
+
             // call PMML script with needed parameters
-            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
             String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);

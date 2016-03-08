@@ -26,6 +26,7 @@ import org.apache.spark.mllib.classification.SVMModel;
 import org.apache.spark.mllib.linalg.DenseVector;
 import org.dmg.pmml.*;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.test.ESTestCase;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
@@ -65,7 +66,7 @@ public class ModelTests extends ESTestCase {
             double[] modelParams = {randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
             String pmmlString = PMMLGenerator.generateSVMPMMLModel(0.1, modelParams, new double[]{1, 0});
-            EsModelEvaluator esLinearSVMModel = PMMLModel.initModel(pmmlString);
+            EsModelEvaluator esLinearSVMModel = PMMLModelScriptEngineService.Factory.initModel(pmmlString);
             assertThat(esLinearSVMModel, instanceOf(EsLinearSVMModel.class));
             Map<FieldName, Object> params = new HashMap<>();
             int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
@@ -90,7 +91,7 @@ public class ModelTests extends ESTestCase {
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), 0.1);
             String pmmlString = PMMLGenerator.generateLRPMMLModel(0.1, modelParams, new double[]{1, 0});
-            EsModelEvaluator esLogisticRegressionModel = PMMLModel.initModel(pmmlString);
+            EsModelEvaluator esLogisticRegressionModel =  PMMLModelScriptEngineService.Factory.initModel(pmmlString);
             assertThat(esLogisticRegressionModel, instanceOf(EsLogisticRegressionModel.class));
             Map<FieldName, Object> params = new HashMap<>();
             int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};

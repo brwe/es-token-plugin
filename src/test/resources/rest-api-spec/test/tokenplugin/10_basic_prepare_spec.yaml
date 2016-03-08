@@ -10,11 +10,11 @@
 
   - do:
       search:
-         index: pmml
-         type:  spec
+         index: .scripts
+         type:  pmml_vector
 
 
   - match: {hits.total: 1}
-  - match:  { hits.hits.0._index: pmml  }
-  - match:  { hits.hits.0._type: spec  }
+  - match:  { hits.hits.0._index: .scripts  }
+  - match:  { hits.hits.0._type: pmml_vector  }
 

@@ -23,6 +23,9 @@ import org.elasticsearch.action.preparespec.FieldSpec;
 import org.elasticsearch.action.preparespec.StringFieldSpec;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.lookup.SourceLookup;
 import org.elasticsearch.test.ESTestCase;
 
@@ -51,7 +54,10 @@ public class VectorizerTests extends ESTestCase {
         List<FieldSpec> specs= new ArrayList<>();
         specs.add(new StringFieldSpec( new String[]{"a", "b", "c"}, "tf", "text1"));
         specs.add(new StringFieldSpec( new String[]{"d", "e", "f"}, "occurrence", "text2"));
-        return SourceLookup.sourceAsMap(TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false, 6).bytes());
+        Map<String, Object> sourceAsMap = SourceLookup.sourceAsMap(TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false, 6).bytes());
+        String script = (String)sourceAsMap.get("script");
+        XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(script);
+        return parser.mapOrdered();
     }
 
     public void assertParameters(VectorEntries entries) {

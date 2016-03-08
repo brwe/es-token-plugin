@@ -22,6 +22,9 @@ package org.elasticsearch.action.preparespec;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.script.VectorEntries;
@@ -29,6 +32,7 @@ import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Map;
 
 import static org.elasticsearch.action.preparespec.PrepareSpecTests.*;
 import static org.hamcrest.Matchers.equalTo;
@@ -55,7 +59,10 @@ public class PrepareSpecIT extends ESIntegTestCase {
         assertThat(prepareSpecResponse.getLength(), greaterThan(0));
         assertThat(prepareSpecResponse.getId(), equalTo("my_id"));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        String script = (String)spec.getSourceAsMap().get("script");
+        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
+        Map<String, Object> parsedSource = parser.mapOrdered();
+        VectorEntries entries = new VectorEntries(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
@@ -67,7 +74,10 @@ public class PrepareSpecIT extends ESIntegTestCase {
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).get();
         assertThat(prepareSpecResponse.getLength(), equalTo(6));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        String script = (String)spec.getSourceAsMap().get("script");
+        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
+        Map<String, Object> parsedSource = parser.mapOrdered();
+        VectorEntries entries = new VectorEntries(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
@@ -79,7 +89,10 @@ public class PrepareSpecIT extends ESIntegTestCase {
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithGivenTerms().string()).get();
         assertThat(prepareSpecResponse.getLength(), equalTo(3));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
+        String script = (String)spec.getSourceAsMap().get("script");
+        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
+        Map<String, Object> parsedSource = parser.mapOrdered();
+        VectorEntries entries = new VectorEntries(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }

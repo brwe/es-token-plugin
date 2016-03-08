@@ -23,6 +23,7 @@ import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
+import org.elasticsearch.search.lookup.SourceLookup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,7 +79,7 @@ public class VectorEntries  {
         return finalTerms;
     }
 
-    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
         if (sparse) {
             int length = 0;
             List<EsSparseVector> entries = new ArrayList<>();

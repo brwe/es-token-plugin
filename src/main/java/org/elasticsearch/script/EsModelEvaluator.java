@@ -22,7 +22,7 @@ package org.elasticsearch.script;
 import org.elasticsearch.common.collect.Tuple;
 
 
-interface EsModelEvaluator {
+public interface EsModelEvaluator {
     String evaluate(Tuple<int[], double[]> featureValues);
     String evaluate(double[] featureValues);
 }

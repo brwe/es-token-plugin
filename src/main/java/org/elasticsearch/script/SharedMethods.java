@@ -27,6 +27,9 @@ import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 
 import java.io.IOException;
@@ -69,19 +72,19 @@ public class SharedMethods {
         // get the stored parameters
         String index = (String) params.get("index");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"index\" missing");
+            throw new ScriptException("cannot initialize naive bayes model: parameter \"index\" missing");
         }
         String type = (String) params.get("type");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"type\" missing");
+            throw new ScriptException("cannot initialize naive bayes model: parameter \"type\" missing");
         }
         String id = (String) params.get("id");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"id\" missing");
+            throw new ScriptException("cannot initialize naive bayes model: parameter \"id\" missing");
         }
         GetResponse getResponse = client.prepareGet(index, type, id).get();
         if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
+            throw new ScriptException("cannot initialize naive bayes model: document " + index + "/" + type + "/" + id);
         }
         return getResponse;
     }
@@ -103,7 +106,7 @@ public class SharedMethods {
         ArrayList thetasAsArrayList = (ArrayList) getResponse.getSource().get("thetas");
         features.addAll((ArrayList) getResponse.getSource().get("features"));
         if (field == null || features == null || piAsArrayList == null || labelsAsArrayList == null || thetasAsArrayList == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": one of the following parameters missing: field, features, pi, thetas, labels");
+            throw new ScriptException("cannot initialize naive bayes model: one of the following parameters missing: field, features, pi, thetas, labels");
         }
         double[] pi = new double[piAsArrayList.size()];
         for (int i = 0; i < piAsArrayList.size(); i++) {
@@ -172,35 +175,8 @@ public class SharedMethods {
         return indicesAndValues;
     }
 
-    public static GetResponse getSpec(Map<String, Object> params, Client client, Map<String, Object> model) {
-
-        // get the stored parameters
-        String index = (String) params.get("spec_index");
-        if (index == null) {
-            index = (String) model.get("spec_index");
-            if (index == null) {
-                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_index\" missing");
-            }
-        }
-        String type = (String) params.get("spec_type");
-        if (type == null) {
-            type = (String) model.get("spec_type");
-            if (type == null) {
-                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_type\" missing");
-            }
-        }
-        String id = (String) params.get("spec_id");
-        if (id == null) {
-            id = (String) model.get("spec_id");
-            if (id == null) {
-                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_id\" missing");
-            }
-        }
-        GetResponse getResponse = client.prepareGet(index, type, id).get();
-        if (getResponse.isExists() == false) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": document " + index + "/" + type + "/" + id);
-        }
-        return getResponse;
-
+    public static Map<String, Object> getSourceAsMap(String source) throws IOException {
+        XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
+        return parser.mapOrdered();
     }
 }

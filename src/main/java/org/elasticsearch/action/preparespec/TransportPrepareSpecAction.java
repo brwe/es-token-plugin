@@ -26,16 +26,14 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.cluster.ClusterService;
-import org.elasticsearch.cluster.ClusterState;
-import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.*;
-import org.elasticsearch.search.aggregations.support.format.ValueParser;
+import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.script.SharedMethods;
+import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -75,8 +73,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
 
     static Tuple<Boolean, List<FieldSpecRequest>> parseFieldSpecRequests(String source) throws IOException {
         List<FieldSpecRequest> fieldSpecRequests = new ArrayList<>();
-        XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
-        Map<String, Object> parsedSource = parser.mapOrdered();
+        Map<String, Object> parsedSource = SharedMethods.getSourceAsMap(source);
         if (parsedSource.get("features") == null) {
             throw new ElasticsearchException("reatures are missing in prepare spec request");
         }
@@ -144,7 +141,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                         length += fS.getLength();
                     }
                     final int finalLength = length;
-                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse, length));
+                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLVectorScriptEngineService.NAME).setSource(createSpecSource(fieldSpecs, sparse, length));
                     if (id != null) {
                         indexRequestBuilder.setId(id);
                     }
@@ -177,7 +174,11 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             sourceBuilder.endArray();
             sourceBuilder.field("length", Integer.toString(length));
             sourceBuilder.endObject();
-            return sourceBuilder;
+            XContentBuilder actualSource = jsonBuilder();
+            actualSource.startObject()
+                    .field("script", sourceBuilder.string())
+                    .endObject();
+            return actualSource;
         }
 
         @Override
