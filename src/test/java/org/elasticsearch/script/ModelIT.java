@@ -309,6 +309,44 @@ public class ModelIT extends ESIntegTestCase {
         }
     }
 
+    @Test
+    public void testPMMLLRSparseWithTFAndSpecStoredWithModel() throws IOException, JAXBException, SAXException, ExecutionException, InterruptedException {
+        createIndexWithTermVectors();
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        ensureGreen("index");
+        for (int i = 0; i < 10; i++) {
+            double intercept = randomFloat();
+            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
+            // store LR Model
+            String llr = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
+
+            refresh();
+            PrepareSpecResponse response = createSpecWithGivenTerms("tf", true);
+            // create spec
+            client().prepareIndex("model", "pmml", "1").setSource(
+                    jsonBuilder().startObject()
+                            .field("pmml", llr)
+                            .field("spec_index", response.getIndex())
+                            .field("spec_type", response.getType())
+                            .field("spec_id", response.getId())
+                            .endObject()
+            ).get();
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("index", "model");
+            parameters.put("type", "pmml");
+            parameters.put("id", "1");
+            // call PMML script with needed parameters
+            SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(PMMLModel.SCRIPT_NAME, ScriptService.ScriptType.INLINE, "native", parameters)).get();
+            assertSearchResponse(searchResponse);
+            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
+            int[] vals = new int[]{1, 2, 1, 0};
+            double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble(label)));
+        }
+    }
+
+
     public PrepareSpecResponse createSpecWithGivenTerms(String number, boolean sparse) throws IOException, InterruptedException, ExecutionException {
         XContentBuilder source = jsonBuilder();
         source.startObject()

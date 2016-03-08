@@ -152,7 +152,7 @@ public class PMMLModel extends AbstractSearchScript {
     private PMMLModel(Map<String, Object> params, Client client) throws ScriptException, IOException, SAXException, JAXBException {
         GetResponse getResponse = SharedMethods.getModel(params, client);
         model = initModel(getResponse.getSourceAsMap().get("pmml").toString());
-        getResponse = SharedMethods.getSpec(params, client);
+        getResponse = SharedMethods.getSpec(params, client, getResponse.getSourceAsMap());
         features= new VectorEntries(getResponse.getSource());
     }
 

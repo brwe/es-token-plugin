@@ -27,6 +27,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.plugin.TokenPlugin;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -80,7 +81,7 @@ public class VectorizerScript extends AbstractSearchScript {
      * @throws ScriptException
      */
     private VectorizerScript(Map<String, Object> params, Client client) throws ScriptException {
-        GetResponse getResponse = SharedMethods.getSpec(params, client);
+        GetResponse getResponse = SharedMethods.getSpec(params, client, new HashMap<String, Object>());
         features = new VectorEntries(getResponse.getSource());
     }
 

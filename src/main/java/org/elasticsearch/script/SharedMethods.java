@@ -172,20 +172,29 @@ public class SharedMethods {
         return indicesAndValues;
     }
 
-    public static GetResponse getSpec(Map<String, Object> params, Client client) {
+    public static GetResponse getSpec(Map<String, Object> params, Client client, Map<String, Object> model) {
 
         // get the stored parameters
         String index = (String) params.get("spec_index");
         if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_index\" missing");
+            index = (String) model.get("spec_index");
+            if (index == null) {
+                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_index\" missing");
+            }
         }
         String type = (String) params.get("spec_type");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_type\" missing");
+        if (type == null) {
+            type = (String) model.get("spec_type");
+            if (type == null) {
+                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_type\" missing");
+            }
         }
         String id = (String) params.get("spec_id");
-        if (index == null) {
-            throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_id\" missing");
+        if (id == null) {
+            id = (String) model.get("spec_id");
+            if (id == null) {
+                throw new ScriptException("cannot initialize " + PMMLModel.SCRIPT_NAME + ": parameter \"spec_id\" missing");
+            }
         }
         GetResponse getResponse = client.prepareGet(index, type, id).get();
         if (getResponse.isExists() == false) {
