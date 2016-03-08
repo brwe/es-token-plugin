@@ -19,7 +19,6 @@
 
 package org.elasticsearch.action.preparespec;
 
-import com.google.common.collect.Lists;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -27,7 +26,9 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest {
@@ -71,9 +72,9 @@ public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest 
                 assert (agg.asList().size() == 1);
                 Aggregation termsAgg = agg.asList().get(0);
                 Set<String> terms = extractTerms(termsAgg);
-                List<String> termsAsList = Lists.newArrayList(terms.toArray(new String[terms.size()]));
-                Collections.sort(termsAsList);
-                fieldSpecActionListener.onResponse(new StringFieldSpec(termsAsList.toArray(new String[termsAsList.size()]), number, field));
+                String[] finalTerms = terms.toArray(new String[terms.size()]);
+                Arrays.sort(finalTerms);
+                fieldSpecActionListener.onResponse(new StringFieldSpec(finalTerms, number, field));
             }
 
             @Override

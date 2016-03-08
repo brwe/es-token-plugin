@@ -21,6 +21,8 @@ package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.client.Client;
 
+import java.util.Arrays;
+
 public class StringFieldGivenTermsSpecRequest implements FieldSpecRequest {
 
     private String[] terms;
@@ -35,6 +37,7 @@ public class StringFieldGivenTermsSpecRequest implements FieldSpecRequest {
 
     @Override
     public void process(final TransportPrepareSpecAction.FieldSpecActionListener fieldSpecActionListener, Client client) {
+        Arrays.sort(terms);
         fieldSpecActionListener.onResponse(new StringFieldSpec(terms, number, field));
     }
 }
