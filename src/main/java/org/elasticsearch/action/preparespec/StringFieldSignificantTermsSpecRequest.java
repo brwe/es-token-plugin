@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.preparespec;
 
+import com.google.common.collect.Lists;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -26,8 +27,7 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest {
@@ -44,38 +44,22 @@ public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest 
         this.field = field;
     }
 
-    private String[] extractTerms(Aggregation aggregation) {
-        List<String[]> terms = new ArrayList<>();
+    private Set<String> extractTerms(Aggregation aggregation) {
+        Set<String> terms = new HashSet<>();
         if (aggregation instanceof MultiBucketsAggregation) {
             for (MultiBucketsAggregation.Bucket bucket : ((MultiBucketsAggregation) (aggregation)).getBuckets()) {
                 if (bucket.getAggregations().asList().size() != 0) {
                     for (Aggregation agg : bucket.getAggregations().asList()) {
-                        terms.add(extractTerms(agg));
+                        terms.addAll(extractTerms(agg));
                     }
                 } else {
-                    terms.add(new String[]{bucket.getKeyAsString()});
+                    terms.add(bucket.getKeyAsString());
                 }
             }
         } else {
             throw new IllegalStateException("cannot deal with non bucket aggs");
         }
-        return combineStringArrays(terms);
-    }
-
-    private String[] combineStringArrays(List<String[]> terms) {
-        int size = 0;
-        for (String[] termsArray : terms) {
-            size += termsArray.length;
-        }
-        String[] finalTerms = new String[size];
-        int curIndex = 0;
-        for (String[] termsArray : terms) {
-            for (String term : termsArray) {
-                finalTerms[curIndex] = term;
-                curIndex++;
-            }
-        }
-        return finalTerms;
+        return terms;
     }
 
     @Override
@@ -86,8 +70,10 @@ public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest 
                 Aggregations agg = searchResponse.getAggregations();
                 assert (agg.asList().size() == 1);
                 Aggregation termsAgg = agg.asList().get(0);
-                String[] terms = extractTerms(termsAgg);
-                fieldSpecActionListener.onResponse(new StringFieldSpec(terms, number, field));
+                Set<String> terms = extractTerms(termsAgg);
+                List<String> termsAsList = Lists.newArrayList(terms.toArray(new String[terms.size()]));
+                Collections.sort(termsAsList);
+                fieldSpecActionListener.onResponse(new StringFieldSpec(termsAsList.toArray(new String[termsAsList.size()]), number, field));
             }
 
             @Override
@@ -96,5 +82,4 @@ public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest 
             }
         });
     }
-
 }
