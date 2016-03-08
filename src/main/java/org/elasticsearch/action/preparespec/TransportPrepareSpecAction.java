@@ -21,6 +21,7 @@ package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
@@ -66,7 +67,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             listener.onFailure(e);
         }
 
-        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener, client, fieldSpecRequests.v1());
+        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener, client, fieldSpecRequests.v1(), request.id());
         for (final FieldSpecRequest fieldSpecRequest : fieldSpecRequests.v2()) {
             fieldSpecRequest.process(fieldSpecActionListener, client);
         }
@@ -120,14 +121,16 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         private ActionListener<PrepareSpecResponse> listener;
         final private Client client;
         final private boolean sparse;
+        private String id;
         private int currentResponses;
         final List<FieldSpec> fieldSpecs = new ArrayList<>();
 
-        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse) {
+        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse, String id) {
             this.numResponses = numResponses;
             this.listener = listener;
             this.client = client;
             this.sparse = sparse;
+            this.id = id;
         }
 
         @Override
@@ -141,7 +144,11 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                         length += fS.getLength();
                     }
                     final int finalLength = length;
-                    client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse, length)).execute(new ActionListener<IndexResponse>() {
+                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex("pmml", "spec").setSource(createSpecSource(fieldSpecs, sparse, length));
+                    if (id != null) {
+                        indexRequestBuilder.setId(id);
+                    }
+                    indexRequestBuilder.execute(new ActionListener<IndexResponse>() {
                         @Override
                         public void onResponse(IndexResponse indexResponse) {
                             listener.onResponse(new PrepareSpecResponse(indexResponse.getIndex(), indexResponse.getType(), indexResponse.getId(), finalLength));

@@ -30,6 +30,8 @@ import java.io.IOException;
 public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
 
     private String source;
+    private String id;
+
     public PrepareSpecRequest() {
 
     }
@@ -51,14 +53,15 @@ public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         source = in.readString();
+        id = in.readOptionalString();
 
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-
         out.writeString(source);
+        out.writeOptionalString(id);
     }
 
 
@@ -69,5 +72,13 @@ public class PrepareSpecRequest extends ActionRequest<PrepareSpecRequest> {
 
     public String source() {
         return source;
+    }
+
+    public void id(String id) {
+        this.id = id;
+    }
+
+    public String id() {
+        return id;
     }
 }

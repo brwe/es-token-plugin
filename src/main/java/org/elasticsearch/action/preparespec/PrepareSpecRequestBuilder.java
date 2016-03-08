@@ -24,6 +24,7 @@ import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.client.ElasticsearchClient;
 
 public class PrepareSpecRequestBuilder extends ActionRequestBuilder<PrepareSpecRequest, PrepareSpecResponse, PrepareSpecRequestBuilder> {
+
     public PrepareSpecRequestBuilder(ElasticsearchClient client) {
         super(client, PrepareSpecAction.INSTANCE, new PrepareSpecRequest());
     }
@@ -38,4 +39,8 @@ public class PrepareSpecRequestBuilder extends ActionRequestBuilder<PrepareSpecR
         client.execute(PrepareSpecAction.INSTANCE, request, listener);
     }
 
+    public PrepareSpecRequestBuilder setId(String id) {
+        request.id(id);
+        return this;
+    }
 }

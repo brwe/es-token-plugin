@@ -51,8 +51,9 @@ public class PrepareSpecIT extends ESIntegTestCase {
     public void testSimpleTextFieldRequestWithSignificantTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithSignificnatTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithSignificnatTerms().string()).setId("my_id").get();
         assertThat(prepareSpecResponse.getLength(), greaterThan(0));
+        assertThat(prepareSpecResponse.getId(), equalTo("my_id"));
         GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
         VectorEntries entries = new VectorEntries(spec.getSourceAsMap());
         assertThat(entries.isSparse(), equalTo(false));
