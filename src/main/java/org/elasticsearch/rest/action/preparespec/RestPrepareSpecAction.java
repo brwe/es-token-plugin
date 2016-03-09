@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.rest.action.allterms;
+package org.elasticsearch.rest.action.preparespec;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.allterms.AllTermsAction;

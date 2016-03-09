@@ -1,13 +1,13 @@
 {
-  "prepare_spec": {
+  "store_model": {
     "documentation": "no doc yet",
     "methods": [
       "POST"
     ],
     "url": {
-      "path": "/_prepare_spec",
+      "path": "/_store_model",
       "paths": [
-        "/_prepare_spec"
+        "/_store_model"
       ],
       "params": {
         "id": {
