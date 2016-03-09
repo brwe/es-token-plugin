@@ -19,3 +19,28 @@
   - match:  { hits.hits.0._type: pmml_model  }
   - match:  { hits.hits.0._source: {"script":"this is just gibberish but we do not validate yet so no problemdont know what to put heresame as spec"}  }
 
+---
+"store_model with existing spec":
+  - do:
+      prepare_spec:
+         body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf", "type": "string"}]}
+         id: "spec_id"
+
+  - do:
+      store_model:
+         body: {"model": "just gibberish"}
+         spec_id: "spec_id"
+
+  - do:
+      indices.refresh: {}
+
+  - do:
+      search:
+         index: .scripts
+         type:  pmml_model
+
+
+  - match: {hits.total: 1}
+  - match:  { hits.hits.0._index: .scripts  }
+  - match:  { hits.hits.0._type: pmml_model  }
+

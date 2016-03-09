@@ -13,6 +13,10 @@
         "id": {
           "type": "string",
           "description": "Id for the model script."
+        },
+        "spec_id": {
+          "type": "string",
+          "description": "Id for the spec."
         }
       }
     },
