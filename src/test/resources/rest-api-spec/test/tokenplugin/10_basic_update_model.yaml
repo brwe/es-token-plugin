@@ -1,0 +1,32 @@
+
+---
+"Basic store_model":
+  - do:
+      store_model:
+         id: "original_model_id"
+         body: {"spec":"this is just gibberish but we do not validate yet so no problem", "model": "here be xml model"}
+
+  - do:
+      index:
+         body: {"script":"the new spec"}
+         index: ".scripts"
+         type: "pmml_vector"
+         id: "another_spec"
+
+  - do:
+      indices.refresh: {}
+
+  - do:
+      update_model:
+         id: "new_model_id"
+         model_id:  "original_model_id"
+         spec_id: "another_spec"
+
+  - do:
+      get:
+         index: ".scripts"
+         type:  "pmml_model"
+         id: "new_model_id"
+
+  - match:  { _source: {"script":"the new specdont know what to put herehere be xml model"}  }
+

@@ -1,0 +1,32 @@
+{
+  "update_model": {
+    "documentation": "no doc yet",
+    "methods": [
+      "POST"
+    ],
+    "url": {
+      "path": "/_update_model_spec",
+      "paths": [
+        "/_update_model_spec"
+      ],
+      "params": {
+        "id": {
+          "type": "string",
+          "required": true,
+          "description": "New id for the updated model script."
+        },
+        "spec_id": {
+          "type": "string",
+          "required": true,
+          "description": "Id for the new spec."
+        },
+        "model_id": {
+          "type": "string",
+          "required": true,
+          "description": "Id for the model for which we want to change the spec."
+        }
+      }
+    }
+  }
+}
+
