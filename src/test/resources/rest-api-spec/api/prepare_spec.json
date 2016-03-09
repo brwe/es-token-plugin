@@ -12,7 +12,7 @@
       "params": {
         "id": {
           "type": "string",
-          "description": "Id for the model script."
+          "description": "Id for the spec."
         }
       }
     },

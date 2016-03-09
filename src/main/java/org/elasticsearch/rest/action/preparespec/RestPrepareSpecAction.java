@@ -53,11 +53,15 @@ public class RestPrepareSpecAction extends BaseRestHandler {
 
     @Override
     public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
+        String id = request.param("id");
         final PrepareSpecRequest prepareSpecRequest = new PrepareSpecRequest();
         if (request.content() == null) {
             throw new ElasticsearchException("prepare spec request must have a body");
         }
         prepareSpecRequest.source(new String(request.content().toBytes(), Charset.defaultCharset()));
+        if (id != null) {
+            prepareSpecRequest.id(id);
+        }
 
         client.execute(PrepareSpecAction.INSTANCE, prepareSpecRequest, new RestBuilderListener<PrepareSpecResponse>(channel) {
             @Override
