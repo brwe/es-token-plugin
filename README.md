@@ -11,7 +11,7 @@ Retrieves all tokens in an index from a user given term onwards.
 Example:
 
 ```
-GET wiki/_allterms/text?size=10&from=random&min_doc_freq=100
+GET sentiment140/_allterms/text?size=10&from=random&min_doc_freq=100
 ```
 
 would result in (depending on the data):
@@ -19,27 +19,28 @@ would result in (depending on the data):
 ```
  {
    "terms": [
-      "random",
-      "random_chance",
-      "randomized",
-      "randomly",
-      "randomness",
-      "rands",
-      "randwick",
-      "randy",
-      "raney",
-      "rang"
+     "rather",
+     "ray",
+     "re",
+     "reach",
+     "read",
+     "reading",
+     "ready",
+     "real",
+     "realised",
+     "reality",
+     "realize"
    ]
-}
+ }
 ```
 
 Parameters:
 
-- size: number of terms to return
+- `size`: number of terms to return
 
-- from: term to start with. Starts from the next term that is greater if the term is not found in the dictionary
+- `from`: term to start with. Starts from the next term that is greater if the term is not found in the dictionary
 
-- min_doc_freq: skip all terms where document frequency is < min_doc_freq. document frequency for term is computed per shard not over the whole index.
+- `min_doc_freq`: skip all terms where document frequency is < `min_doc_freq`. document frequency for term is computed per shard not over the whole index.
 
 
 
@@ -131,8 +132,25 @@ Result:
 }
 ```
 
-Prepare spec request 
-==========
+
+Using machine learning models with this plugin
+==============================================
+
+In order to apply trained machine learning models in elasticsearch with this plugin models need to be trained outside elasticsearch and stored in elasticsearch in PMML format.
+
+The basic workflow is as follows:
+
+1. Specify how documents should be converted to feature vectors (`_prepare_spec` api)
+2. Retrieve document vectors with any tool you like (sci kit learn, spark, etc) using the spec (`pmml_vector` script)
+3. store trained model in elasticsearch (`_store_model` api)
+4. use model on new documents (`pmml_model` script)
+
+Currently this plugin only supports retrieving term frequencies fo terms in string fields.
+
+
+
+Prepare spec request (`_prepare_spec`)
+======================================
 
 In order to convert a document into a numeric vector we need some specification how is is supposed to work.
 This specification can then be used to either retrieve vectors for each document or to apply a PMML model to a document.
@@ -151,18 +169,21 @@ POST INDEX/TYPE/_prepare_spec
 }
 ```
 
-The parameter "sparse" defines if the vector returned should be in sparse format or dense.
+The parameter `sparse` defines if the vector returned should be in sparse format or dense.
 
-Return value for sparse 
 
-The "features" array is an array of feature definitions each of which describes how a single field will be converted to an entry into a vector.
+
+The `features` array is an array of feature definitions each of which describes how a single field will be converted to an entry into a vector.
+
 So far only string fields are supported.
+String fields are converted to vectors by counting the number of times a word occurs in a field or optionally if it occurs or not. 
+
 The following parameters are mandatory for each definition:
 
 `field`: the field this is supposed to look at
-`tokens`: where the tokens come from. can be "significant_terms", "all_terms" or "given" Depending on this parameter other parameters are required, see below
-`number`: can be "tf" if the resulting number in the vector should be the term frequency or "occurrence" in case the entry in the vector should be 1 if the token appears in the document or 0 otherwise
-`type`: The type of the field, currently only "string" is supported
+`tokens`: where the tokens come from. can be `significant_terms`, `all_terms` or `given`. Depending on this parameter other parameters are required, see below
+`number`: can be `tf` if the resulting number in the vector should be the term frequency or `occurrence` in case the entry in the vector should be 1 if the token appears in the document or 0 otherwise
+`type`: The type of the field, currently only `string` is supported
 
 
 
@@ -172,7 +193,7 @@ The following parameters are mandatory for each definition:
 
 
 ```
- POST INDEX/TYPE/_prepare_spec
+ POST _prepare_spec
  {
    "features": [
      {
@@ -181,7 +202,7 @@ The following parameters are mandatory for each definition:
        "tokens": "significant_terms",
        "number": "tf"| "occurence",
        "index": INDEX_NAME,
-       "request": A string with a significnat terms aggregation
+       "request": A string with a significnat terms aggregation. this should be json but is needs to be an actual string, so escaped " etc.
        
      },
      {},
@@ -191,7 +212,7 @@ The following parameters are mandatory for each definition:
  }
 ```
 
-This will execute a significant terms aggregation as specified in the "request" field and use all tokens that are returned by significant_terms. The aggregation will be performed on the index given in the "index" parameter.
+This will execute a significant terms aggregation as specified in the `request` field and use all tokens that are returned by `significant_terms`. The aggregation will be performed on the index given in the "index" parameter.
 
 
 
@@ -199,7 +220,7 @@ This will execute a significant terms aggregation as specified in the "request" 
 -------------------
 
 ```
- POST INDEX/TYPE/_prepare_spec
+ POST _prepare_spec
  {
   "features": [
        {
@@ -217,13 +238,13 @@ This will execute a significant terms aggregation as specified in the "request" 
  }
 ```
 
-This will use all terms in the index on the given field that exceed the minimum document frequency given.
+This will use `_allterms` in the index on the given field that exceed the minimum document frequency (`min_doc_freq`) given.
 
 "tokens": "given"
 -------------------
 
 ```
- POST INDEX/TYPE/_prepare_spec
+ POST _prepare_spec
  {
   "features": [
        {
@@ -240,25 +261,208 @@ This will use all terms in the index on the given field that exceed the minimum 
  }
 ```
 
-This will use the tokens given in the "terms" list.
+This will use the tokens given in the `terms` list.
+
+Return value
+------------
+`_prepare_spec` will create an indexed script with language `pmml_vector` which can later be used to retrieve a vector per document (see "Vector scripts" below).
+The return value looks like this:
+
+```
+{
+  "index": ".scripts",
+  "type": "pmml_vector",
+  "id": "AVNgPhq-EcToqOJ2nbcv",
+  "length": 32528
+}
+```
+
+`length`: the number of entries in each vector
+
+`id`: the id of the script which later needs to be used whe retrieving the vectors (see "Vector scripts" below). 
+
+Optionally an id can be given with the `_prepare_spec` request like this:
+
+```
+POST _prepare_spec?id=my_custom_id
+{
+....
+}
+```
+
+in which case the result will be :
+
+```
+{
+  "index": ".scripts",
+  "type": "pmml_vector",
+  "id": "my_custom_id",
+  "length": 32528
+}
+```
+
+Vector scripts
+==============
+
+The script that is created with the _prepare_spec can be used in any place where scripts are used, like for example so:
+
+```
+GET sentiment140/_search
+{
+  "script_fields": {
+    "vector": {
+      "script": {
+        "id": "my_custom_id",
+        "lang": "pmml_vector"
+      }
+    }
+  }
+}
+```
+where the id is what  _prepare_spec returned.
 
 
+Result looks like this for sparse vectors:
 
+
+```
+   "hits": [
+      {
+        "_index": "sentiment140",
+        "_type": "tweets",
+        "_id": "AVNb-VfJYKIbrxwdVhA-",
+        "_score": 1,
+        "fields": {
+          "vector": [
+            {
+              "indices": [
+                881,
+                7539,
+                8659,
+                13402,
+                22831
+              ],
+              "values": [
+                1,
+                1,
+                1,
+                1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      ...
+```
+
+indices is the index in the vector (in this example the whole vector would have 32528 entries most of whihc are 0 so that makes no sense to return). values is the actual vector entries.
+
+For dense vectors it looks like this:
+
+```
+{
+...
+        "_index": "sentiment140",
+        "_type": "tweets",
+        "_id": "AVNb-VfJYKIbrxwdVhBX",
+        "_score": 1,
+        "fields": {
+          "vector": [
+            {
+              "values": [
+                0,
+                0,
+                2
+              ]
+            }
+          ]
+        }
+      },
+      ...
+```
+
+
+Store a trained model
+=====================
+
+Use the _store_model api to store a trained model. 
+The request needs two parameters: the model in pmml format and the vector spec (created with _prepare_spec).
+
+Request looks like this:
+
+POST _store_model
+{
+  "model": "here be the xml that defines the model",
+  "spec": "here be the script that defines the document-vector transformation"
+}
+
+or alternatively:
+
+
+```
+POST _store_model?spec_id=my_custom_id
+{
+  "model": "here be the xml that defines the model"
+}
+```
+
+where spec_id points to the vector spec we created before.
+
+There is currently no validation whether model and spec actually fit.
+
+Return value is:
+
+```
+{
+  "index": ".scripts",
+  "type": "pmml_model",
+  "id": "AVNgvTjoEcToqOJ2nbc_",
+  "version": 1
+}
+```
+where "id" again is the id of a script with lang pmml_model. Id can also be defines via the id parameter:
+
+```
+POST _store_model?spec_id=my_custom_id&id=my_custom_model_id
+{
+  "model": "here be the xml that defines the model"
+}
+```
+
+in which case the result would be:
+
+```
+{
+  "index": ".scripts",
+  "type": "pmml_model",
+  "id": "my_custom_model_id",
+  "version": 1
+}
+```
 
 
 Model scripts
 =============
 
+To apply the stored model, use the model id from the `_store_model` api whenever you could use a script like this:
 
-Models must be stored as a PMML string in any index as a document in the following format:
 
 ```
+GET sentiment140/_search
 {
-    "pmml": "HER BE THE UGLY XML AS A STRING"
+  "aggs": {
+    "label": {
+      "terms": {
+        "script": {
+          "id": "lr_tweets",
+          "lang": "pmml_model"
+        }
+      }
+    }
+  }
 }
 ```
-
-To use a model for prediction on a document, execute a request with a native script and add parameters that point to the spec and the stored model like this:
 
 
 
