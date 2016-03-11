@@ -95,7 +95,7 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
         request.id(hitContext.hit().id());
         request.type(hitContext.hit().type());
         request.index(context.indexShard().indexService().index().getName());
-        TermVectorsResponse termVector = context.indexShard().termVectorsService().getTermVectors(new TermVectorsRequest(context.indexShard().indexService().index().getName(), hitContext.hit().type(), hitContext.hit().id()), context.indexShard().indexService().index().getName());
+        TermVectorsResponse termVector = context.indexShard().termVectorsService().getTermVectors(request, context.indexShard().indexService().index().getName());
         XContentBuilder builder;
         try {
             builder = jsonBuilder();

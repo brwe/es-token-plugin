@@ -208,4 +208,54 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         assertArrayEquals((double[]) vectorAsMap.get("values"), new double[]{2, 2, 1}, 0.0);
 
     }
+
+    @Test
+    public void testFetchTermvectorsAndCustomAnalyzerWorks() throws IOException {
+
+        client().admin()
+                .indices()
+                .prepareCreate("index")
+                .setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1))
+                .addMapping(
+                        "type",
+                        jsonBuilder()
+                                .startObject().startObject("type")
+                                .startObject("properties")
+                                .startObject("text")
+                                .field("type", "string").field("term_vector", "yes")
+                                .endObject()
+                                .endObject()
+                                .endObject().endObject()).execute().actionGet();
+        client().admin().cluster().prepareHealth().setWaitForEvents(Priority.LANGUID).setWaitForYellowStatus().execute().actionGet();
+
+        client().index(
+                indexRequest("index").type("type").id("1")
+                        .source(jsonBuilder().startObject().field("text", "I am sam i am").endObject())).actionGet();
+        client().index(
+                indexRequest("index").type("type").id("2")
+                        .source(jsonBuilder().startObject().field("text", "I am sam i am").endObject())).actionGet();
+
+        ensureGreen();
+        refresh();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
+        String searchSource = jsonBuilder().startObject()
+                .startObject(TermVectorsFetchSubPhase.NAMES[0])
+                .startObject("per_field_analyzer")
+                .field("text", "keyword")
+                .endObject()
+                .endObject().string();
+        SearchResponse response = client().prepareSearch().setSource(searchSource).get();
+        assertSearchResponse(response);
+        logger.info(response.toString());
+        SearchHit hit = response.getHits().getAt(0);
+        // get the fields from the response
+        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAMES[0]);
+        Map<String, Object> termVectors = fields.getValue();
+        // get frequencies for field test
+        Map<String, Object> field = (Map<String, Object>) termVectors.get("text");
+        Map<String, Object> freqs = (Map<String, Object>) field.get("terms");
+        assertThat((Integer) ((Map<String, Object>) freqs.get("I am sam i am")).get("term_freq"), equalTo(1));
+
+
+    }
 }
