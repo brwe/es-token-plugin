@@ -155,11 +155,31 @@ For example:
 
 
 ```
+
+PUT test 
+{
+  "mappings": {
+    "doc": {
+      "properties": {
+        "text": {
+          "term_vector": "yes",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+
+POST test/doc/1
+{
+  "text": "I am a happy hippo"
+}
+
 GET test/_search
 {
   "termvectors": {
     "per_field_analyzer": {
-      "text": "standard"
+      "text": "whitespace"
     }
   },
   "query": ...
@@ -171,7 +191,7 @@ will result in
 
 ```
 {
-  "took": 4,
+  "took": 3,
   "timed_out": false,
   "_shards": {
     "total": 5,
@@ -200,6 +220,16 @@ will result in
                   "sum_ttf": 5
                 },
                 "terms": {
+                  "I": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 0,
+                        "start_offset": 0,
+                        "end_offset": 1
+                      }
+                    ]
+                  },
                   "a": {
                     "term_freq": 1,
                     "tokens": [
@@ -237,16 +267,6 @@ will result in
                         "position": 4,
                         "start_offset": 13,
                         "end_offset": 18
-                      }
-                    ]
-                  },
-                  "i": {
-                    "term_freq": 1,
-                    "tokens": [
-                      {
-                        "position": 0,
-                        "start_offset": 0,
-                        "end_offset": 1
                       }
                     ]
                   }
