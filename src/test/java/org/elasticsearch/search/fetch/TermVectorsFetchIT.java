@@ -176,7 +176,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
         String searchSource = jsonBuilder().startObject()
                 .startObject(TermVectorsFetchSubPhase.NAMES[0])
-                .field("fields", new String[]{"test"})
+                .field("fields", new String[]{"text"})
                 .endObject()
                 .startObject("script_fields")
                 .startObject("vectors")
