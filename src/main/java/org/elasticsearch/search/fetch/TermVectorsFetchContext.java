@@ -20,18 +20,20 @@
 package org.elasticsearch.search.fetch;
 
 
+import org.elasticsearch.action.termvectors.TermVectorsRequest;
+
 public class TermVectorsFetchContext extends FetchSubPhaseContext {
 
-    private String field = null;
+    private TermVectorsRequest request;
 
     public TermVectorsFetchContext() {
     }
 
-    public void setField(String field) {
-        this.field = field;
+    public TermVectorsRequest getRequest() {
+        return request;
     }
 
-    public String getField() {
-        return field;
+    public void setRequest(TermVectorsRequest request) {
+        this.request = request;
     }
 }

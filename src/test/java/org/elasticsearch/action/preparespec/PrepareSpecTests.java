@@ -71,7 +71,7 @@ public class PrepareSpecTests extends ESTestCase {
         return new MappingMetaData("type", parser.mapOrdered());
     }
 
-    protected static XContentBuilder getTextFieldRequestSourceWithSignificnatTerms() throws IOException {
+    public static XContentBuilder getTextFieldRequestSourceWithSignificnatTerms() throws IOException {
         XContentBuilder source = jsonBuilder();
         XContentBuilder request = jsonBuilder();
 
@@ -109,7 +109,7 @@ public class PrepareSpecTests extends ESTestCase {
         return source;
     }
 
-    protected static XContentBuilder getTextFieldRequestSourceWithAllTerms() throws IOException {
+    public static XContentBuilder getTextFieldRequestSourceWithAllTerms() throws IOException {
         XContentBuilder source = jsonBuilder();
         source.startObject()
                 .startArray("features")

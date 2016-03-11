@@ -19,22 +19,31 @@
 
 package org.elasticsearch.search.fetch;
 
+import org.elasticsearch.action.termvectors.TermVectorsRequest;
+import org.elasticsearch.common.logging.ESLoggerFactory;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.search.internal.SearchContext;
+
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
 public class TermVectorsFetchParseElement extends FetchSubPhaseParseElement<TermVectorsFetchContext> {
     @Override
     protected void innerParse(XContentParser parser, TermVectorsFetchContext termVectorsFetchContext, SearchContext searchContext) throws Exception {
 
-        XContentParser.Token token = parser.currentToken();
-        if (token == XContentParser.Token.VALUE_STRING) {
-            String fieldName = parser.text();
-            termVectorsFetchContext.setField(fieldName);
-        } else {
-            throw new IllegalStateException("Expected a VALUE_STRING but got " + token);
-        }
+        TermVectorsRequest request = new TermVectorsRequest();
+        XContentBuilder newBuilder = jsonBuilder();
+        newBuilder.copyCurrentStructure(parser);
+        ESLoggerFactory.getRootLogger().info("request copied is {}", newBuilder.string());
+        XContentParser newParser = XContentFactory.xContent(XContentType.JSON).createParser(newBuilder.string());
+        TermVectorsRequest.parseRequest(request, newParser);
+        termVectorsFetchContext.setRequest(request);
+
     }
+
     @Override
     protected FetchSubPhase.ContextFactory getContextFactory() {
         return TermVectorsFetchSubPhase.CONTEXT_FACTORY;

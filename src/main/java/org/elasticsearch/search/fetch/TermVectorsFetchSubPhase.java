@@ -20,12 +20,13 @@
 package org.elasticsearch.search.fetch;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.action.termvectors.TermVectorsResponse;
+import org.elasticsearch.common.logging.ESLoggerFactory;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.internal.InternalSearchHit;
@@ -36,6 +37,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
 public class TermVectorsFetchSubPhase implements FetchSubPhase {
@@ -56,11 +59,11 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
     public TermVectorsFetchSubPhase() {
     }
 
-    public static final String[] NAMES = {"term_vectors_fetch"};
+    public static final String[] NAMES = {"termvectors"};
 
     @Override
     public Map<String, ? extends SearchParseElement> parseElements() {
-        return ImmutableMap.of("term_vectors_fetch", new TermVectorsFetchParseElement());
+        return ImmutableMap.of(NAMES[0], new TermVectorsFetchParseElement());
     }
 
     @Override
@@ -79,7 +82,7 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
 
     @Override
     public void hitExecute(SearchContext context, HitContext hitContext) {
-        String field = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getField();
+        TermVectorsRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
 
         if (hitContext.hit().fieldsOrNull() == null) {
             hitContext.hit().fields(new HashMap<String, SearchHitField>());
@@ -89,15 +92,25 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
             hitField = new InternalSearchHitField(NAMES[0], new ArrayList<>(1));
             hitContext.hit().fields().put(NAMES[0], hitField);
         }
+        request.id(hitContext.hit().id());
+        request.type(hitContext.hit().type());
+        request.index(context.indexShard().indexService().index().getName());
         TermVectorsResponse termVector = context.indexShard().termVectorsService().getTermVectors(new TermVectorsRequest(context.indexShard().indexService().index().getName(), hitContext.hit().type(), hitContext.hit().id()), context.indexShard().indexService().index().getName());
+        XContentBuilder builder;
         try {
-            Map<String, Integer> tv = new HashMap<>();
-            TermsEnum terms = termVector.getFields().terms(field).iterator();
-            BytesRef term;
-            while ((term = terms.next()) != null) {
-                tv.put(term.utf8ToString(), terms.postings(null, PostingsEnum.ALL).freq());
-            }
-            hitField.values().add(tv);
+            builder = jsonBuilder();
+            builder.startObject();
+            termVector.toXContent(builder, ToXContent.EMPTY_PARAMS);
+            builder.endObject();
+        } catch (IOException e) {
+            throw new ElasticsearchException("could not build term vector respoonse", e);
+        }
+
+
+        try {
+            Map<String, Object> termVectorAsMap = SharedMethods.getSourceAsMap(builder.string());
+            ESLoggerFactory.getRootLogger().info("{}", builder.string());
+            hitField.values().add(termVectorAsMap.get("term_vectors"));
         } catch (IOException e) {
             throw new ElasticsearchException("retrieving term vectors failed", e);
         }
