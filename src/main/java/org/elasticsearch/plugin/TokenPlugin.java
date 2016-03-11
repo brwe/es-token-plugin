@@ -36,6 +36,8 @@ import org.elasticsearch.script.NaiveBayesUpdateScript;
 import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.search.SearchModule;
+import org.elasticsearch.search.fetch.TermVectorsFetchSubPhase;
 
 /**
  *
@@ -74,5 +76,9 @@ public class TokenPlugin extends Plugin {
 
     public void onModule(IndicesModule indicesModule) {
         indicesModule.registerMapper(AnalyzedTextFieldMapper.CONTENT_TYPE, new AnalyzedTextFieldMapper.TypeParser());
+    }
+
+    public void onModule(SearchModule searchModule) {
+        searchModule.registerFetchSubPhase(TermVectorsFetchSubPhase.class);
     }
 }
