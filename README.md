@@ -132,6 +132,139 @@ Result:
 }
 ```
 
+Term vectors within search and scroll
+=====================================
+
+To use the term vector api per docuemnt as returned with search per document, use the following syntax:
+
+
+```
+GET test/_search
+{
+  "termvectors": {
+    //term vector parameters as described here: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-termvectors.html
+    ...
+  },
+  "query": ...
+}
+
+```
+
+
+For example:
+
+
+```
+GET test/_search
+{
+  "termvectors": {
+    "per_field_analyzer": {
+      "text": "standard"
+    }
+  },
+  "query": ...
+}
+
+```
+
+will result in 
+
+```
+{
+  "took": 4,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "failed": 0
+  },
+  "hits": {
+    "total": 1,
+    "max_score": 1,
+    "hits": [
+      {
+        "_index": "test",
+        "_type": "doc",
+        "_id": "1",
+        "_score": 1,
+        "_source": {
+          "text": "I am a happy hippo"
+        },
+        "fields": {
+          "termvectors": [
+            {
+              "text": {
+                "field_statistics": {
+                  "sum_doc_freq": 5,
+                  "doc_count": 1,
+                  "sum_ttf": 5
+                },
+                "terms": {
+                  "a": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 2,
+                        "start_offset": 5,
+                        "end_offset": 6
+                      }
+                    ]
+                  },
+                  "am": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 1,
+                        "start_offset": 2,
+                        "end_offset": 4
+                      }
+                    ]
+                  },
+                  "happy": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 3,
+                        "start_offset": 7,
+                        "end_offset": 12
+                      }
+                    ]
+                  },
+                  "hippo": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 4,
+                        "start_offset": 13,
+                        "end_offset": 18
+                      }
+                    ]
+                  },
+                  "i": {
+                    "term_freq": 1,
+                    "tokens": [
+                      {
+                        "position": 0,
+                        "start_offset": 0,
+                        "end_offset": 1
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+Note that currently term vectors must be stored for each field even if we want to analyze them on the fly due to this bug: https://github.com/elastic/elasticsearch/issues/17076
+ 
+ 
+
 
 Using machine learning models with this plugin
 ==============================================
