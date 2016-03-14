@@ -32,6 +32,7 @@ import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertAcked;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertSearchResponse;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.lessThan;
@@ -248,6 +250,165 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices[0], equalTo(0));
         assertThat(indices[1], equalTo(2));
         assertThat(indices[2], equalTo(3));
+    }
+
+    @Test
+    public void testSparseVectorWithIDF() throws IOException, ExecutionException, InterruptedException {
+        assertAcked(client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)));
+        indexRandom(true,
+                client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick"),
+                client().prepareIndex().setId("2").setIndex("index").setType("type").setSource("text", "the quick fox is brown"),
+                client().prepareIndex().setId("3").setIndex("index").setType("type").setSource("text", "the brown fox is lame"),
+                client().prepareIndex().setId("4").setIndex("index").setType("type").setSource("text", "the zonk is quick"));
+        ensureGreen("index");
+        refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "lame", "quick", "the", "zonk"})
+                .field("number", "tf_idf")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", true)
+                .endObject();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        assertSearchResponse(searchResponse);
+
+        assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
+        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
+        double[] values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.44628710262841953));
+        assertThat(values[2], equalTo(0.0));
+        int[] indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(0));
+        assertThat(indices[1], equalTo(2));
+        assertThat(indices[2], equalTo(3));
+
+        assertThat(searchResponse.getHits().getAt(1).getId(), equalTo("2"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(1).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.22314355131420976));
+        assertThat(values[2], equalTo(0.0));
+        indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(0));
+        assertThat(indices[1], equalTo(2));
+        assertThat(indices[2], equalTo(3));
+
+        assertThat(searchResponse.getHits().getAt(2).getId(), equalTo("3"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(2).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.9162907318741551));
+        assertThat(values[2], equalTo(0.0));
+        indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(0));
+        assertThat(indices[1], equalTo(1));
+        assertThat(indices[2], equalTo(3));
+
+        assertThat(searchResponse.getHits().getAt(3).getId(), equalTo("4"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(3).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.0));
+        assertThat(values[2], equalTo(0.9162907318741551));
+        indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(2));
+        assertThat(indices[1], equalTo(3));
+        assertThat(indices[2], equalTo(4));
+    }
+
+    @Test
+    public void testDenseVectorWithIDF() throws IOException, ExecutionException, InterruptedException {
+        assertAcked(client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)));
+        indexRandom(true,
+                client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick"),
+                client().prepareIndex().setId("2").setIndex("index").setType("type").setSource("text", "the quick fox is brown"),
+                client().prepareIndex().setId("3").setIndex("index").setType("type").setSource("text", "the brown fox is lame"),
+                client().prepareIndex().setId("4").setIndex("index").setType("type").setSource("text", "the zonk is quick"));
+        ensureGreen("index");
+        refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "lame", "quick", "the", "zonk"})
+                .field("number", "tf_idf")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", false)
+                .endObject();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        assertSearchResponse(searchResponse);
+
+        assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
+        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
+        double[] values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(5));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.0));
+        assertThat(values[2], equalTo(0.44628710262841953));
+        assertThat(values[3], equalTo(0.0));
+        assertThat(values[4], equalTo(0.0));
+
+
+        assertThat(searchResponse.getHits().getAt(1).getId(), equalTo("2"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(1).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(5));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.0));
+        assertThat(values[2], equalTo(0.22314355131420976));
+        assertThat(values[3], equalTo(0.0));
+        assertThat(values[4], equalTo(0.0));
+
+        assertThat(searchResponse.getHits().getAt(2).getId(), equalTo("3"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(2).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(5));
+        assertThat(values[0], equalTo(0.22314355131420976));
+        assertThat(values[1], equalTo(0.9162907318741551));
+        assertThat(values[2], equalTo(0.0));
+        assertThat(values[3], equalTo(0.0));
+        assertThat(values[4], equalTo(0.0));
+
+
+        assertThat(searchResponse.getHits().getAt(3).getId(), equalTo("4"));
+        vector = (Map<String, Object>) (searchResponse.getHits().getAt(3).field("vector").values().get(0));
+        values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(5));
+        assertThat(values[0], equalTo(0.0));
+        assertThat(values[1], equalTo(0.0));
+        assertThat(values[2], equalTo(0.22314355131420976));
+        assertThat(values[3], equalTo(0.0));
+        assertThat(values[4], equalTo(0.9162907318741551));
+
     }
 
     public PrepareSpecResponse createSpecWithGivenTerms(String number, boolean sparse) throws IOException, InterruptedException, ExecutionException {

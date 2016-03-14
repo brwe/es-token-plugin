@@ -32,6 +32,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.IndexField;
+import org.elasticsearch.search.lookup.IndexFieldTerm;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 
 import java.io.IOException;
@@ -192,6 +193,34 @@ public class SharedMethods {
             if (index != null) {
                 indices.add(index);
                 values.add(indexField.get(value).tf());
+            }
+        }
+        int[] indicesArray = new int[indices.size()];
+        double[] valuesArray = new double[indices.size()];
+        for (int i = 0; i < indices.size(); i++) {
+            indicesArray[i] = indices.get(i);
+            valuesArray[i] = values.get(i);
+        }
+        indicesAndValues = new Tuple<>(indicesArray, valuesArray);
+        return indicesAndValues;
+    }
+
+    public static Tuple<int[], double[]> getIndicesAndTF_IDFFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues, IndexField indexField) throws IOException {
+        Tuple<int[], double[]> indicesAndValues;
+        List<Integer> indices = new ArrayList<>();
+        List<Double> values = new ArrayList<>();
+
+        for (String value : docValues.getValues()) {
+            Integer index = wordMap.get(value);
+            if (index != null) {
+                indices.add(index);
+                IndexFieldTerm indexFieldTerm = indexField.get(value);
+                // TODO: Here use Lucene functions already which is tricky
+                double tf = indexFieldTerm.tf();
+                double df = indexFieldTerm.df();
+                double numDocs = indexField.docCount();
+                values.add(tf * Math.log((numDocs + 1) / (df + 1)));
+
             }
         }
         int[] indicesArray = new int[indices.size()];

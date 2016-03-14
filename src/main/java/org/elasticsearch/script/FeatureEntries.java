@@ -105,6 +105,9 @@ public abstract class FeatureEntries {
                 } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
+                } else if (FeatureType.fromString(number).equals(FeatureType.TF_IDF)) {
+                    ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
+                    indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromFielddataFields(wordMap, docValues, leafIndexLookup.get(field));
                 } else {
                     throw new ScriptException(number + " not implemented yet for sparse vector");
                 }
@@ -135,20 +138,25 @@ public abstract class FeatureEntries {
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
-            double[] tfs = new double[terms.length];
+            double[] values = new double[terms.length];
             try {
                 IndexField indexField = leafIndexLookup.get(field);
                 for (int i = 0; i < terms.length; i++) {
                     IndexFieldTerm indexTermField = indexField.get(terms[i]);
                     if (FeatureType.fromString(number).equals(FeatureType.TF)) {
-                        tfs[i] = indexTermField.tf();
+                        values[i] = indexTermField.tf();
                     } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
-                        tfs[i] = indexTermField.tf() > 0 ? 1 : 0;
+                        values[i] = indexTermField.tf() > 0 ? 1 : 0;
+                    } else if (FeatureType.fromString(number).equals(FeatureType.TF_IDF)) {
+                        double tf = indexTermField.tf();
+                        double df = indexTermField.df();
+                        double numDocs = indexField.docCount();
+                        values[i] = tf * Math.log((numDocs + 1) / (df + 1));
                     } else {
                         throw new ScriptException(number + " not implemented yet for dense vector");
                     }
                 }
-                return new EsDenseVector(tfs);
+                return new EsDenseVector(values);
             } catch (IOException ex) {
                 throw new ScriptException("Could not get tf vector: ", ex);
             }
