@@ -177,21 +177,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     @SuppressWarnings({"unchecked"})
     @Override
     public SearchScript search(final CompiledScript compiledScript, final SearchLookup lookup, @Nullable final Map<String, Object> vars) {
-        return new SearchScript() {
-
-            @Override
-            public LeafSearchScript getLeafSearchScript(LeafReaderContext context) throws IOException {
-                final LeafSearchLookup leafLookup = lookup.getLeafSearchLookup(context);
-                PMMLModel scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup);
-                return scriptObject;
-            }
-
-            @Override
-            public boolean needsScores() {
-                // TODO: can we reliably know if a vectorizer script does not make use of _score
-                return false;
-            }
-        };
+        return new ModelSearchScript(lookup, compiledScript);
     }
 
     public static class PMMLModel implements LeafSearchScript {
@@ -273,6 +259,40 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         @Override
         public void setScorer(Scorer scorer) {
 
+        }
+    }
+
+    private static class ModelSearchScript implements SearchScript {
+
+        private final SearchLookup lookup;
+        private final CompiledScript compiledScript;
+        private LeafReaderContext context;
+        private LeafSearchScript modelSearchScript;
+
+
+        public ModelSearchScript(SearchLookup lookup, CompiledScript compiledScript) {
+            this.lookup = lookup;
+            this.compiledScript = compiledScript;
+        }
+
+        @Override
+        public LeafSearchScript getLeafSearchScript(LeafReaderContext context) throws IOException {
+            if (context == this.context) {
+                return modelSearchScript;
+            } else {
+                final LeafSearchLookup leafLookup = lookup.getLeafSearchLookup(context);
+                modelSearchScript = ((Factory) compiledScript.compiled()).newScript(leafLookup);
+                this.context = context;
+                return modelSearchScript;
+            }
+
+
+        }
+
+        @Override
+        public boolean needsScores() {
+            // TODO: can we reliably know if a vectorizer script does not make use of _score
+            return false;
         }
     }
 }
