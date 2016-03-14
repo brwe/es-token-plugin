@@ -137,16 +137,17 @@ public abstract class FeatureEntries {
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             double[] tfs = new double[terms.length];
             try {
-                if (FeatureType.fromString(number).equals(FeatureType.TF)) {
-                    IndexField indexField = leafIndexLookup.get(field);
-                    for (int i = 0; i < terms.length; i++) {
-                        IndexFieldTerm indexTermField = indexField.get(terms[i]);
+                IndexField indexField = leafIndexLookup.get(field);
+                for (int i = 0; i < terms.length; i++) {
+                    IndexFieldTerm indexTermField = indexField.get(terms[i]);
+                    if (FeatureType.fromString(number).equals(FeatureType.TF)) {
                         tfs[i] = indexTermField.tf();
+                    } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
+                        tfs[i] = indexTermField.tf() > 0 ? 1 : 0;
+                    } else {
+                        throw new ScriptException(number + " not implemented yet for dense vector");
                     }
-                } else {
-                    throw new ScriptException(number + " not implemented yet for dense vector");
                 }
-
                 return new EsDenseVector(tfs);
             } catch (IOException ex) {
                 throw new ScriptException("Could not get tf vector: ", ex);
