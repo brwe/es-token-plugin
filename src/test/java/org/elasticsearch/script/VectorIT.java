@@ -135,6 +135,44 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices[2], equalTo(3));
     }
 
+    @Test
+    public void testSparseVectorScriptWithTFWithoutTermVectorsStored() throws IOException, ExecutionException, InterruptedException {
+        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
+        ensureGreen("index");
+        refresh();
+        XContentBuilder source = jsonBuilder();
+        source.startObject()
+                .startArray("features")
+                .startObject()
+                .field("field", "text")
+                .field("tokens", "given")
+                .field("terms", new String[]{"fox", "lame", "quick", "the"})
+                .field("number", "tf")
+                .field("type", "string")
+                .endObject()
+                .endArray()
+                .field("sparse", true)
+                .endObject();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("spec_index", specResponse.getIndex());
+        parameters.put("spec_type", specResponse.getType());
+        parameters.put("spec_id", specResponse.getId());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        assertSearchResponse(searchResponse);
+        Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
+        double[] values = (double[]) vector.get("values");
+        assertThat(values.length, equalTo(3));
+        assertThat(values[0], equalTo(1.0));
+        assertThat(values[1], equalTo(2.0));
+        assertThat(values[2], equalTo(1.0));
+        int[] indices = (int[]) vector.get("indices");
+        assertThat(indices.length, equalTo(3));
+        assertThat(indices[0], equalTo(0));
+        assertThat(indices[1], equalTo(2));
+        assertThat(indices[2], equalTo(3));
+    }
+
     public PrepareSpecResponse createSpecWithGivenTerms(String number, boolean sparse) throws IOException, InterruptedException, ExecutionException {
         XContentBuilder source = jsonBuilder();
         source.startObject()

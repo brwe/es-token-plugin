@@ -96,9 +96,11 @@ public abstract class FeatureEntries {
                 if (FeatureType.fromString(number).equals(FeatureType.TF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
-                        throw new ScriptException("Term vectors not stored! (We could do it without but Britta has not implemented it yet)");
+                        ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
+                        indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                    } else {
+                        indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
                     }
-                    indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
 
                 } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);

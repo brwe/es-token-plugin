@@ -31,6 +31,8 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
+import org.elasticsearch.search.lookup.IndexField;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
 
 import java.io.IOException;
 import java.util.*;
@@ -178,5 +180,27 @@ public class SharedMethods {
     public static Map<String, Object> getSourceAsMap(String source) throws IOException {
         XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(source);
         return parser.mapOrdered();
+    }
+
+    public static Tuple<int[], double[]> getIndicesAndTfsFromFielddataFieldsAndIndexLookup(Map<String, Integer> wordMap, ScriptDocValues<String> docValues, IndexField indexField) throws IOException {
+        Tuple<int[], double[]> indicesAndValues;
+        List<Integer> indices = new ArrayList<>();
+        List<Integer> values = new ArrayList<>();
+
+        for (String value : docValues.getValues()) {
+            Integer index = wordMap.get(value);
+            if (index != null) {
+                indices.add(index);
+                values.add(indexField.get(value).tf());
+            }
+        }
+        int[] indicesArray = new int[indices.size()];
+        double[] valuesArray = new double[indices.size()];
+        for (int i = 0; i < indices.size(); i++) {
+            indicesArray[i] = indices.get(i);
+            valuesArray[i] = values.get(i);
+        }
+        indicesAndValues = new Tuple<>(indicesArray, valuesArray);
+        return indicesAndValues;
     }
 }
