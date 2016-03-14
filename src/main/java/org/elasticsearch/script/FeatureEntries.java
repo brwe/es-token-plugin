@@ -34,6 +34,41 @@ public abstract class FeatureEntries {
     int offset;
     String field;
 
+    public enum FeatureType {
+        OCCURRENCE,
+        TF,
+        TF_IDF,
+        BM25;
+
+        public String toString() {
+            switch (this.ordinal()) {
+                case 0:
+                    return "occurrence";
+                case 1:
+                    return "tf";
+                case 2:
+                    return "tf_idf";
+                case 3:
+                    return "bm25";
+            }
+            throw new IllegalStateException("There is no toString() for ordinal " + this.ordinal() + " - someone forgot to implement toString().");
+        }
+
+        public static FeatureType fromString(String s) {
+            if (s.equals(OCCURRENCE.toString())) {
+                return OCCURRENCE;
+            } else if (s.equals(TF.toString())) {
+                return TF;
+            } else if (s.equals(TF_IDF.toString())) {
+                return TF_IDF;
+            } else if (s.equals(BM25.toString())) {
+                return BM25;
+            } else {
+                throw new IllegalStateException("Don't know what " + s + " is - choose one of " + OCCURRENCE.toString() + " " + TF.toString() + " " + TF_IDF.toString() + " " + BM25.toString());
+            }
+        }
+    }
+
     public abstract int size();
 
     public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
@@ -58,16 +93,18 @@ public abstract class FeatureEntries {
             try {
                 /** here be the vectorizer **/
                 Tuple<int[], double[]> indicesAndValues;
-                if (number.equals("tf")) {
+                if (FeatureType.fromString(number).equals(FeatureType.TF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         throw new ScriptException("Term vectors not stored! (We could do it without but Britta has not implemented it yet)");
                     }
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
 
-                } else {
+                } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
+                } else {
+                    throw new ScriptException(number + " not implemented yet for sparse vector");
                 }
                 return new EsSparseVector(indicesAndValues);
             } catch (IOException ex) {
@@ -98,15 +135,14 @@ public abstract class FeatureEntries {
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             double[] tfs = new double[terms.length];
             try {
-                if (number.equals("tf")) {
+                if (FeatureType.fromString(number).equals(FeatureType.TF)) {
                     IndexField indexField = leafIndexLookup.get(field);
                     for (int i = 0; i < terms.length; i++) {
                         IndexFieldTerm indexTermField = indexField.get(terms[i]);
                         tfs[i] = indexTermField.tf();
                     }
-
                 } else {
-                    throw new ScriptException("sense vector woth number: occurrence not implemented yet");
+                    throw new ScriptException(number + " not implemented yet for dense vector");
                 }
 
                 return new EsDenseVector(tfs);

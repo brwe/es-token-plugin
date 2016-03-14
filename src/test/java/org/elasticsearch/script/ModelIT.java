@@ -134,7 +134,7 @@ public class ModelIT extends ESIntegTestCase {
     }
 
     @Test
-    public void testPMMLLRSparseWithOccurence() throws IOException, JAXBException, SAXException, ExecutionException, InterruptedException {
+    public void testPMMLLRSparseWithOccurrence() throws IOException, JAXBException, SAXException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
         for (int i = 0; i < 10; i++) {
@@ -142,7 +142,7 @@ public class ModelIT extends ESIntegTestCase {
             double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
             // store LR Model
             String llr = PMMLGenerator.generateLRPMMLModel(intercept, modelParams, new double[]{1, 0});
-            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
+            PrepareSpecResponse response = createSpecWithGivenTerms("occurrence", true);
             GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
             String vectorScript = (String) getResponse.getSourceAsMap().get("script");
             String finalModel = vectorScript + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + llr;
@@ -237,7 +237,7 @@ public class ModelIT extends ESIntegTestCase {
     }
 
     @Test
-    public void testPMMLSVMSparseWithOccurence() throws IOException, JAXBException, SAXException, ExecutionException, InterruptedException {
+    public void testPMMLSVMSparseWithOccurrence() throws IOException, JAXBException, SAXException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
         for (int i = 0; i < 10; i++) {
@@ -246,7 +246,7 @@ public class ModelIT extends ESIntegTestCase {
             // store LR Model
             String svm = PMMLGenerator.generateSVMPMMLModel(intercept, modelParams, new double[]{1, 0});
 
-            PrepareSpecResponse response = createSpecWithGivenTerms("occurence", true);
+            PrepareSpecResponse response = createSpecWithGivenTerms("occurrence", true);
 
             GetResponse getResponse = client().prepareGet(response.getIndex(), response.getType(), response.getId()).get();
             String vectorScript = (String) getResponse.getSourceAsMap().get("script");

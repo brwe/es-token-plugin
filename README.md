@@ -353,7 +353,7 @@ The following parameters are mandatory for each definition:
        "field": FIELDNAME,
        "type": "string",
        "tokens": "significant_terms",
-       "number": "tf"| "occurence",
+       "number": "tf"| "occurrence",
        "index": INDEX_NAME,
        "request": A string with a significnat terms aggregation. this should be json but is needs to be an actual string, so escaped " etc.
        
@@ -380,7 +380,7 @@ This will execute a significant terms aggregation as specified in the `request` 
          "field": FIELDNAME,
          "type": "string",
          "tokens": "all_terms",
-         "number": "tf"| "occurence",
+         "number": "tf"| "occurrence",
          "index": INDEX_NAME,
          "min_doc_freq": Minimum document frequency for each term, if a tersm doc freq is below it will be skipped
        },
@@ -404,7 +404,7 @@ This will use `_allterms` in the index on the given field that exceed the minimu
          "field": FIELDNAME,
          "type": "string",
          "tokens": "all_terms",
-         "number": "tf"| "occurence",
+         "number": "tf"| "occurrence",
          "terms": ["term1", "term2", ...]
        },
        {},
