@@ -37,7 +37,9 @@ import java.util.*;
 
 
 public class SharedMethods {
-    public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(List<Integer> indices, List<Double> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
+    public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
+        List<Integer> indices = new ArrayList<>();
+        List<Double> values = new ArrayList<>();
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator();
         BytesRef t;
@@ -230,7 +232,9 @@ public class SharedMethods {
         return indicesAndValues;
     }
 
-    public static Tuple<int[], double[]> getIndicesAndTF_IDFFromTermVectors(List<Integer> indices, List<Double> values, Fields fields, String field, Map<String, Integer> wordMap, LeafIndexLookup indexLookup) throws IOException {
+    public static Tuple<int[], double[]> getIndicesAndTF_IDFFromTermVectors(Fields fields, String field, Map<String, Integer> wordMap, LeafIndexLookup indexLookup) throws IOException {
+        List<Integer> indices = new ArrayList<>();
+        List<Double> values = new ArrayList<>();
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator();
         BytesRef t;

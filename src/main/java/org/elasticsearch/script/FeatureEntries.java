@@ -77,8 +77,6 @@ public abstract class FeatureEntries {
 
     public static class SparseTermFeatureEntries extends FeatureEntries {
         private String number;
-        List<Integer> indices = new ArrayList<>();
-        List<Double> values = new ArrayList<>();
         Map<String, Integer> wordMap;
 
         public SparseTermFeatureEntries(String field, String[] terms, String number, int offset) {
@@ -102,7 +100,7 @@ public abstract class FeatureEntries {
                         //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
-                        indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
+                        indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
                     }
 
                 } else if (FeatureType.fromString(number).equals(FeatureType.OCCURRENCE)) {
@@ -116,7 +114,7 @@ public abstract class FeatureEntries {
                         //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
-                        indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(indices, values, fields, field, wordMap, leafIndexLookup);
+                        indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(fields, field, wordMap, leafIndexLookup);
                     }
 
                 } else {
