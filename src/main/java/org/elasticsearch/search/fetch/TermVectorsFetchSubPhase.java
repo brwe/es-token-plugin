@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.action.termvectors.TermVectorsResponse;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.script.SharedMethods;
@@ -109,7 +108,6 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
 
         try {
             Map<String, Object> termVectorAsMap = SharedMethods.getSourceAsMap(builder.string());
-            ESLoggerFactory.getRootLogger().info("{}", builder.string());
             hitField.values().add(termVectorAsMap.get("term_vectors"));
         } catch (IOException e) {
             throw new ElasticsearchException("retrieving term vectors failed", e);

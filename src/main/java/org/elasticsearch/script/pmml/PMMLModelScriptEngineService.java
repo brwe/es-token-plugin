@@ -25,12 +25,10 @@ import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -134,7 +132,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         }
 
         public static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
-            ESLoggerFactory.getRootLogger().info("initializing model...");
             // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
             PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
                 public PMML run() {

@@ -21,7 +21,6 @@ package org.elasticsearch.script;
 
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 
 public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 

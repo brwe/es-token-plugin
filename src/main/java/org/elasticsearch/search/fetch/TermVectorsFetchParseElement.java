@@ -20,7 +20,6 @@
 package org.elasticsearch.search.fetch;
 
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
-import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -37,7 +36,6 @@ public class TermVectorsFetchParseElement extends FetchSubPhaseParseElement<Term
         TermVectorsRequest request = new TermVectorsRequest();
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
-        ESLoggerFactory.getRootLogger().info("request copied is {}", newBuilder.string());
         XContentParser newParser = XContentFactory.xContent(XContentType.JSON).createParser(newBuilder.string());
         TermVectorsRequest.parseRequest(request, newParser);
         termVectorsFetchContext.setRequest(request);
