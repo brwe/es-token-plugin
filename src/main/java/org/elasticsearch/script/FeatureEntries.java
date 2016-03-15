@@ -76,7 +76,7 @@ public abstract class FeatureEntries {
     public static class SparseTermFeatureEntries extends FeatureEntries {
         private String number;
         List<Integer> indices = new ArrayList<>();
-        List<Integer> values = new ArrayList<>();
+        List<Double> values = new ArrayList<>();
         Map<String, Integer> wordMap;
 
         public SparseTermFeatureEntries(String field, String[] terms, String number, int offset) {
@@ -96,8 +96,9 @@ public abstract class FeatureEntries {
                 if (FeatureType.fromString(number).equals(FeatureType.TF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
-                        ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        throw new ScriptException("Cannot get tf without term vectors until IndexLookup is fixed");
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
                     }
@@ -106,8 +107,16 @@ public abstract class FeatureEntries {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
                 } else if (FeatureType.fromString(number).equals(FeatureType.TF_IDF)) {
-                    ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                    indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromFielddataFields(wordMap, docValues, leafIndexLookup.get(field));
+                    Fields fields = leafIndexLookup.termVectors();
+                    if (fields == null) {
+                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
+                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        throw new ScriptException("Cannot get tf without term vectors until IndexLookup is fixed");
+                    } else {
+                        indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(indices, values, fields, field, wordMap, leafIndexLookup);
+                    }
+
                 } else {
                     throw new ScriptException(number + " not implemented yet for sparse vector");
                 }

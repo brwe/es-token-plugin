@@ -18,10 +18,7 @@ package org.elasticsearch.script;/*
  */
 
 
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeResponse;
 import org.elasticsearch.action.get.GetResponse;
@@ -40,7 +37,7 @@ import java.util.*;
 
 
 public class SharedMethods {
-    public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(List<Integer> indices, List<Integer> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
+    public static Tuple<int[], double[]> getIndicesAndValuesFromTermVectors(List<Integer> indices, List<Double> values, Fields fields, String field, Map<String, Integer> wordMap) throws IOException {
         Terms terms = fields.terms(field);
         TermsEnum termsEnum = terms.iterator();
         BytesRef t;
@@ -56,7 +53,7 @@ public class SharedMethods {
                 docsEnum = termsEnum.postings(docsEnum, PostingsEnum.FREQS);
                 int nextDoc = docsEnum.nextDoc();
                 assert nextDoc != PostingsEnum.NO_MORE_DOCS;
-                values.add(docsEnum.freq());
+                values.add((double) docsEnum.freq());
                 nextDoc = docsEnum.nextDoc();
                 assert nextDoc == PostingsEnum.NO_MORE_DOCS;
                 numTerms++;
@@ -231,5 +228,39 @@ public class SharedMethods {
         }
         indicesAndValues = new Tuple<>(indicesArray, valuesArray);
         return indicesAndValues;
+    }
+
+    public static Tuple<int[], double[]> getIndicesAndTF_IDFFromTermVectors(List<Integer> indices, List<Double> values, Fields fields, String field, Map<String, Integer> wordMap, LeafIndexLookup indexLookup) throws IOException {
+        Terms terms = fields.terms(field);
+        TermsEnum termsEnum = terms.iterator();
+        BytesRef t;
+        PostingsEnum docsEnum = null;
+        double docCount = indexLookup.getParentReader().numDocs();
+
+        int numTerms = 0;
+        indices.clear();
+        values.clear();
+        while ((t = termsEnum.next()) != null) {
+            Integer termIndex = wordMap.get(t.utf8ToString());
+            if (termIndex != null) {
+                indices.add(termIndex);
+                docsEnum = termsEnum.postings(docsEnum, PostingsEnum.FREQS);
+                int nextDoc = docsEnum.nextDoc();
+                assert nextDoc != PostingsEnum.NO_MORE_DOCS;
+                double docFreq = indexLookup.getParentReader().docFreq(new Term(field, t));
+                double freq = docsEnum.freq();
+                values.add(freq * Math.log((docCount + 1) / (docFreq + 1)));
+                nextDoc = docsEnum.nextDoc();
+                assert nextDoc == PostingsEnum.NO_MORE_DOCS;
+                numTerms++;
+            }
+        }
+        int[] indicesArray = new int[numTerms];
+        double[] valuesArray = new double[numTerms];
+        for (int i = 0; i < numTerms; i++) {
+            indicesArray[i] = indices.get(i);
+            valuesArray[i] = values.get(i);
+        }
+        return new Tuple<>(indicesArray, valuesArray);
     }
 }

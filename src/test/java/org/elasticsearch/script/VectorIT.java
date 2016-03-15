@@ -215,6 +215,7 @@ public class VectorIT extends ESIntegTestCase {
     }
 
     @Test
+    @AwaitsFix(bugUrl = "Must fix Index lookup first")
     public void testSparseVectorScriptWithTFWithoutTermVectorsStored() throws IOException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
@@ -254,7 +255,7 @@ public class VectorIT extends ESIntegTestCase {
 
     @Test
     public void testSparseVectorWithIDF() throws IOException, ExecutionException, InterruptedException {
-        assertAcked(client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)));
+        createIndexWithTermVectors();
         indexRandom(true,
                 client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick"),
                 client().prepareIndex().setId("2").setIndex("index").setType("type").setSource("text", "the quick fox is brown"),
@@ -440,7 +441,7 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject()
                 .endObject()
                 .endObject();
-        client().admin().indices().prepareCreate("index").addMapping("type", mapping).get();
+        client().admin().indices().prepareCreate("index").addMapping("type", mapping).setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)).get();
     }
 
     @Test
