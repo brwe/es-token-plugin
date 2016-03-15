@@ -403,7 +403,7 @@ This will use `_allterms` in the index on the given field that exceed the minimu
        {
          "field": FIELDNAME,
          "type": "string",
-         "tokens": "all_terms",
+         "tokens": "given",
          "number": "tf"| "occurrence",
          "terms": ["term1", "term2", ...]
        },
