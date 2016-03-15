@@ -34,6 +34,8 @@ public abstract class FeatureEntries {
     int offset;
     String field;
 
+    public static final EsSparseVector EMPTY_SPARSE = new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+
     public enum FeatureType {
         OCCURRENCE,
         TF,
@@ -98,7 +100,7 @@ public abstract class FeatureEntries {
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
-                        throw new ScriptException("Cannot get tf without term vectors until IndexLookup is fixed");
+                        return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(indices, values, fields, field, wordMap);
                     }
@@ -112,7 +114,7 @@ public abstract class FeatureEntries {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
-                        throw new ScriptException("Cannot get tf without term vectors until IndexLookup is fixed");
+                        return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(indices, values, fields, field, wordMap, leafIndexLookup);
                     }
