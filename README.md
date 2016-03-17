@@ -311,7 +311,7 @@ This specification can then be used to either retrieve vectors for each document
 To generate a specification, use the following endpoint:
 
 ```
-POST INDEX/TYPE/_prepare_spec
+POST _prepare_spec
 {
   "features": [
     {},
