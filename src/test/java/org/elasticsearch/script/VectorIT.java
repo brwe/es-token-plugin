@@ -212,6 +212,8 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices[0], equalTo(0));
         assertThat(indices[1], equalTo(2));
         assertThat(indices[2], equalTo(3));
+        int length = (int) vector.get("length");
+        assertThat(length, equalTo(4));
     }
 
     @Test

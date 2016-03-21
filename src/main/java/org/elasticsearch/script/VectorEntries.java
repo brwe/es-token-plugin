@@ -39,6 +39,8 @@ public class VectorEntries  {
     boolean sparse;
     List<FeatureEntries> features = new ArrayList<>();
 
+    int numEntries;
+
     public List<FeatureEntries> getEntries() {
         return features;
     }
@@ -64,6 +66,7 @@ public class VectorEntries  {
                 features.add(new FeatureEntries.DenseTermFeatureEntries((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
             }
             offset += features.get(features.size() - 1).size();
+            numEntries +=features.get(features.size() - 1).size();
         }
     }
 
@@ -102,6 +105,7 @@ public class VectorEntries  {
             }
             finalVector.put("values", values);
             finalVector.put("indices", indices);
+            finalVector.put("length", numEntries);
             return finalVector;
 
         } else {
@@ -121,6 +125,7 @@ public class VectorEntries  {
                 curPos += numValues;
             }
             finalVector.put("values", values);
+            finalVector.put("length", numEntries);
             return finalVector;
         }
     }
