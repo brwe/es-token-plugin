@@ -37,6 +37,7 @@ import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
 import org.elasticsearch.search.SearchModule;
+import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchSubPhase;
 import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
 
 /**
@@ -80,5 +81,6 @@ public class TokenPlugin extends Plugin {
 
     public void onModule(SearchModule searchModule) {
         searchModule.registerFetchSubPhase(TermVectorsFetchSubPhase.class);
+        searchModule.registerFetchSubPhase(AnalyzedTextFetchSubPhase.class);
     }
 }
