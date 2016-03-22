@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.search.fetch;
+package org.elasticsearch.search.fetch.termvectors;
 
 import org.elasticsearch.action.preparespec.PrepareSpecRequestBuilder;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;

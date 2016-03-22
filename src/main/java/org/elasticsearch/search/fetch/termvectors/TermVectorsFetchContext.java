@@ -17,10 +17,11 @@
  * under the License.
  */
 
-package org.elasticsearch.search.fetch;
+package org.elasticsearch.search.fetch.termvectors;
 
 
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
+import org.elasticsearch.search.fetch.FetchSubPhaseContext;
 
 public class TermVectorsFetchContext extends FetchSubPhaseContext {
 

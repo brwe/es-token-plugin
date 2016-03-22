@@ -37,7 +37,7 @@ import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
 import org.elasticsearch.search.SearchModule;
-import org.elasticsearch.search.fetch.TermVectorsFetchSubPhase;
+import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
 
 /**
  *

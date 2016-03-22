@@ -17,13 +17,15 @@
  * under the License.
  */
 
-package org.elasticsearch.search.fetch;
+package org.elasticsearch.search.fetch.termvectors;
 
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.search.fetch.FetchSubPhase;
+import org.elasticsearch.search.fetch.FetchSubPhaseParseElement;
 import org.elasticsearch.search.internal.SearchContext;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;

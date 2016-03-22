@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.search.fetch;
+package org.elasticsearch.search.fetch.termvectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.ElasticsearchException;
@@ -28,6 +28,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchParseElement;
+import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.internal.InternalSearchHit;
 import org.elasticsearch.search.internal.InternalSearchHitField;
 import org.elasticsearch.search.internal.SearchContext;
