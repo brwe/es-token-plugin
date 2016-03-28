@@ -182,7 +182,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                 .startObject("vectors")
                 .startObject("script")
                 .field("id", "my_id")
-                .field("lang", "pmml_vector")
+                .field("lang", "doc_to_vector")
                 .endObject()
                 .endObject()
                 .endObject()

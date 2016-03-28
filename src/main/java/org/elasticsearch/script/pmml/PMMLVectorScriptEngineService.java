@@ -41,7 +41,7 @@ import java.util.Map;
  */
 public class PMMLVectorScriptEngineService extends AbstractComponent implements ScriptEngineService {
 
-    public static final String NAME = "pmml_vector";
+    public static final String NAME = "doc_to_vector";
 
     @Inject
     public PMMLVectorScriptEngineService(Settings settings) {

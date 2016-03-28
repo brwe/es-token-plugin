@@ -11,12 +11,12 @@
   - do:
       search:
          index: .scripts
-         type:  pmml_vector
+         type:  doc_to_vector
 
 
   - match: {hits.total: 1}
   - match:  { hits.hits.0._index: .scripts  }
-  - match:  { hits.hits.0._type: pmml_vector  }
+  - match:  { hits.hits.0._type: doc_to_vector  }
 
 ---
 "Basic prepare spec with id":
@@ -31,11 +31,11 @@
   - do:
       search:
          index: .scripts
-         type:  pmml_vector
+         type:  doc_to_vector
 
 
   - match: {hits.total: 1}
   - match:  { hits.hits.0._index: .scripts  }
-  - match:  { hits.hits.0._type: pmml_vector  }
+  - match:  { hits.hits.0._type: doc_to_vector  }
   - match:  { hits.hits.0._id: "some_id"  }
 
