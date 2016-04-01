@@ -43,6 +43,65 @@ Parameters:
 - `min_doc_freq`: skip all terms where document frequency is < `min_doc_freq`. document frequency for term is computed per shard not over the whole index.
 
 
+Analyzed text field
+==========
+
+Similar to the [_analyze api](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html). Allows you to retrieve a field in a document as the it would appear after analysis is done.
+
+Example:
+
+```
+ GET movie-reviews/_search
+ {
+   "fields": [],
+   "analyzed_text": {
+     "analyzer": "standard",
+     "field": "text"
+   }
+ }
+
+```
+
+would return
+
+```
+...
+    "hits": [
+      {
+        "_index": "sentiment140",
+        "_type": "tweets",
+        "_id": "AVOkpeizcWk5UWep0S36",
+        "_score": 1,
+        "_source": {
+          "label": "negative",
+          "text": "\"I hate this time zone diff. thing!! ALL THE ACTION HAPPENS WHILE I'M SLEEPING !!!!!!  \""
+        },
+        "fields": {
+          "analyzed_text": [
+            [
+              "i",
+              "hate",
+              "this",
+              "time",
+              "zone",
+              "diff",
+              "thing",
+              "all",
+              "the",
+              "action",
+              "happens",
+              "while",
+              "i'm",
+              "sleeping"
+            ]
+          ]
+        }
+      }
+...
+```
+
+The request takes the same parameters as the [_analyze api](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html).
+
 
 Analyzed text mapper
 ==========
