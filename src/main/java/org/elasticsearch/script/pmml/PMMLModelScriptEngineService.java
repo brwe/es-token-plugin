@@ -114,7 +114,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             } catch (IOException e) {
                 throw new ScriptException("pmml prediction failed", e);
             }
-            features = new VectorEntries(parsedSource);
+            features = new VectorEntriesJSON(parsedSource);
 
             if (model == null) {
                 try {

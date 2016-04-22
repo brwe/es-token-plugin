@@ -19,30 +19,7 @@
 
 package org.elasticsearch.script;
 
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-public abstract class VectorEntries {
-
-    public boolean isSparse() {
-        return sparse;
-    }
-
-    boolean sparse;
-    List<FeatureEntries> features = new ArrayList<>();
-
-    public List<FeatureEntries> getEntries() {
-        return features;
-    }
-
-    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
-            sourceLookup);
-    protected int numEntries;
+public interface PreProcessingStep {
+    Object apply(Object o);
 }
-

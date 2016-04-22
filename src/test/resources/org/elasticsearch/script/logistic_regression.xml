@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+  <Header copyright="britta">
+    <Application name="KNIME" version="3.1.2"/>
+  </Header>
+  <DataDictionary numberOfFields="15">
+    <DataField dataType="integer" name="age" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="17.0" rightMargin="90.0"/>
+    </DataField>
+    <DataField dataType="string" name="workclass" optype="categorical">
+      <Value value="State-gov"/>
+      <Value value="Self-emp-not-inc"/>
+      <Value value="Private"/>
+      <Value value="Federal-gov"/>
+      <Value value="Local-gov"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Without-pay"/>
+      <Value value="Never-worked"/>
+    </DataField>
+    <DataField dataType="integer" name="fnlwgt" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="12285.0" rightMargin="1484705.0"/>
+    </DataField>
+    <DataField dataType="string" name="education" optype="categorical">
+      <Value value="Bachelors"/>
+      <Value value="HS-grad"/>
+      <Value value="11th"/>
+      <Value value="Masters"/>
+      <Value value="9th"/>
+      <Value value="Some-college"/>
+      <Value value="Assoc-acdm"/>
+      <Value value="Assoc-voc"/>
+      <Value value="7th-8th"/>
+      <Value value="Doctorate"/>
+      <Value value="Prof-school"/>
+      <Value value="5th-6th"/>
+      <Value value="10th"/>
+      <Value value="1st-4th"/>
+      <Value value="Preschool"/>
+      <Value value="12th"/>
+    </DataField>
+    <DataField dataType="integer" name="education-num" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="1.0" rightMargin="16.0"/>
+    </DataField>
+    <DataField dataType="string" name="marital-status" optype="categorical">
+      <Value value="Never-married"/>
+      <Value value="Married-civ-spouse"/>
+      <Value value="Divorced"/>
+      <Value value="Married-spouse-absent"/>
+      <Value value="Separated"/>
+      <Value value="Married-AF-spouse"/>
+      <Value value="Widowed"/>
+    </DataField>
+    <DataField dataType="string" name="occupation" optype="categorical">
+      <Value value="Adm-clerical"/>
+      <Value value="Exec-managerial"/>
+      <Value value="Handlers-cleaners"/>
+      <Value value="Prof-specialty"/>
+      <Value value="Other-service"/>
+      <Value value="Sales"/>
+      <Value value="Craft-repair"/>
+      <Value value="Transport-moving"/>
+      <Value value="Farming-fishing"/>
+      <Value value="Machine-op-inspct"/>
+      <Value value="Tech-support"/>
+      <Value value="Protective-serv"/>
+      <Value value="Armed-Forces"/>
+      <Value value="Priv-house-serv"/>
+    </DataField>
+    <DataField dataType="string" name="relationship" optype="categorical">
+      <Value value="Not-in-family"/>
+      <Value value="Husband"/>
+      <Value value="Wife"/>
+      <Value value="Own-child"/>
+      <Value value="Unmarried"/>
+      <Value value="Other-relative"/>
+    </DataField>
+    <DataField dataType="string" name="race" optype="categorical">
+      <Value value="White"/>
+      <Value value="Black"/>
+      <Value value="Asian-Pac-Islander"/>
+      <Value value="Amer-Indian-Eskimo"/>
+      <Value value="Other"/>
+    </DataField>
+    <DataField dataType="string" name="sex" optype="categorical">
+      <Value value="Male"/>
+      <Value value="Female"/>
+    </DataField>
+    <DataField dataType="integer" name="capital-gain" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="99999.0"/>
+    </DataField>
+    <DataField dataType="integer" name="capital-loss" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="0.0" rightMargin="4356.0"/>
+    </DataField>
+    <DataField dataType="integer" name="hours-per-week" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="1.0" rightMargin="99.0"/>
+    </DataField>
+    <DataField dataType="string" name="native-country" optype="categorical">
+      <Value value="United-States"/>
+      <Value value="Cuba"/>
+      <Value value="Jamaica"/>
+      <Value value="India"/>
+      <Value value="Mexico"/>
+      <Value value="South"/>
+      <Value value="Puerto-Rico"/>
+      <Value value="Honduras"/>
+      <Value value="England"/>
+      <Value value="Canada"/>
+      <Value value="Germany"/>
+      <Value value="Iran"/>
+      <Value value="Philippines"/>
+      <Value value="Italy"/>
+      <Value value="Poland"/>
+      <Value value="Columbia"/>
+      <Value value="Cambodia"/>
+      <Value value="Thailand"/>
+      <Value value="Ecuador"/>
+      <Value value="Laos"/>
+      <Value value="Taiwan"/>
+      <Value value="Haiti"/>
+      <Value value="Portugal"/>
+      <Value value="Dominican-Republic"/>
+      <Value value="El-Salvador"/>
+      <Value value="France"/>
+      <Value value="Guatemala"/>
+      <Value value="China"/>
+      <Value value="Japan"/>
+      <Value value="Yugoslavia"/>
+      <Value value="Peru"/>
+      <Value value="Outlying-US(Guam-USVI-etc)"/>
+      <Value value="Scotland"/>
+      <Value value="Trinadad&amp;Tobago"/>
+      <Value value="Greece"/>
+      <Value value="Nicaragua"/>
+      <Value value="Vietnam"/>
+      <Value value="Hong"/>
+      <Value value="Ireland"/>
+      <Value value="Hungary"/>
+      <Value value="Holand-Netherlands"/>
+    </DataField>
+    <DataField dataType="string" name="class" optype="categorical">
+      <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
+    </DataField>
+  </DataDictionary>
+  <TransformationDictionary>
+    <DerivedField dataType="double" displayName="age" name="age*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="age"/>
+        </Apply>
+        <Constant dataType="double">38.58164675532078</Constant>
+        <FieldRef field="age"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="workclass" name="workclass*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="workclass"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="workclass"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="integer" displayName="fnlwgt" name="fnlwgt*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="fnlwgt"/>
+        </Apply>
+        <Constant dataType="integer">0</Constant>
+        <FieldRef field="fnlwgt"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="education" name="education*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="education"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="education"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="education-num" name="education-num*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="education-num"/>
+        </Apply>
+        <Constant dataType="double">10.0806793403151</Constant>
+        <FieldRef field="education-num"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="marital-status" name="marital-status*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="marital-status"/>
+        </Apply>
+        <Constant dataType="string">Married-civ-spouse</Constant>
+        <FieldRef field="marital-status"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="occupation" name="occupation*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="occupation"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="occupation"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="relationship" name="relationship*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="relationship"/>
+        </Apply>
+        <Constant dataType="string">Husband</Constant>
+        <FieldRef field="relationship"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="race" name="race*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="race"/>
+        </Apply>
+        <Constant dataType="string">White</Constant>
+        <FieldRef field="race"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="sex" name="sex*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="sex"/>
+        </Apply>
+        <Constant dataType="string">Male</Constant>
+        <FieldRef field="sex"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="capital-loss" name="capital-loss*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="capital-loss"/>
+        </Apply>
+        <Constant dataType="double">87.303829734959</Constant>
+        <FieldRef field="capital-loss"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="hours-per-week" name="hours-per-week*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="hours-per-week"/>
+        </Apply>
+        <Constant dataType="double">40.437455852092995</Constant>
+        <FieldRef field="hours-per-week"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="native-country" name="native-country*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="native-country"/>
+        </Apply>
+        <Constant dataType="string">United-States</Constant>
+        <FieldRef field="native-country"/>
+      </Apply>
+    </DerivedField>
+  </TransformationDictionary>
+  <GeneralRegressionModel modelType="multinomialLogistic" functionName="classification" algorithmName="LogisticRegression" modelName="KNIME Logistic Regression" targetReferenceCategory=">50K">
+    <MiningSchema>
+      <MiningField name="age" invalidValueTreatment="asIs"/>
+      <MiningField name="workclass" invalidValueTreatment="asIs"/>
+      <MiningField name="fnlwgt" invalidValueTreatment="asIs"/>
+      <MiningField name="education" invalidValueTreatment="asIs"/>
+      <MiningField name="education-num" invalidValueTreatment="asIs"/>
+      <MiningField name="marital-status" invalidValueTreatment="asIs"/>
+      <MiningField name="occupation" invalidValueTreatment="asIs"/>
+      <MiningField name="relationship" invalidValueTreatment="asIs"/>
+      <MiningField name="race" invalidValueTreatment="asIs"/>
+      <MiningField name="sex" invalidValueTreatment="asIs"/>
+      <MiningField name="capital-gain" invalidValueTreatment="asIs"/>
+      <MiningField name="capital-loss" invalidValueTreatment="asIs"/>
+      <MiningField name="hours-per-week" invalidValueTreatment="asIs"/>
+      <MiningField name="native-country" invalidValueTreatment="asIs"/>
+      <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
+    </MiningSchema>
+    <ParameterList>
+      <Parameter name="p0" label="Intercept"/>
+      <Parameter name="p1" label="age*"/>
+      <Parameter name="p2" label="[workclass=Local-gov]"/>
+      <Parameter name="p3" label="[workclass=Never-worked]"/>
+      <Parameter name="p4" label="[workclass=Private]"/>
+      <Parameter name="p5" label="[workclass=Self-emp-inc]"/>
+      <Parameter name="p6" label="[workclass=Self-emp-not-inc]"/>
+      <Parameter name="p7" label="[workclass=State-gov]"/>
+      <Parameter name="p8" label="[workclass=Without-pay]"/>
+      <Parameter name="p9" label="[workclass=other]"/>
+      <Parameter name="p10" label="fnlwgt*"/>
+      <Parameter name="p11" label="[education=11th]"/>
+      <Parameter name="p12" label="[education=12th]"/>
+      <Parameter name="p13" label="[education=1st-4th]"/>
+      <Parameter name="p14" label="[education=5th-6th]"/>
+      <Parameter name="p15" label="[education=7th-8th]"/>
+      <Parameter name="p16" label="[education=9th]"/>
+      <Parameter name="p17" label="[education=Assoc-acdm]"/>
+      <Parameter name="p18" label="[education=Assoc-voc]"/>
+      <Parameter name="p19" label="[education=Bachelors]"/>
+      <Parameter name="p20" label="[education=Doctorate]"/>
+      <Parameter name="p21" label="[education=HS-grad]"/>
+      <Parameter name="p22" label="[education=Masters]"/>
+      <Parameter name="p23" label="[education=Preschool]"/>
+      <Parameter name="p24" label="[education=Prof-school]"/>
+      <Parameter name="p25" label="[education=Some-college]"/>
+      <Parameter name="p26" label="education-num*"/>
+      <Parameter name="p27" label="[marital-status=Married-AF-spouse]"/>
+      <Parameter name="p28" label="[marital-status=Married-civ-spouse]"/>
+      <Parameter name="p29" label="[marital-status=Married-spouse-absent]"/>
+      <Parameter name="p30" label="[marital-status=Never-married]"/>
+      <Parameter name="p31" label="[marital-status=Separated]"/>
+      <Parameter name="p32" label="[marital-status=Widowed]"/>
+      <Parameter name="p33" label="[occupation=Armed-Forces]"/>
+      <Parameter name="p34" label="[occupation=Craft-repair]"/>
+      <Parameter name="p35" label="[occupation=Exec-managerial]"/>
+      <Parameter name="p36" label="[occupation=Farming-fishing]"/>
+      <Parameter name="p37" label="[occupation=Handlers-cleaners]"/>
+      <Parameter name="p38" label="[occupation=Machine-op-inspct]"/>
+      <Parameter name="p39" label="[occupation=Other-service]"/>
+      <Parameter name="p40" label="[occupation=Priv-house-serv]"/>
+      <Parameter name="p41" label="[occupation=Prof-specialty]"/>
+      <Parameter name="p42" label="[occupation=Protective-serv]"/>
+      <Parameter name="p43" label="[occupation=Sales]"/>
+      <Parameter name="p44" label="[occupation=Tech-support]"/>
+      <Parameter name="p45" label="[occupation=Transport-moving]"/>
+      <Parameter name="p46" label="[occupation=other]"/>
+      <Parameter name="p47" label="[relationship=Not-in-family]"/>
+      <Parameter name="p48" label="[relationship=Other-relative]"/>
+      <Parameter name="p49" label="[relationship=Own-child]"/>
+      <Parameter name="p50" label="[relationship=Unmarried]"/>
+      <Parameter name="p51" label="[relationship=Wife]"/>
+      <Parameter name="p52" label="[race=Asian-Pac-Islander]"/>
+      <Parameter name="p53" label="[race=Black]"/>
+      <Parameter name="p54" label="[race=Other]"/>
+      <Parameter name="p55" label="[race=White]"/>
+      <Parameter name="p56" label="[sex=Male]"/>
+      <Parameter name="p57" label="capital-gain"/>
+      <Parameter name="p58" label="capital-loss*"/>
+      <Parameter name="p59" label="hours-per-week*"/>
+      <Parameter name="p60" label="[native-country=Canada]"/>
+      <Parameter name="p61" label="[native-country=China]"/>
+      <Parameter name="p62" label="[native-country=Columbia]"/>
+      <Parameter name="p63" label="[native-country=Cuba]"/>
+      <Parameter name="p64" label="[native-country=Dominican-Republic]"/>
+      <Parameter name="p65" label="[native-country=Ecuador]"/>
+      <Parameter name="p66" label="[native-country=El-Salvador]"/>
+      <Parameter name="p67" label="[native-country=England]"/>
+      <Parameter name="p68" label="[native-country=France]"/>
+      <Parameter name="p69" label="[native-country=Germany]"/>
+      <Parameter name="p70" label="[native-country=Greece]"/>
+      <Parameter name="p71" label="[native-country=Guatemala]"/>
+      <Parameter name="p72" label="[native-country=Haiti]"/>
+      <Parameter name="p73" label="[native-country=Holand-Netherlands]"/>
+      <Parameter name="p74" label="[native-country=Honduras]"/>
+      <Parameter name="p75" label="[native-country=Hong]"/>
+      <Parameter name="p76" label="[native-country=Hungary]"/>
+      <Parameter name="p77" label="[native-country=India]"/>
+      <Parameter name="p78" label="[native-country=Iran]"/>
+      <Parameter name="p79" label="[native-country=Ireland]"/>
+      <Parameter name="p80" label="[native-country=Italy]"/>
+      <Parameter name="p81" label="[native-country=Jamaica]"/>
+      <Parameter name="p82" label="[native-country=Japan]"/>
+      <Parameter name="p83" label="[native-country=Laos]"/>
+      <Parameter name="p84" label="[native-country=Mexico]"/>
+      <Parameter name="p85" label="[native-country=Nicaragua]"/>
+      <Parameter name="p86" label="[native-country=Outlying-US(Guam-USVI-etc)]"/>
+      <Parameter name="p87" label="[native-country=Peru]"/>
+      <Parameter name="p88" label="[native-country=Philippines]"/>
+      <Parameter name="p89" label="[native-country=Poland]"/>
+      <Parameter name="p90" label="[native-country=Portugal]"/>
+      <Parameter name="p91" label="[native-country=Puerto-Rico]"/>
+      <Parameter name="p92" label="[native-country=Scotland]"/>
+      <Parameter name="p93" label="[native-country=South]"/>
+      <Parameter name="p94" label="[native-country=Taiwan]"/>
+      <Parameter name="p95" label="[native-country=Thailand]"/>
+      <Parameter name="p96" label="[native-country=Trinadad&amp;Tobago]"/>
+      <Parameter name="p97" label="[native-country=United-States]"/>
+      <Parameter name="p98" label="[native-country=Vietnam]"/>
+      <Parameter name="p99" label="[native-country=Yugoslavia]"/>
+    </ParameterList>
+    <FactorList>
+      <Predictor name="workclass*"/>
+      <Predictor name="education*"/>
+      <Predictor name="marital-status*"/>
+      <Predictor name="occupation*"/>
+      <Predictor name="relationship*"/>
+      <Predictor name="race*"/>
+      <Predictor name="sex*"/>
+      <Predictor name="native-country*"/>
+    </FactorList>
+    <CovariateList>
+      <Predictor name="age*"/>
+      <Predictor name="fnlwgt*"/>
+      <Predictor name="education-num*"/>
+      <Predictor name="capital-gain"/>
+      <Predictor name="capital-loss*"/>
+      <Predictor name="hours-per-week*"/>
+    </CovariateList>
+    <PPMatrix>
+      <PPCell value="1" predictorName="age*" parameterName="p1"/>
+      <PPCell value="Local-gov" predictorName="workclass*" parameterName="p2"/>
+      <PPCell value="Never-worked" predictorName="workclass*" parameterName="p3"/>
+      <PPCell value="Private" predictorName="workclass*" parameterName="p4"/>
+      <PPCell value="Self-emp-inc" predictorName="workclass*" parameterName="p5"/>
+      <PPCell value="Self-emp-not-inc" predictorName="workclass*" parameterName="p6"/>
+      <PPCell value="State-gov" predictorName="workclass*" parameterName="p7"/>
+      <PPCell value="Without-pay" predictorName="workclass*" parameterName="p8"/>
+      <PPCell value="other" predictorName="workclass*" parameterName="p9"/>
+      <PPCell value="1" predictorName="fnlwgt*" parameterName="p10"/>
+      <PPCell value="11th" predictorName="education*" parameterName="p11"/>
+      <PPCell value="12th" predictorName="education*" parameterName="p12"/>
+      <PPCell value="1st-4th" predictorName="education*" parameterName="p13"/>
+      <PPCell value="5th-6th" predictorName="education*" parameterName="p14"/>
+      <PPCell value="7th-8th" predictorName="education*" parameterName="p15"/>
+      <PPCell value="9th" predictorName="education*" parameterName="p16"/>
+      <PPCell value="Assoc-acdm" predictorName="education*" parameterName="p17"/>
+      <PPCell value="Assoc-voc" predictorName="education*" parameterName="p18"/>
+      <PPCell value="Bachelors" predictorName="education*" parameterName="p19"/>
+      <PPCell value="Doctorate" predictorName="education*" parameterName="p20"/>
+      <PPCell value="HS-grad" predictorName="education*" parameterName="p21"/>
+      <PPCell value="Masters" predictorName="education*" parameterName="p22"/>
+      <PPCell value="Preschool" predictorName="education*" parameterName="p23"/>
+      <PPCell value="Prof-school" predictorName="education*" parameterName="p24"/>
+      <PPCell value="Some-college" predictorName="education*" parameterName="p25"/>
+      <PPCell value="1" predictorName="education-num*" parameterName="p26"/>
+      <PPCell value="Married-AF-spouse" predictorName="marital-status*" parameterName="p27"/>
+      <PPCell value="Married-civ-spouse" predictorName="marital-status*" parameterName="p28"/>
+      <PPCell value="Married-spouse-absent" predictorName="marital-status*" parameterName="p29"/>
+      <PPCell value="Never-married" predictorName="marital-status*" parameterName="p30"/>
+      <PPCell value="Separated" predictorName="marital-status*" parameterName="p31"/>
+      <PPCell value="Widowed" predictorName="marital-status*" parameterName="p32"/>
+      <PPCell value="Armed-Forces" predictorName="occupation*" parameterName="p33"/>
+      <PPCell value="Craft-repair" predictorName="occupation*" parameterName="p34"/>
+      <PPCell value="Exec-managerial" predictorName="occupation*" parameterName="p35"/>
+      <PPCell value="Farming-fishing" predictorName="occupation*" parameterName="p36"/>
+      <PPCell value="Handlers-cleaners" predictorName="occupation*" parameterName="p37"/>
+      <PPCell value="Machine-op-inspct" predictorName="occupation*" parameterName="p38"/>
+      <PPCell value="Other-service" predictorName="occupation*" parameterName="p39"/>
+      <PPCell value="Priv-house-serv" predictorName="occupation*" parameterName="p40"/>
+      <PPCell value="Prof-specialty" predictorName="occupation*" parameterName="p41"/>
+      <PPCell value="Protective-serv" predictorName="occupation*" parameterName="p42"/>
+      <PPCell value="Sales" predictorName="occupation*" parameterName="p43"/>
+      <PPCell value="Tech-support" predictorName="occupation*" parameterName="p44"/>
+      <PPCell value="Transport-moving" predictorName="occupation*" parameterName="p45"/>
+      <PPCell value="other" predictorName="occupation*" parameterName="p46"/>
+      <PPCell value="Not-in-family" predictorName="relationship*" parameterName="p47"/>
+      <PPCell value="Other-relative" predictorName="relationship*" parameterName="p48"/>
+      <PPCell value="Own-child" predictorName="relationship*" parameterName="p49"/>
+      <PPCell value="Unmarried" predictorName="relationship*" parameterName="p50"/>
+      <PPCell value="Wife" predictorName="relationship*" parameterName="p51"/>
+      <PPCell value="Asian-Pac-Islander" predictorName="race*" parameterName="p52"/>
+      <PPCell value="Black" predictorName="race*" parameterName="p53"/>
+      <PPCell value="Other" predictorName="race*" parameterName="p54"/>
+      <PPCell value="White" predictorName="race*" parameterName="p55"/>
+      <PPCell value="Male" predictorName="sex*" parameterName="p56"/>
+      <PPCell value="1" predictorName="capital-gain" parameterName="p57"/>
+      <PPCell value="1" predictorName="capital-loss*" parameterName="p58"/>
+      <PPCell value="1" predictorName="hours-per-week*" parameterName="p59"/>
+      <PPCell value="Canada" predictorName="native-country*" parameterName="p60"/>
+      <PPCell value="China" predictorName="native-country*" parameterName="p61"/>
+      <PPCell value="Columbia" predictorName="native-country*" parameterName="p62"/>
+      <PPCell value="Cuba" predictorName="native-country*" parameterName="p63"/>
+      <PPCell value="Dominican-Republic" predictorName="native-country*" parameterName="p64"/>
+      <PPCell value="Ecuador" predictorName="native-country*" parameterName="p65"/>
+      <PPCell value="El-Salvador" predictorName="native-country*" parameterName="p66"/>
+      <PPCell value="England" predictorName="native-country*" parameterName="p67"/>
+      <PPCell value="France" predictorName="native-country*" parameterName="p68"/>
+      <PPCell value="Germany" predictorName="native-country*" parameterName="p69"/>
+      <PPCell value="Greece" predictorName="native-country*" parameterName="p70"/>
+      <PPCell value="Guatemala" predictorName="native-country*" parameterName="p71"/>
+      <PPCell value="Haiti" predictorName="native-country*" parameterName="p72"/>
+      <PPCell value="Holand-Netherlands" predictorName="native-country*" parameterName="p73"/>
+      <PPCell value="Honduras" predictorName="native-country*" parameterName="p74"/>
+      <PPCell value="Hong" predictorName="native-country*" parameterName="p75"/>
+      <PPCell value="Hungary" predictorName="native-country*" parameterName="p76"/>
+      <PPCell value="India" predictorName="native-country*" parameterName="p77"/>
+      <PPCell value="Iran" predictorName="native-country*" parameterName="p78"/>
+      <PPCell value="Ireland" predictorName="native-country*" parameterName="p79"/>
+      <PPCell value="Italy" predictorName="native-country*" parameterName="p80"/>
+      <PPCell value="Jamaica" predictorName="native-country*" parameterName="p81"/>
+      <PPCell value="Japan" predictorName="native-country*" parameterName="p82"/>
+      <PPCell value="Laos" predictorName="native-country*" parameterName="p83"/>
+      <PPCell value="Mexico" predictorName="native-country*" parameterName="p84"/>
+      <PPCell value="Nicaragua" predictorName="native-country*" parameterName="p85"/>
+      <PPCell value="Outlying-US(Guam-USVI-etc)" predictorName="native-country*" parameterName="p86"/>
+      <PPCell value="Peru" predictorName="native-country*" parameterName="p87"/>
+      <PPCell value="Philippines" predictorName="native-country*" parameterName="p88"/>
+      <PPCell value="Poland" predictorName="native-country*" parameterName="p89"/>
+      <PPCell value="Portugal" predictorName="native-country*" parameterName="p90"/>
+      <PPCell value="Puerto-Rico" predictorName="native-country*" parameterName="p91"/>
+      <PPCell value="Scotland" predictorName="native-country*" parameterName="p92"/>
+      <PPCell value="South" predictorName="native-country*" parameterName="p93"/>
+      <PPCell value="Taiwan" predictorName="native-country*" parameterName="p94"/>
+      <PPCell value="Thailand" predictorName="native-country*" parameterName="p95"/>
+      <PPCell value="Trinadad&amp;Tobago" predictorName="native-country*" parameterName="p96"/>
+      <PPCell value="United-States" predictorName="native-country*" parameterName="p97"/>
+      <PPCell value="Vietnam" predictorName="native-country*" parameterName="p98"/>
+      <PPCell value="Yugoslavia" predictorName="native-country*" parameterName="p99"/>
+    </PPMatrix>
+    <ParamMatrix>
+      <PCell targetCategory="&lt;=50K" parameterName="p0" beta="5.952996597401233" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p1" beta="-0.024238311710072194" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p2" beta="0.690598065648544" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p3" beta="0.0030450794590488744" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p4" beta="0.5084083300845047" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p5" beta="0.3315714731145885" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p6" beta="0.9911191991096007" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p7" beta="0.8146003817892625" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p8" beta="0.011146285188189844" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p9" beta="0.6007014338440069" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p10" beta="-6.70541072309291E-7" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p11" beta="0.34747569264140127" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p12" beta="0.13323092723837765" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p13" beta="0.9681378388007715" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p14" beta="0.052813381252321094" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p15" beta="0.4064145956470576" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p16" beta="0.29996215784584646" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p17" beta="-0.06321985654862852" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p18" beta="-0.24857715296199417" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p19" beta="-0.49032166010879086" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p20" beta="-0.9990944621969655" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p21" beta="-0.049472041069217605" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p22" beta="-0.6666616626451175" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p23" beta="0.2210056008600536" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p24" beta="-0.9824258455815782" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p25" beta="-0.2206662631806318" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p26" beta="-0.16850445868864622" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p27" beta="0.5688573636252774" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p28" beta="-0.2165750833625445" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p29" beta="0.10725518887733311" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p30" beta="0.5653559854276586" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p31" beta="0.19452058874889794" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p32" beta="-0.08262502214242759" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p33" beta="0.038381225612435205" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p34" beta="-0.0625090385646587" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p35" beta="-0.7832755539363265" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p36" beta="1.0031785549499777" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p37" beta="0.6992890173221431" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p38" beta="0.3056197616801485" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p39" beta="0.8390064673268285" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p40" beta="1.188135113498955" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p41" beta="-0.5164152548504317" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p42" beta="-0.5703911119440483" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p43" beta="-0.27670869793288466" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p44" beta="-0.6416011484733792" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p45" beta="0.1259216432711246" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p46" beta="0.6037465089509724" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p47" beta="1.3917786966024812" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p48" beta="1.738271139285901" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p49" beta="2.479390142158934" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p50" beta="1.5823948450497451" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p51" beta="-1.2890706639380836" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p52" beta="-0.28226013323204613" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p53" beta="-0.10057938078558509" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p54" beta="0.2133989181969118" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p55" beta="-0.29726993703084537" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p56" beta="-0.8131446880112762" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p57" beta="-3.1598733139584083E-4" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p58" beta="-6.427872650909511E-4" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p59" beta="-0.029206412720322886" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p60" beta="-0.2910993422351834" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p61" beta="0.5515760474070681" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p62" beta="1.1292920496375065" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p63" beta="-0.3119647548395294" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p64" beta="0.5387936348967597" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p65" beta="0.17098372560872072" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p66" beta="0.6712951230979792" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p67" beta="-0.25374883805787196" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p68" beta="-0.49182366501323715" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p69" beta="-0.370004087352096" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p70" beta="1.4344556316770711" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p71" beta="0.26461469914477054" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p72" beta="0.25824241582235863" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p73" beta="0.0031103719668892993" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p74" beta="0.02715528931237266" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p75" beta="0.11316865300308424" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p76" beta="0.16129020610681116" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p77" beta="0.26747340634757893" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p78" beta="0.014829352929552647" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p79" beta="0.20078198020836807" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p80" beta="-0.8018859416232584" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p81" beta="0.0193516119620792" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p82" beta="-0.46066619317268126" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p83" beta="0.05561240459260482" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p84" beta="0.5713080758103259" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p85" beta="0.28156019448320224" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p86" beta="0.07688922119812588" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p87" beta="0.2127751885963019" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p88" beta="-0.5258898451114751" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p89" beta="0.020196366985536965" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p90" beta="0.3486467249308216" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p91" beta="0.3587218033705817" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p92" beta="0.123849637000609" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p93" beta="0.9759021626413882" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p94" beta="-0.10909123125525727" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p95" beta="0.051452211296672094" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p96" beta="0.09179391844737524" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p97" beta="-0.1273123536051744" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p98" beta="0.3650481769691526" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p99" beta="0.24384364514974194" df="1"/>
+    </ParamMatrix>
+  </GeneralRegressionModel>
+</PMML>

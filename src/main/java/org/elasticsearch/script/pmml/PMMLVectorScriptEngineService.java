@@ -95,7 +95,7 @@ public class PMMLVectorScriptEngineService extends AbstractComponent implements 
             } catch (IOException e) {
                 throw new ScriptException("vector script failed", e);
             }
-            features = new VectorEntries(parsedSource);
+            features = new VectorEntriesJSON(parsedSource);
         }
 
         public VectorizerScript newScript(LeafSearchLookup lookup) {

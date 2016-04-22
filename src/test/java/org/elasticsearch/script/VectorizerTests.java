@@ -41,12 +41,12 @@ import static org.hamcrest.Matchers.instanceOf;
 public class VectorizerTests extends ESTestCase {
 
     public void testVectorizerParsing() throws IOException {
-        VectorEntries entries = new VectorEntries(createSpecSource());
+        VectorEntries entries = new VectorEntriesJSON(createSpecSource());
         assertParameters(entries);
     }
 
     public void testVectorizerParsingFromActualSource() throws IOException {
-        VectorEntries entries = new VectorEntries(createSpecSourceFromSpec());
+        VectorEntries entries = new VectorEntriesJSON(createSpecSourceFromSpec());
         assertParameters(entries);
     }
 

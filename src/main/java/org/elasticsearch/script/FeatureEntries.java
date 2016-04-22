@@ -20,21 +20,49 @@
 package org.elasticsearch.script;
 
 import org.apache.lucene.index.Fields;
+import org.dmg.pmml.*;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class FeatureEntries {
     int offset;
     String field;
 
+    protected PreProcessingStep[] preProcessingSteps;
+
     public static final EsSparseVector EMPTY_SPARSE = new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+
+    protected Object applyPreProcessing(Object value) {
+        for (int i = 0; i < preProcessingSteps.length; i++) {
+            value = preProcessingSteps[i].apply(value);
+        }
+        return value;
+    }
+
+    public static class MissingValue implements PreProcessingStep {
+
+        private Object missingValue;
+
+        public MissingValue(Object missingValue) {
+            this.missingValue = missingValue;
+        }
+
+        @Override
+        public Object apply(Object value) {
+            if (value == null) {
+                return missingValue;
+            } else {
+                return value;
+            }
+        }
+    }
+
+    public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
 
     public enum FeatureType {
         OCCURRENCE,
@@ -97,7 +125,7 @@ public abstract class FeatureEntries {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
@@ -111,7 +139,7 @@ public abstract class FeatureEntries {
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(fields, field, wordMap, leafIndexLookup);
@@ -127,8 +155,87 @@ public abstract class FeatureEntries {
         }
 
         @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            throw new UnsupportedOperationException("not available for term vector entries");
+        }
+
+        @Override
         public int size() {
             return wordMap.size();
+        }
+
+
+    }
+
+    /**
+     * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
+     * Categories will be numbered according to the order given in categories parameter.
+     */
+    public static class SparseCategorical1OfKFeatureEntries extends FeatureEntries {
+        Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
+
+        public SparseCategorical1OfKFeatureEntries(DataField dataField, DerivedField[] derivedFields) {
+            this.field = dataField.getName().getValue();
+            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            fillPreProcessingSteps(derivedFields);
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            Tuple<int[], double[]> indicesAndValues;
+            Object category = docLookup.get(field);
+            Object processedCategory = applyPreProcessing(category);
+            int index = categoryToIndexHashMap.get(processedCategory);
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
+            return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            categoryToIndexHashMap.put(ppcell.getValue(), indexCounter);
+        }
+
+        @Override
+        public int size() {
+            return categoryToIndexHashMap.size();
+        }
+
+    }
+
+    /**
+     * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
+     * Categories will be numbered according to the order given in categories parameter.
+     */
+    public static class ContinousSingleEntryFeatureEntries extends FeatureEntries {
+        int index = -1;
+
+        /**
+         * The derived fields must be given in backwards order of the processing chain.
+         */
+        public ContinousSingleEntryFeatureEntries(DataField dataField, DerivedField... derivedFields) {
+            this.field = dataField.getName().getValue();
+            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            fillPreProcessingSteps(derivedFields);
+
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            Tuple<int[], double[]> indicesAndValues;
+            Object value = docLookup.get(field);
+            value = applyPreProcessing(value);
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) value).doubleValue()});
+            return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            index = indexCounter;
+        }
+
+        @Override
+        public int size() {
+            return 1;
         }
 
 
@@ -172,8 +279,57 @@ public abstract class FeatureEntries {
         }
 
         @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            throw new UnsupportedOperationException("not available for term vector entries");
+        }
+
+        @Override
         public int size() {
             return terms.length;
+        }
+    }
+
+    protected void fillPreProcessingSteps(DerivedField[] derivedFields) {
+        for (int i = derivedFields.length - 1; i >= 0; i--) {
+            DerivedField derivedField = derivedFields[i];
+            if (derivedField.getExpression() != null) {
+                if (derivedField.getExpression() instanceof Apply) {
+                    for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
+                        if (expression instanceof Apply) {
+                            if (((Apply) expression).getFunction().equals("isMissing")) {
+                                // now find the value that is supposed to replace the missing value
+
+                                for (Expression expression2 : ((Apply) derivedField.getExpression()).getExpressions()) {
+                                    if (expression2 instanceof Constant) {
+                                        String missingValue = ((Constant) expression2).getValue();
+                                        Object parsedMissingValue;
+                                        if (derivedField.getDataType().equals(DataType.DOUBLE)) {
+                                            parsedMissingValue = Double.parseDouble(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.FLOAT)) {
+                                            parsedMissingValue = Float.parseFloat(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.INTEGER)) {
+                                            parsedMissingValue = Integer.parseInt(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.STRING)) {
+                                            parsedMissingValue = missingValue;
+                                        } else {
+                                            throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
+                                                    "far.");
+                                        }
+                                        preProcessingSteps[i] = new MissingValue(parsedMissingValue);
+                                        break;
+                                    }
+                                }
+                            } else {
+                                throw new UnsupportedOperationException("So far only if isMissing implemented.");
+                            }
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException("So far only Apply expression implemented.");
+                }
+            } else {
+                throw new UnsupportedOperationException("So far only Apply implemented.");
+            }
         }
     }
 }
