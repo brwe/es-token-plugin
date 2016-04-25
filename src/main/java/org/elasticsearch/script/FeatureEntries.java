@@ -25,9 +25,7 @@ import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public abstract class FeatureEntries {
@@ -97,7 +95,7 @@ public abstract class FeatureEntries {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
@@ -111,7 +109,7 @@ public abstract class FeatureEntries {
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(wordMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(fields, field, wordMap, leafIndexLookup);
@@ -129,6 +127,66 @@ public abstract class FeatureEntries {
         @Override
         public int size() {
             return wordMap.size();
+        }
+
+
+    }
+
+    /**
+     * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
+     * Categories will be numbered according to the order given in categories parameter.
+     * */
+    public static class SparseCategorial1OfKFeatureEntries extends FeatureEntries {
+        Map<String, Integer> categoryToIndexHashMap;
+
+        public SparseCategorial1OfKFeatureEntries(String field, String[] categories, int offset) {
+            this.field = field;
+            categoryToIndexHashMap = new HashMap<>();
+            for (int i = 0; i < categories.length; i++) {
+                categoryToIndexHashMap.put(categories[i], i + offset);
+            }
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            Tuple<int[], double[]> indicesAndValues;
+            Object category = docLookup.get(field);
+            int index = categoryToIndexHashMap.get(category);
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
+            return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public int size() {
+            return categoryToIndexHashMap.size();
+        }
+
+
+    }
+
+    /**
+     * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
+     * Categories will be numbered according to the order given in categories parameter.
+     * */
+    public static class ContinousSingleEntryFeatureEntries extends FeatureEntries {
+        int index;
+
+        public ContinousSingleEntryFeatureEntries(String field, int offset) {
+            this.field = field;
+            index = offset;
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            Tuple<int[], double[]> indicesAndValues;
+            Object category = docLookup.get(field);
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
+            return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public int size() {
+            return 1;
         }
 
 

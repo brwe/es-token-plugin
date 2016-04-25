@@ -38,6 +38,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
+import static org.hamcrest.CoreMatchers.equalTo;
 
 public class VectorizerPMMLTests extends ESTestCase {
 
@@ -58,6 +59,9 @@ public class VectorizerPMMLTests extends ESTestCase {
             }
         });
         pmml.getDataDictionary();
+
+        VectorEntries vectorEntries = new VectorEntries(pmml, 0);
+        assertThat(vectorEntries.features.size(), equalTo(10));
     }
 
 

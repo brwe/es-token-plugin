@@ -19,16 +19,33 @@
 
 package org.elasticsearch.script;
 
+import org.apache.avro.generic.GenericData;
+import org.dmg.pmml.*;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.SourceLookup;
+import org.jpmml.model.ImportFilter;
+import org.jpmml.model.JAXBUtil;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.bind.JAXBException;
+import javax.xml.transform.Source;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 
 public class VectorEntries  {
 
@@ -67,6 +84,81 @@ public class VectorEntries  {
             }
             offset += features.get(features.size() - 1).size();
             numEntries +=features.get(features.size() - 1).size();
+        }
+    }
+
+    public VectorEntries(PMML pmml, int modelNum /* for which model find the vectors?**/) {
+        Model model = pmml.getModels().get(modelNum);
+        if (model instanceof GeneralRegressionModel ==false) {
+            throw new UnsupportedOperationException("Only implemented general regression model so far.");
+        }
+        GeneralRegressionModel grModel = (GeneralRegressionModel) model;
+        if (grModel.getAlgorithmName().equals("LogisticRegression") == false || grModel.getModelType().value().equals
+                ("multinomialLogistic") == false) {
+            throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
+        }
+        //get all the field names for multinomialLogistic model
+        List<String> usedFields = new ArrayList<>();
+        for (Predictor predictor : grModel.getFactorList().getPredictors()) {
+            usedFields.add(predictor.getName().getValue());
+        }
+        for (Predictor predictor : grModel.getCovariateList().getPredictors()) {
+            usedFields.add(predictor.getName().getValue());
+        }
+        pmml.getDataDictionary();
+        int offset = 0;
+        for (DataField dataField : pmml.getDataDictionary().getDataFields()){
+            String fieldName = dataField.getName().getValue();
+            DerivedField derivedField = null;
+            for (DerivedField maybeDerivedField : pmml.getTransformationDictionary().getDerivedFields()) {
+                if (maybeDerivedField.hasExtensions()) {
+                    throw new UnsupportedOperationException("extensions in tranformation not implemented yet!");
+                }
+                if (maybeDerivedField.hasIntervals()) {
+                    throw new UnsupportedOperationException("intervals in tranformation not implemented yet!");
+                }
+                if (maybeDerivedField.hasValues()) {
+                    throw new UnsupportedOperationException("vales in tranformation not implemented yet!");
+                }
+                if (maybeDerivedField.getLocator() != null) {
+                    throw new UnsupportedOperationException("Don't know what to do with ba locator so I will throw and exception instead.");
+                }
+                if (maybeDerivedField.getExpression() != null) {
+
+                }
+                if (maybeDerivedField.getName().equals(dataField.getName())) {
+                    derivedField = maybeDerivedField;
+                }
+            }
+            FeatureEntries featureEntries = createVectorEntries(dataField, derivedField, offset);
+            offset += featureEntries.size();
+            features.add(featureEntries);
+        }
+
+    }
+
+    private FeatureEntries createVectorEntries(DataField dataField, DerivedField derivedField, int offset) {
+        if(dataField.getOpType().value().equals("categorical")) {
+            List<String> categories = new ArrayList<>();
+            for (Value value : dataField.getValues()) {
+                categories.add(value.getValue());
+            }
+            if (derivedField != null) {
+
+            }
+            throw new UnsupportedOperationException("have not implemented any derived field for continous variables yet. I am working" +
+                    " as quick as I can! At least when I feel like it...which is not often lately...seriously, need more holiday...");
+        }
+        else if(dataField.getOpType().value().equals("continuous")) {
+            if (derivedField != null) {
+                throw new UnsupportedOperationException("have not implemented any derived field for continous variables yet. I am working" +
+                        " as quick as I can! At least when I feel like it...which is not often lately...seriously, need more holiday...");
+            }
+            return new FeatureEntries.ContinousSingleEntryFeatureEntries(dataField.getName().getValue(), offset);
+        } else {
+            throw new UnsupportedOperationException("have not implemented any field except for continuous and categorical yet. " +
+                    dataField.getOpType().value()+ " is not supported. I am working" +
+                    " as quick as I can! At least when I feel like it...which is not often lately...seriously, need more holiday...");
         }
     }
 
