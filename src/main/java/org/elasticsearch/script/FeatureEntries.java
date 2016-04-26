@@ -20,6 +20,7 @@
 package org.elasticsearch.script;
 
 import org.apache.lucene.index.Fields;
+import org.dmg.pmml.PPCell;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.*;
@@ -33,6 +34,8 @@ public abstract class FeatureEntries {
     String field;
 
     public static final EsSparseVector EMPTY_SPARSE = new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+
+    public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
 
     public enum FeatureType {
         OCCURRENCE,
@@ -125,6 +128,11 @@ public abstract class FeatureEntries {
         }
 
         @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            throw new UnsupportedOperationException("not available for term vector entries");
+        }
+
+        @Override
         public int size() {
             return wordMap.size();
         }
@@ -136,15 +144,12 @@ public abstract class FeatureEntries {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      * */
-    public static class SparseCategorial1OfKFeatureEntries extends FeatureEntries {
+    public static class SparseCategorical1OfKFeatureEntries extends FeatureEntries {
         Map<String, Integer> categoryToIndexHashMap;
 
-        public SparseCategorial1OfKFeatureEntries(String field, String[] categories, int offset) {
+        public SparseCategorical1OfKFeatureEntries(String field) {
             this.field = field;
             categoryToIndexHashMap = new HashMap<>();
-            for (int i = 0; i < categories.length; i++) {
-                categoryToIndexHashMap.put(categories[i], i + offset);
-            }
         }
 
         @Override
@@ -154,6 +159,11 @@ public abstract class FeatureEntries {
             int index = categoryToIndexHashMap.get(category);
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
             return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            categoryToIndexHashMap.put(ppcell.getValue(), indexCounter);
         }
 
         @Override
@@ -169,19 +179,22 @@ public abstract class FeatureEntries {
      * Categories will be numbered according to the order given in categories parameter.
      * */
     public static class ContinousSingleEntryFeatureEntries extends FeatureEntries {
-        int index;
+        int index = -1;
 
-        public ContinousSingleEntryFeatureEntries(String field, int offset) {
+        public ContinousSingleEntryFeatureEntries(String field) {
             this.field = field;
-            index = offset;
         }
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             Tuple<int[], double[]> indicesAndValues;
-            Object category = docLookup.get(field);
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
             return new EsSparseVector(indicesAndValues);
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            index = indexCounter;
         }
 
         @Override
@@ -227,6 +240,11 @@ public abstract class FeatureEntries {
             } catch (IOException ex) {
                 throw new ScriptException("Could not get tf vector: ", ex);
             }
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            throw new UnsupportedOperationException("not available for term vector entries");
         }
 
         @Override

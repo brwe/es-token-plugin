@@ -19,7 +19,6 @@
 
 package org.elasticsearch.script;
 
-import org.apache.commons.io.FileUtils;
 import org.dmg.pmml.PMML;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.test.ESTestCase;
