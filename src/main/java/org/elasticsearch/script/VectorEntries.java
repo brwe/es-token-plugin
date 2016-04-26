@@ -19,7 +19,6 @@
 
 package org.elasticsearch.script;
 
-import org.apache.avro.generic.GenericData;
 import org.dmg.pmml.*;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
@@ -45,7 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 
 public class VectorEntries  {
 
