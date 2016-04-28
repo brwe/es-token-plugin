@@ -43,6 +43,6 @@ public abstract class VectorEntries {
 
     public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
             sourceLookup);
-    int numEntries;
+    protected int numEntries;
 }
 

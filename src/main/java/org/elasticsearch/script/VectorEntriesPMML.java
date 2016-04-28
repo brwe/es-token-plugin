@@ -21,15 +21,13 @@ package org.elasticsearch.script;
 
 import org.dmg.pmml.*;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class VectorEntriesPMML extends VectorEntries {
@@ -64,8 +62,10 @@ public class VectorEntriesPMML extends VectorEntries {
             featureEntries.addVectorEntry(indexCounter, ppcell);
             indexCounter++;
         }
-
-        // TODO: now remember the featureEntries and find different abstraction for that stuff to a proper sparse vector
+        for (Map.Entry<String, FeatureEntries> entry : featureEntriesMap.entrySet()) {
+            features.add(entry.getValue());
+            numEntries += entry.getValue().size();
+        }
     }
 
     FeatureEntries getFeatureEntryFromModel(PMML model, int modelIndex, String fieldName) {
@@ -149,51 +149,29 @@ public class VectorEntriesPMML extends VectorEntries {
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
-        if (sparse) {
-            int length = 0;
-            List<EsSparseVector> entries = new ArrayList<>();
-            for (FeatureEntries fieldEntry : features) {
-                EsSparseVector vec = (EsSparseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
-                entries.add(vec);
-                length += vec.values.v1().length;
+        Map<Integer, Double> indicesAndValues = new TreeMap<>();
+        for (FeatureEntries featureEntries : features) {
+            EsVector entries = featureEntries.getVector(docLookup, fieldsLookup, leafIndexLookup);
+            assert entries instanceof EsSparseVector;
+            EsSparseVector sparseVector = (EsSparseVector) entries;
+            for (int i = 0; i< sparseVector.values.v1().length; i++) {
+                assert indicesAndValues.containsKey(sparseVector.values.v1()[i]) == false;
+                indicesAndValues.put(sparseVector.values.v1()[i], sparseVector.values.v2()[i]);
             }
-            Map<String, Object> finalVector = new HashMap<>();
-
-
-            double[] values = new double[length];
-            int[] indices = new int[length];
-            int curPos = 0;
-            for (EsSparseVector vector : entries) {
-                int numValues = vector.values.v1().length;
-                System.arraycopy(vector.values.v1(), 0, indices, curPos, numValues);
-                System.arraycopy(vector.values.v2(), 0, values, curPos, numValues);
-                curPos += numValues;
-            }
-            finalVector.put("values", values);
-            finalVector.put("indices", indices);
-            finalVector.put("length", numEntries);
-            return finalVector;
-
-        } else {
-            int length = 0;
-            List<double[]> entries = new ArrayList<>();
-            for (FeatureEntries fieldEntry : features) {
-                EsDenseVector vec = (EsDenseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
-                entries.add(vec.values);
-                length += vec.values.length;
-            }
-            Map<String, Object> finalVector = new HashMap<>();
-            double[] values = new double[length];
-            int curPos = 0;
-            for (double[] vals : entries) {
-                int numValues = vals.length;
-                System.arraycopy(vals, 0, values, curPos, numValues);
-                curPos += numValues;
-            }
-            finalVector.put("values", values);
-            finalVector.put("length", numEntries);
-            return finalVector;
         }
+        Map<String, Object> finalVector = new HashMap<>();
+        double[] values = new double[indicesAndValues.size()];
+        int[] indices = new int[indicesAndValues.size()];
+        int i = 0;
+        for (Map.Entry<Integer, Double> entry : indicesAndValues.entrySet()) {
+            indices[i] = entry.getKey();
+            values[i] = entry.getValue();
+            i++;
+        }
+        finalVector.put("values", values);
+        finalVector.put("indices", indices);
+        finalVector.put("length", numEntries);
+        return finalVector;
     }
 }
 

@@ -64,7 +64,7 @@ public class VectorizerPMMLTests extends ESTestCase {
         pmml.getDataDictionary();
 
         VectorEntries vectorEntries = new VectorEntriesPMML(pmml, 0);
-        assertThat(vectorEntries.features.size(), equalTo(10));
+        assertThat(vectorEntries.features.size(), equalTo(14));
     }
 
     public void testVectorizerParsingWithDOM() throws IOException, SAXException, ParserConfigurationException {
