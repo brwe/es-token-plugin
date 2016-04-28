@@ -155,9 +155,19 @@ public class VectorEntriesPMML extends VectorEntries {
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
+
+        HashMap<String, Object> fieldValues = new HashMap<>();
+        for (FeatureEntries featureEntries : features) {
+            String field = featureEntries.getField();
+            // TODO: We assume here doc lookup will always give us something back. What if not?
+            fieldValues.put(field, docLookup.get(field));
+        }
+        return vector(fieldValues);
+    }
+    protected Object vector(Map<String, Object> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
         for (FeatureEntries featureEntries : features) {
-            EsVector entries = featureEntries.getVector(docLookup, fieldsLookup, leafIndexLookup);
+            EsVector entries = featureEntries.getVector(fieldValues);
             assert entries instanceof EsSparseVector;
             EsSparseVector sparseVector = (EsSparseVector) entries;
             for (int i = 0; i < sparseVector.values.v1().length; i++) {

@@ -35,9 +35,12 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class VectorizerPMMLTests extends ESTestCase {
 
@@ -79,8 +82,28 @@ public class VectorizerPMMLTests extends ESTestCase {
             }
         });
 
-        VectorEntries vectorEntries = new VectorEntriesPMML(pmml, 0);
+        VectorEntriesPMML vectorEntries = new VectorEntriesPMML(pmml, 0);
         assertThat(vectorEntries.features.size(), equalTo(2));
-        
+        final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
+        final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
+        String testDataLines[] = testData.split("\\r?\\n");
+        String expectedResultsLines[] = testData.split("\\r?\\n");
+        for (int i = 0; i < testDataLines.length; i++) {
+            String[] testDataValues = testDataLines[i].split(",");
+            Object ageInput = null;
+            if (testDataValues[0].equals("") == false) {
+                ageInput = Double.parseDouble(testDataValues[0]);
+            }
+            Object workInput = null;
+            if (testDataValues[1].trim().equals("") == false) {
+                workInput = testDataValues[1].trim();
+            }
+            Map<String, Object> input = new HashMap<>();
+            input.put("age", ageInput);
+            input.put("work", workInput);
+            vectorEntries.vector(input);
+        }
+
+
     }
 }

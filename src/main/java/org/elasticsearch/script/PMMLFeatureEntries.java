@@ -58,12 +58,21 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            throw new UnsupportedOperationException("Remove this later, we should not get here.");
+        }
+
+        @Override
+        public EsVector getVector(Map<String, Object> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object category = docLookup.get(field);
+            Object category = fieldValues.get(field);
             Object processedCategory = applyPreProcessing(category);
-            int index = categoryToIndexHashMap.get(processedCategory);
-            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
-            return new EsSparseVector(indicesAndValues);
+            Integer index = categoryToIndexHashMap.get(processedCategory);
+            if (index == null) {
+                return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+            } else {
+                indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
+                return new EsSparseVector(indicesAndValues);
+            }
         }
 
         @Override
@@ -97,8 +106,13 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            throw new UnsupportedOperationException("Remove this later, we should not get here.");
+        }
+
+        @Override
+        public EsVector getVector(Map<String, Object> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object value = docLookup.get(field);
+            Object value = fieldValues.get(field);
             value = applyPreProcessing(value);
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) value).doubleValue()});
             return new EsSparseVector(indicesAndValues);
@@ -143,7 +157,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                                             throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
                                                     "far.");
                                         }
-                                        preProcessingSteps[i] = new MissingValuePreProcess(parsedMissingValue);
+                                        preProcessingSteps[derivedFields.length - i -1] = new MissingValuePreProcess(parsedMissingValue);
                                         break;
                                     }
                                 }
@@ -153,7 +167,8 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                         }
                     }
                 } else if (derivedField.getExpression() instanceof NormContinuous) {
-                    preProcessingSteps[i] = new NormContinousPreProcess((NormContinuous)derivedField.getExpression());
+                    preProcessingSteps[derivedFields.length - i -1] = new NormContinousPreProcess((NormContinuous) derivedField
+                            .getExpression());
                 } else {
                     throw new UnsupportedOperationException("So far only Apply expression implemented.");
                 }

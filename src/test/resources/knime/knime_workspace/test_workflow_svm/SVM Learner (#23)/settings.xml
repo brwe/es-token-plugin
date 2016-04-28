@@ -6,16 +6,17 @@
 <entry key="memory_policy" type="xstring" value="CacheSmallInMemory"/>
 </config>
 <config key="model">
-<config key="classcol_Internals">
-<entry key="SettingsModelID" type="xstring" value="SMID_string"/>
-<entry key="EnabledStatus" type="xboolean" value="true"/>
-</config>
-<entry key="classcol" type="xstring" value="class"/>
+<entry key="kernel_type" type="xstring" value="Polynomial"/>
 <config key="c_parameter_Internals">
 <entry key="SettingsModelID" type="xstring" value="SMID_double"/>
 <entry key="EnabledStatus" type="xboolean" value="true"/>
 </config>
 <entry key="c_parameter" type="xdouble" value="1.0"/>
+<config key="classcol_Internals">
+<entry key="SettingsModelID" type="xstring" value="SMID_string"/>
+<entry key="EnabledStatus" type="xboolean" value="true"/>
+</config>
+<entry key="classcol" type="xstring" value="class"/>
 <config key="kernel_param_Bias_Internals">
 <entry key="SettingsModelID" type="xstring" value="SMID_double"/>
 <entry key="EnabledStatus" type="xboolean" value="true"/>
@@ -46,7 +47,6 @@
 <entry key="EnabledStatus" type="xboolean" value="false"/>
 </config>
 <entry key="kernel_param_sigma" type="xdouble" value="0.1"/>
-<entry key="kernel_type" type="xstring" value="Polynomial"/>
 </config>
 <entry key="customDescription" type="xstring" isnull="true" value=""/>
 <entry key="state" type="xstring" value="EXECUTED"/>
@@ -81,6 +81,6 @@
 </config>
 <config key="filestores">
 <entry key="file_store_location" type="xstring" isnull="true" value=""/>
-<entry key="file_store_id" type="xstring" value="dea26f2e-12f4-4757-acf1-00d4dd7df18d"/>
+<entry key="file_store_id" type="xstring" value="5cd0925e-9603-48ee-b13d-fc0cc7b1b375"/>
 </config>
 </config>

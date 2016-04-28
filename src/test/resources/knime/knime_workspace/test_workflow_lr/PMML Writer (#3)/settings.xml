@@ -11,16 +11,16 @@
 <entry key="EnabledStatus" type="xboolean" value="true"/>
 </config>
 <entry key="PMMLWriterFile" type="xstring" value="knime://knime.mountpoint/data/lr_model.xml"/>
-<config key="validatePMML_Internals">
-<entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
-<entry key="EnabledStatus" type="xboolean" value="true"/>
-</config>
-<entry key="validatePMML" type="xboolean" value="true"/>
 <config key="overwriteOK_Internals">
 <entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
 <entry key="EnabledStatus" type="xboolean" value="true"/>
 </config>
 <entry key="overwriteOK" type="xboolean" value="true"/>
+<config key="validatePMML_Internals">
+<entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
+<entry key="EnabledStatus" type="xboolean" value="true"/>
+</config>
+<entry key="validatePMML" type="xboolean" value="true"/>
 </config>
 <entry key="customDescription" type="xstring" isnull="true" value=""/>
 <entry key="state" type="xstring" value="EXECUTED"/>
@@ -41,6 +41,6 @@
 <config key="ports"/>
 <config key="filestores">
 <entry key="file_store_location" type="xstring" isnull="true" value=""/>
-<entry key="file_store_id" type="xstring" value="9f4fc29f-44cd-468d-8ab6-110912f501bd"/>
+<entry key="file_store_id" type="xstring" value="2c42b9ce-db65-4b72-a750-07672ca89d32"/>
 </config>
 </config>

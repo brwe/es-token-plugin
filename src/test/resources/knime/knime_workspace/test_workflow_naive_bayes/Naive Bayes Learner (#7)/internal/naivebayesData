@@ -46,12 +46,11 @@
 <entry key="maxNoOfAttrs" type="xint" value="50"/>
 <entry key="noOfClasses" type="xint" value="2"/>
 <config key="attributeValues">
-<entry key="array-size" type="xint" value="5"/>
+<entry key="array-size" type="xint" value="4"/>
 <entry key="0" type="xstring" value="Private"/>
 <entry key="1" type="xstring" value="Self-emp-inc"/>
-<entry key="2" type="xstring" value="Local-gov"/>
-<entry key="3" type="xstring" value="other"/>
-<entry key="4" type="xstring" value="State-gov"/>
+<entry key="2" type="xstring" value="other"/>
+<entry key="3" type="xstring" value="State-gov"/>
 </config>
 <config key="classValueData_0">
 <entry key="classValue" type="xstring" value="&lt;=50K"/>
@@ -60,15 +59,15 @@
 <config key="attributeValues">
 <entry key="array-size" type="xint" value="4"/>
 <entry key="0" type="xstring" value="other"/>
-<entry key="1" type="xstring" value="Local-gov"/>
+<entry key="1" type="xstring" value="Self-emp-inc"/>
 <entry key="2" type="xstring" value="Private"/>
 <entry key="3" type="xstring" value="State-gov"/>
 </config>
 <config key="attributeCounter">
 <entry key="array-size" type="xint" value="4"/>
 <entry key="0" type="xint" value="3"/>
-<entry key="1" type="xint" value="1"/>
-<entry key="2" type="xint" value="7"/>
+<entry key="1" type="xint" value="3"/>
+<entry key="2" type="xint" value="5"/>
 <entry key="3" type="xint" value="2"/>
 </config>
 </config>
