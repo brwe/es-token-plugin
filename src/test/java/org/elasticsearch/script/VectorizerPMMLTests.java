@@ -61,4 +61,26 @@ public class VectorizerPMMLTests extends ESTestCase {
         VectorEntries vectorEntries = new VectorEntriesPMML(pmml, 0);
         assertThat(vectorEntries.features.size(), equalTo(14));
     }
+
+    public void testVectorizerParsingWithNormalization() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
+        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+            public PMML run() {
+                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                    Source transformedSource = ImportFilter.apply(new InputSource(is));
+                    return JAXBUtil.unmarshalPMML(transformedSource);
+                } catch (SAXException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (JAXBException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (IOException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                }
+            }
+        });
+
+        VectorEntries vectorEntries = new VectorEntriesPMML(pmml, 0);
+        assertThat(vectorEntries.features.size(), equalTo(2));
+        
+    }
 }
