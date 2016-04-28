@@ -22,6 +22,7 @@ package org.elasticsearch.script;
 import org.dmg.pmml.PMML;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.test.ESTestCase;
+import org.hamcrest.Matchers;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.xml.sax.InputSource;
@@ -87,7 +88,7 @@ public class VectorizerPMMLTests extends ESTestCase {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
         String testDataLines[] = testData.split("\\r?\\n");
-        String expectedResultsLines[] = testData.split("\\r?\\n");
+        String expectedResultsLines[] = expectedResults.split("\\r?\\n");
         for (int i = 0; i < testDataLines.length; i++) {
             String[] testDataValues = testDataLines[i].split(",");
             Object ageInput = null;
@@ -101,9 +102,30 @@ public class VectorizerPMMLTests extends ESTestCase {
             Map<String, Object> input = new HashMap<>();
             input.put("age", ageInput);
             input.put("work", workInput);
-            vectorEntries.vector(input);
+            Map<String, Object> result = (Map<String, Object>) vectorEntries.vector(input);
+            String[] expectedResult = expectedResultsLines[i + 1].split(",");
+            assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
+            if ("Private".equals(workInput)) {
+                assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
+                assertThat(((int[]) result.get("indices"))[1], equalTo(1));
+                assertThat(((double[]) result.get("values")).length, equalTo(2));
+                assertThat(((int[]) result.get("indices")).length, equalTo(2));
+            } else if ("Self-emp-inc".equals(workInput)) {
+                assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
+                assertThat(((int[]) result.get("indices"))[1], equalTo(2));
+                assertThat(((double[]) result.get("values")).length, equalTo(2));
+                assertThat(((int[]) result.get("indices")).length, equalTo(2));
+            } else if ("State-gov".equals(workInput)) {
+                assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
+                assertThat(((int[]) result.get("indices"))[1], equalTo(3));
+                assertThat(((double[]) result.get("values")).length, equalTo(2));
+                assertThat(((int[]) result.get("indices")).length, equalTo(2));
+            } else if (workInput == null) {
+                assertThat(((double[]) result.get("values")).length, equalTo(1));
+                assertThat(((int[]) result.get("indices")).length, equalTo(1));
+            } else {
+                fail();
+            }
         }
-
-
     }
 }

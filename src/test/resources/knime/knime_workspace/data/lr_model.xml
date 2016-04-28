@@ -5,27 +5,25 @@
   </Header>
   <DataDictionary numberOfFields="3">
     <DataField dataType="integer" name="age" optype="continuous">
-      <Interval closure="closedClosed" leftMargin="24.0" rightMargin="71.0"/>
+      <Interval closure="closedClosed" leftMargin="21.0" rightMargin="71.0"/>
     </DataField>
     <DataField dataType="string" name="work" optype="categorical">
-      <Value value="Self-emp-inc"/>
-      <Value value="A"/>
-      <Value value="State-gov"/>
       <Value value="Private"/>
-      <Value value="Unemployed"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="State-gov"/>
     </DataField>
     <DataField dataType="string" name="class" optype="categorical">
-      <Value value=">50K"/>
       <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
     </DataField>
   </DataDictionary>
   <TransformationDictionary>
-    <DerivedField dataType="double" displayName="age" name="age*" optype="continuous">
+    <DerivedField dataType="integer" displayName="age" name="age*" optype="continuous">
       <Apply function="if">
         <Apply function="isMissing">
           <FieldRef field="age"/>
         </Apply>
-        <Constant dataType="double">43.4</Constant>
+        <Constant dataType="integer">0</Constant>
         <FieldRef field="age"/>
       </Apply>
     </DerivedField>
@@ -34,15 +32,15 @@
         <Apply function="isMissing">
           <FieldRef field="work"/>
         </Apply>
-        <Constant dataType="string">other</Constant>
+        <Constant dataType="string">Hedonist</Constant>
         <FieldRef field="work"/>
       </Apply>
     </DerivedField>
     <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
       <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 1 column(s)"/>
       <NormContinuous field="age*">
-        <LinearNorm norm="-3.4927385813896032" orig="0.0"/>
-        <LinearNorm norm="-3.412260733892147" orig="1.0"/>
+        <LinearNorm norm="-1.622771550939363" orig="0.0"/>
+        <LinearNorm norm="-1.5761848078501948" orig="1.0"/>
       </NormContinuous>
     </DerivedField>
   </TransformationDictionary>
@@ -58,8 +56,6 @@
       <Parameter name="p2" label="[work=Private]"/>
       <Parameter name="p3" label="[work=Self-emp-inc]"/>
       <Parameter name="p4" label="[work=State-gov]"/>
-      <Parameter name="p5" label="[work=Unemployed]"/>
-      <Parameter name="p6" label="[work=other]"/>
     </ParameterList>
     <FactorList>
       <Predictor name="work*"/>
@@ -72,17 +68,13 @@
       <PPCell value="Private" predictorName="work*" parameterName="p2"/>
       <PPCell value="Self-emp-inc" predictorName="work*" parameterName="p3"/>
       <PPCell value="State-gov" predictorName="work*" parameterName="p4"/>
-      <PPCell value="Unemployed" predictorName="work*" parameterName="p5"/>
-      <PPCell value="other" predictorName="work*" parameterName="p6"/>
     </PPMatrix>
     <ParamMatrix>
-      <PCell targetCategory="&lt;=50K" parameterName="p0" beta="26.969710413997277" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p1" beta="1.3924994025625481" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p2" beta="1.4698311676837594" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p3" beta="-25.712066416314997" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p4" beta="-24.563524250565173" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p5" beta="-0.9241928464357458" df="1"/>
-      <PCell targetCategory="&lt;=50K" parameterName="p6" beta="-26.26164430814491" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p0" beta="0.9807956889114153" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p1" beta="-0.30845493083495035" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p2" beta="0.13771708280083522" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p3" beta="-2.138917238221307" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p4" beta="-0.49862386517796264" df="1"/>
     </ParamMatrix>
   </GeneralRegressionModel>
 </PMML>

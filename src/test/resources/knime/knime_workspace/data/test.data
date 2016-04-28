@@ -6,13 +6,13 @@
 71, Private, <=50K
 58, , <=50K
 30, State-gov, >50K
-, , <=50K
+, Private , <=50K
 24, Private, <=50K
 35, , >50K
 , State-gov, <=50K
 27, Private, <=50K
 29, State-gov, <=50K
 70, , <=50K
-34, Self-emp-inc, <=50K
-44, Self-emp-inc, <=50K
+34, Self-emp-inc, >50K
+44, Self-emp-inc, >50K
 43, Private, >50K
