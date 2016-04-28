@@ -62,12 +62,12 @@ public class VectorizerTests extends ESTestCase {
 
     public void assertParameters(VectorEntries entries) {
         assertThat(entries.sparse, equalTo(false));
-        assertThat(entries.features.get(0), instanceOf(FeatureEntries.DenseTermFeatureEntries.class));
-        assertThat(entries.features.get(1), instanceOf(FeatureEntries.DenseTermFeatureEntries.class));
-        FeatureEntries.DenseTermFeatureEntries entry1 = (FeatureEntries.DenseTermFeatureEntries) entries.features.get(0);
-        FeatureEntries.DenseTermFeatureEntries entry2 = (FeatureEntries.DenseTermFeatureEntries) entries.features.get(1);
-        assertThat(entry1, instanceOf(FeatureEntries.DenseTermFeatureEntries.class));
-        assertThat(entry2, instanceOf(FeatureEntries.DenseTermFeatureEntries.class));
+        assertThat(entries.features.get(0), instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
+        assertThat(entries.features.get(1), instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
+        AnalyzedTextFeatureEntries.DenseTermFeatureEntries entry1 = (AnalyzedTextFeatureEntries.DenseTermFeatureEntries) entries.features.get(0);
+        AnalyzedTextFeatureEntries.DenseTermFeatureEntries entry2 = (AnalyzedTextFeatureEntries.DenseTermFeatureEntries) entries.features.get(1);
+        assertThat(entry1, instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
+        assertThat(entry2, instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
         assertThat(entry1.size(), equalTo(3));
         assertThat(entry2.size(), equalTo(3));
         assertThat(entry1.offset, equalTo(0));
