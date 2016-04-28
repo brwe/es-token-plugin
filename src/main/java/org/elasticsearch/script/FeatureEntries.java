@@ -23,6 +23,8 @@ import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class FeatureEntries {
@@ -33,7 +35,7 @@ public abstract class FeatureEntries {
 
     public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
 
-    public abstract EsVector getVector(Map<String,Object> fieldValues);
+    public abstract EsVector getVector(Map<String, List> fieldValues);
 
     public String getField() {
         return field;

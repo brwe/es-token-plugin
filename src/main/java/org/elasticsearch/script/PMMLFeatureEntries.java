@@ -26,6 +26,7 @@ import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class PMMLFeatureEntries extends FeatureEntries {
@@ -62,10 +63,10 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(Map<String, Object> fieldValues) {
+        public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object category = fieldValues.get(field);
-            Object processedCategory = applyPreProcessing(category);
+            List category = fieldValues.get(field);
+            Object processedCategory = applyPreProcessing(category.size() == 0 ? null : category.get(0));
             Integer index = categoryToIndexHashMap.get(processedCategory);
             if (index == null) {
                 // TODO: Should we throw an exception here? Can this actually happen?
@@ -111,11 +112,11 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(Map<String, Object> fieldValues) {
+        public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object value = fieldValues.get(field);
-            value = applyPreProcessing(value);
-            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) value).doubleValue()});
+            List value = fieldValues.get(field);
+            Object finalValue = applyPreProcessing(value.size() == 0 ? null : value.get(0));
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) finalValue).doubleValue()});
             return new EsSparseVector(indicesAndValues);
         }
 
@@ -158,7 +159,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                                             throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
                                                     "far.");
                                         }
-                                        preProcessingSteps[derivedFields.length - i -1] = new MissingValuePreProcess(parsedMissingValue);
+                                        preProcessingSteps[derivedFields.length - i - 1] = new MissingValuePreProcess(parsedMissingValue);
                                         break;
                                     }
                                 }
@@ -168,7 +169,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                         }
                     }
                 } else if (derivedField.getExpression() instanceof NormContinuous) {
-                    preProcessingSteps[derivedFields.length - i -1] = new NormContinousPreProcess((NormContinuous) derivedField
+                    preProcessingSteps[derivedFields.length - i - 1] = new NormContinousPreProcess((NormContinuous) derivedField
                             .getExpression());
                 } else {
                     throw new UnsupportedOperationException("So far only Apply expression implemented.");

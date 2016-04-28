@@ -20,6 +20,7 @@
 package org.elasticsearch.script;
 
 import org.dmg.pmml.*;
+import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
@@ -156,15 +157,15 @@ public class VectorEntriesPMML extends VectorEntries {
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
 
-        HashMap<String, Object> fieldValues = new HashMap<>();
+        HashMap<String, List> fieldValues = new HashMap<>();
         for (FeatureEntries featureEntries : features) {
             String field = featureEntries.getField();
             // TODO: We assume here doc lookup will always give us something back. What if not?
-            fieldValues.put(field, docLookup.get(field));
+            fieldValues.put(field, ((ScriptDocValues)docLookup.get(field)).getValues());
         }
         return vector(fieldValues);
     }
-    protected Object vector(Map<String, Object> fieldValues) {
+    protected Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
         for (FeatureEntries featureEntries : features) {
             EsVector entries = featureEntries.getVector(fieldValues);

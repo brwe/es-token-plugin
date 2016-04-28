@@ -36,12 +36,13 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class VectorizerPMMLTests extends ESTestCase {
 
@@ -91,40 +92,42 @@ public class VectorizerPMMLTests extends ESTestCase {
         String expectedResultsLines[] = expectedResults.split("\\r?\\n");
         for (int i = 0; i < testDataLines.length; i++) {
             String[] testDataValues = testDataLines[i].split(",");
-            Object ageInput = null;
+            List ageInput = new ArrayList<Double>();
+            ;
             if (testDataValues[0].equals("") == false) {
-                ageInput = Double.parseDouble(testDataValues[0]);
+                ageInput.add(Double.parseDouble(testDataValues[0]));
             }
-            Object workInput = null;
+            List workInput = new ArrayList<String>();
             if (testDataValues[1].trim().equals("") == false) {
-                workInput = testDataValues[1].trim();
+                workInput.add(testDataValues[1].trim());
             }
-            Map<String, Object> input = new HashMap<>();
+            Map<String, List> input = new HashMap<>();
             input.put("age", ageInput);
             input.put("work", workInput);
             Map<String, Object> result = (Map<String, Object>) vectorEntries.vector(input);
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
-            if ("Private".equals(workInput)) {
+            if (workInput.size() == 0) {
+                // this might be a problem with the model. not sure. the "other" value does not appear in it.
+                assertThat(((double[]) result.get("values")).length, equalTo(1));
+                assertThat(((int[]) result.get("indices")).length, equalTo(1));
+            } else if ("Private".equals(workInput.get(0))) {
                 assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
                 assertThat(((int[]) result.get("indices"))[1], equalTo(1));
                 assertThat(((double[]) result.get("values")).length, equalTo(2));
                 assertThat(((int[]) result.get("indices")).length, equalTo(2));
-            } else if ("Self-emp-inc".equals(workInput)) {
+            } else if ("Self-emp-inc".equals(workInput.get(0))) {
                 assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
                 assertThat(((int[]) result.get("indices"))[1], equalTo(2));
                 assertThat(((double[]) result.get("values")).length, equalTo(2));
                 assertThat(((int[]) result.get("indices")).length, equalTo(2));
-            } else if ("State-gov".equals(workInput)) {
+            } else if ("State-gov".equals(workInput.get(0))) {
                 assertThat(((double[]) result.get("values"))[1], equalTo(1.0));
                 assertThat(((int[]) result.get("indices"))[1], equalTo(3));
                 assertThat(((double[]) result.get("values")).length, equalTo(2));
                 assertThat(((int[]) result.get("indices")).length, equalTo(2));
-            } else if (workInput == null) {
-                assertThat(((double[]) result.get("values")).length, equalTo(1));
-                assertThat(((int[]) result.get("indices")).length, equalTo(1));
             } else {
-                fail();
+                fail("work input was " + workInput);
             }
         }
     }
