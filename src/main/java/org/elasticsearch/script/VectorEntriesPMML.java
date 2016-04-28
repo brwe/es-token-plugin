@@ -137,6 +137,8 @@ public class VectorEntriesPMML extends VectorEntries {
                         referencedField = ((FieldRef) expression).getField().getValue();
                     }
                 }
+            } else if (derivedField.getExpression() instanceof NormContinuous) {
+                referencedField = ((NormContinuous)derivedField.getExpression()).getField().getValue();
             } else {
                 throw new UnsupportedOperationException("So far only Apply expression implemented.");
             }

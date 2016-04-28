@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+  <Header copyright="britta">
+    <Application name="KNIME" version="3.1.2"/>
+  </Header>
+  <DataDictionary numberOfFields="3">
+    <DataField dataType="integer" name="age" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="21.0" rightMargin="71.0"/>
+    </DataField>
+    <DataField dataType="string" name="work" optype="categorical">
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Local-gov"/>
+      <Value value="State-gov"/>
+    </DataField>
+    <DataField dataType="string" name="class" optype="categorical">
+      <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
+    </DataField>
+  </DataDictionary>
+  <TransformationDictionary>
+    <DerivedField dataType="double" displayName="age" name="age*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="age"/>
+        </Apply>
+        <Constant dataType="double">41.8</Constant>
+        <FieldRef field="age"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="work" name="work*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="work"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="work"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
+      <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 1 column(s)"/>
+      <NormContinuous field="age*">
+        <LinearNorm norm="-2.7920002845477194" orig="0.0"/>
+        <LinearNorm norm="-2.725206019367152" orig="1.0"/>
+      </NormContinuous>
+    </DerivedField>
+  </TransformationDictionary>
+  <NaiveBayesModel isScorable="true" modelName="KNIME PMML Naive Bayes model" threshold="0.0" functionName="classification">
+    <MiningSchema>
+      <MiningField name="age" invalidValueTreatment="asIs"/>
+      <MiningField name="work" invalidValueTreatment="asIs"/>
+      <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
+    </MiningSchema>
+    <BayesInputs>
+      <BayesInput fieldName="age">
+        <TargetValueStats>
+          <TargetValueStat value="&lt;=50K">
+            <GaussianDistribution mean="0.1541406119551564" variance="1.1355823737463462"/>
+          </TargetValueStat>
+          <TargetValueStat value=">50K">
+            <GaussianDistribution mean="-0.4007655910834039" variance="0.5652687381902165"/>
+          </TargetValueStat>
+        </TargetValueStats>
+      </BayesInput>
+      <BayesInput fieldName="work">
+        <PairCounts value="Private">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="7.0"/>
+            <TargetValueCount value=">50K" count="2.0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Self-emp-inc">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="0.0"/>
+            <TargetValueCount value=">50K" count="1.0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Local-gov">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1.0"/>
+            <TargetValueCount value=">50K" count="0.0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="other">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3.0"/>
+            <TargetValueCount value=">50K" count="1.0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="State-gov">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="2.0"/>
+            <TargetValueCount value=">50K" count="1.0"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+    </BayesInputs>
+    <BayesOutput fieldName="class">
+      <TargetValueCounts>
+        <TargetValueCount value="&lt;=50K" count="13.0"/>
+        <TargetValueCount value=">50K" count="5.0"/>
+      </TargetValueCounts>
+    </BayesOutput>
+  </NaiveBayesModel>
+</PMML>

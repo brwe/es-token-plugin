@@ -143,7 +143,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                                             throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
                                                     "far.");
                                         }
-                                        preProcessingSteps[i] = new MissingValue(parsedMissingValue);
+                                        preProcessingSteps[i] = new MissingValuePreProcess(parsedMissingValue);
                                         break;
                                     }
                                 }
@@ -152,9 +152,12 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
                             }
                         }
                     }
+                } else if (derivedField.getExpression() instanceof NormContinuous) {
+                    preProcessingSteps[i] = new NormContinousPreProcess((NormContinuous)derivedField.getExpression());
                 } else {
                     throw new UnsupportedOperationException("So far only Apply expression implemented.");
                 }
+
             } else {
                 throw new UnsupportedOperationException("So far only Apply implemented.");
             }

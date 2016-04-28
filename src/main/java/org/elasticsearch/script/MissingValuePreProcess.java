@@ -19,11 +19,11 @@
 
 package org.elasticsearch.script;
 
-public class MissingValue implements PreProcessingStep {
+public class MissingValuePreProcess implements PreProcessingStep {
 
     private Object missingValue;
 
-    public MissingValue(Object missingValue) {
+    public MissingValuePreProcess(Object missingValue) {
         this.missingValue = missingValue;
     }
 
