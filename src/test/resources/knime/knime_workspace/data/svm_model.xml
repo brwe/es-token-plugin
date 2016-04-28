@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+  <Header copyright="britta">
+    <Application name="KNIME" version="3.1.2"/>
+  </Header>
+  <DataDictionary numberOfFields="3">
+    <DataField dataType="integer" name="age" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="21.0" rightMargin="71.0"/>
+    </DataField>
+    <DataField dataType="string" name="work" optype="categorical">
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Local-gov"/>
+      <Value value="State-gov"/>
+    </DataField>
+    <DataField dataType="string" name="class" optype="categorical">
+      <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
+    </DataField>
+  </DataDictionary>
+  <TransformationDictionary>
+    <DerivedField dataType="double" displayName="age" name="age*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="age"/>
+        </Apply>
+        <Constant dataType="double">41.8</Constant>
+        <FieldRef field="age"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="work" name="work*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="work"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="work"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
+      <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 1 column(s)"/>
+      <NormContinuous field="age*">
+        <LinearNorm norm="-2.7920002845477194" orig="0.0"/>
+        <LinearNorm norm="-2.725206019367152" orig="1.0"/>
+      </NormContinuous>
+    </DerivedField>
+  </TransformationDictionary>
+  <SupportVectorMachineModel modelName="SVM" functionName="classification" algorithmName="Sequential Minimal Optimization (SMO)" svmRepresentation="SupportVectors">
+    <MiningSchema>
+      <MiningField name="age" invalidValueTreatment="asIs"/>
+      <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
+    </MiningSchema>
+    <Targets>
+      <Target field="class" optype="categorical"/>
+    </Targets>
+    <PolynomialKernelType coef0="1.0" degree="1.0" gamma="1.0"/>
+    <VectorDictionary numberOfVectors="11">
+      <VectorFields numberOfFields="1">
+        <FieldRef field="age**"/>
+      </VectorFields>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row0">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>1.2156556262863285</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id=">50K_>50K_Row1">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-1.3893207157558025</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row2">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-0.7213780639501279</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id=">50K_>50K_Row3">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>0.5477129744806541</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id=">50K_>50K_Row7">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-0.7881723291306955</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row9">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-1.1889379202141002</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id=">50K_>50K_Row10">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-0.45420100322785784</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row11">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>4.440892098500626E-16</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row12">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-0.9885551246723978</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id="&lt;=50K_&lt;=50K_Row13">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>-0.8549665943112628</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+      <VectorInstance id=">50K_>50K_Row17">
+        <REAL-SparseArray n="1">
+          <Indices>1</Indices>
+          <REAL-Entries>0.08015311821668192</REAL-Entries>
+        </REAL-SparseArray>
+      </VectorInstance>
+    </VectorDictionary>
+    <SupportVectorMachine targetCategory="&lt;=50K" alternateTargetCategory=">50K">
+      <SupportVectors numberOfAttributes="1" numberOfSupportVectors="11">
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row0"/>
+        <SupportVector vectorId=">50K_>50K_Row1"/>
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row2"/>
+        <SupportVector vectorId=">50K_>50K_Row3"/>
+        <SupportVector vectorId=">50K_>50K_Row7"/>
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row9"/>
+        <SupportVector vectorId=">50K_>50K_Row10"/>
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row11"/>
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row12"/>
+        <SupportVector vectorId="&lt;=50K_&lt;=50K_Row13"/>
+        <SupportVector vectorId=">50K_>50K_Row17"/>
+      </SupportVectors>
+      <Coefficients numberOfCoefficients="11" absoluteValue="-0.9999999999999999">
+        <Coefficient value="-0.845161290322581"/>
+        <Coefficient value="1.0"/>
+        <Coefficient value="-1.0"/>
+        <Coefficient value="1.0"/>
+        <Coefficient value="1.0"/>
+        <Coefficient value="-1.0"/>
+        <Coefficient value="1.0"/>
+        <Coefficient value="-1.0"/>
+        <Coefficient value="-1.0"/>
+        <Coefficient value="-0.15483870967741897"/>
+        <Coefficient value="1.0"/>
+      </Coefficients>
+    </SupportVectorMachine>
+  </SupportVectorMachineModel>
+</PMML>

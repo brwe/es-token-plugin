@@ -1,0 +1,8 @@
+knime://knime.mountpoint/data/svm_model.xml
+knime://knime.mountpoint/data/decision_tree_model.xml
+knime://knime.mountpoint/data/naive_bayes_model.xml
+knime://knime.mountpoint/data/lr_model.xml
+/home/britta/poc/data/adult_income/pmml_output/naive_bayes
+/home/britta/poc/data/adult_income/pmml_output/naive_bayes_pre_process
+naive_bayes_pre_process.pmml
+/home/britta/poc/data/adult_income/pmml_output/logistic_regression
