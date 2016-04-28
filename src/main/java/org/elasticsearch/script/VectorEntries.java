@@ -170,8 +170,29 @@ public class VectorEntries {
                     " as quick as I can! At least when I feel like it...which is not often lately...seriously, need more holiday...");
         } else if (dataField.getOpType().value().equals("continuous")) {
             if (derivedField != null) {
-                throw new UnsupportedOperationException("have not implemented any derived field for continous variables yet. I am working" +
-                        " as quick as I can! At least when I feel like it...which is not often lately...seriously, need more holiday...");
+                if (derivedField.getExpression() == null) {
+                    throw new UnsupportedOperationException("only implemented expression for continuous variables so far");
+                }
+                if (derivedField.getExpression() instanceof  Apply == false) {
+                    throw new UnsupportedOperationException("only implemented expression for continuous variables with Apply expression " +
+                            "so far");
+                } else {
+                    if (((Apply)derivedField.getExpression()).getFunction().equals("if") == false) {
+                        throw new UnsupportedOperationException("only implemented expression for continuous variables with Apply expression " +
+                                "so far");
+                    } else {
+                        // got through all the expressions and check for missing field value
+                        // first find the function
+
+                        for (Object o : derivedField.getExtensions()) {
+                            if (o instanceof Apply) {
+                                if (((Apply)o).getFunction().equals("isMissing")) {
+                                    return new FeatureEntries.ContinousSingleEntryFeatureEntries(dataField, derivedField);
+                                }
+                            }
+                        }
+                    }
+                }
             }
             return null; //new FeatureEntries.ContinousSingleEntryFeatureEntries(dataField.getName().getValue(), offset);
         } else {

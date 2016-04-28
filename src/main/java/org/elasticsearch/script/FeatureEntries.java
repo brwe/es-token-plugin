@@ -20,6 +20,8 @@
 package org.elasticsearch.script;
 
 import org.apache.lucene.index.Fields;
+import org.dmg.pmml.DataField;
+import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.PPCell;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
@@ -180,9 +182,25 @@ public abstract class FeatureEntries {
      * */
     public static class ContinousSingleEntryFeatureEntries extends FeatureEntries {
         int index = -1;
+        PreProcessingStep[] preProcessingSteps;
 
-        public ContinousSingleEntryFeatureEntries(String field) {
-            this.field = field;
+        public ContinousSingleEntryFeatureEntries(DataField dataField, DerivedField... derivedField) {
+            this.field = dataField.getName().getValue();
+            preProcessingSteps = new PreProcessingStep[derivedField.length];
+            fillPreProcessingSteps(derivedField);
+
+        }
+
+        private void fillPreProcessingSteps(DerivedField[] derivedFields) {
+            int numProcessedFields = 0;
+            while (numProcessedFields < derivedFields.length) {
+                for (DerivedField derivedField : derivedFields) {
+                    if (derivedField != null) {// we set an entry null whenever we found one that fit the previous
+
+
+                    }
+                }
+            }
         }
 
         @Override
