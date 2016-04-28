@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+  <Header copyright="britta">
+    <Application name="KNIME" version="3.1.2"/>
+  </Header>
+  <DataDictionary numberOfFields="3">
+    <DataField dataType="integer" name="age" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="21.0" rightMargin="71.0"/>
+    </DataField>
+    <DataField dataType="string" name="work" optype="categorical">
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="State-gov"/>
+    </DataField>
+    <DataField dataType="string" name="class" optype="categorical">
+      <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
+    </DataField>
+  </DataDictionary>
+  <TransformationDictionary>
+    <DerivedField dataType="integer" displayName="age" name="age*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="age"/>
+        </Apply>
+        <Constant dataType="integer">-1000</Constant>
+        <FieldRef field="age"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="work" name="work*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="work"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="work"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
+      <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 1 column(s)"/>
+      <NormContinuous field="age*">
+        <LinearNorm norm="-1.622771550939363" orig="0.0"/>
+        <LinearNorm norm="-1.5761848078501948" orig="1.0"/>
+      </NormContinuous>
+    </DerivedField>
+  </TransformationDictionary>
+  <GeneralRegressionModel modelType="multinomialLogistic" functionName="classification" algorithmName="LogisticRegression" modelName="KNIME Logistic Regression" targetReferenceCategory=">50K">
+    <MiningSchema>
+      <MiningField name="age" invalidValueTreatment="asIs"/>
+      <MiningField name="work" invalidValueTreatment="asIs"/>
+      <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
+    </MiningSchema>
+    <ParameterList>
+      <Parameter name="p0" label="Intercept"/>
+      <Parameter name="p1" label="age**"/>
+      <Parameter name="p2" label="[work=Private]"/>
+      <Parameter name="p3" label="[work=Self-emp-inc]"/>
+      <Parameter name="p4" label="[work=State-gov]"/>
+      <Parameter name="p5" label="[other]"/>
+    </ParameterList>
+    <FactorList>
+      <Predictor name="work*"/>
+    </FactorList>
+    <CovariateList>
+      <Predictor name="age**"/>
+    </CovariateList>
+    <PPMatrix>
+      <PPCell value="1" predictorName="age**" parameterName="p1"/>
+      <PPCell value="Private" predictorName="work*" parameterName="p2"/>
+      <PPCell value="Self-emp-inc" predictorName="work*" parameterName="p3"/>
+      <PPCell value="State-gov" predictorName="work*" parameterName="p4"/>
+      <PPCell value="other" predictorName="work*" parameterName="p5"/>
+    </PPMatrix>
+    <ParamMatrix>
+      <PCell targetCategory="&lt;=50K" parameterName="p0" beta="0.9807956889114153" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p1" beta="-0.30845493083495035" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p2" beta="0.13771708280083522" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p3" beta="-2.138917238221307" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p4" beta="-0.49862386517796264" df="1"/>
+      <PCell targetCategory="&lt;=50K" parameterName="p5" beta="-0.49862386517796264" df="1"/>
+    </ParamMatrix>
+  </GeneralRegressionModel>
+</PMML>

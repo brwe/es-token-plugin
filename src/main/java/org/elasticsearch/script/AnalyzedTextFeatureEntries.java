@@ -26,6 +26,7 @@ import org.elasticsearch.search.lookup.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
@@ -120,7 +121,7 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(Map<String, Object> fieldValues) {
+        public EsVector getVector(Map<String, List> fieldValues) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
@@ -169,7 +170,7 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
         }
 
         @Override
-        public EsVector getVector(Map<String, Object> fieldValues) {
+        public EsVector getVector(Map<String, List> fieldValues) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
