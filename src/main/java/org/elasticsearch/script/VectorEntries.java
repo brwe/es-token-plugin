@@ -141,7 +141,7 @@ public class VectorEntries {
                 // now find the actual dataField
                 for (DataField dataField : model.getDataDictionary().getDataFields()) {
                     String rawDataFieldName = dataField.getName().getValue();
-                    if (rawDataFieldName.equals(fieldName)) {
+                    if (rawDataFieldName.equals(rawField)) {
                         return createVectorEntries(dataField, derivedField);
                     }
                 }
