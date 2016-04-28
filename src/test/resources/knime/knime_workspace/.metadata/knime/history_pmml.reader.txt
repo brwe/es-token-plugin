@@ -1,0 +1,8 @@
+/home/britta/poc/data/adult_income/pmml_output/naive_bayes
+/home/britta/poc/data/adult_income/pmml_output/logistic_regression
+/home/britta/poc/data/adult_income/pmml_output/na ive_bayes
+/home/britta/poc/data/adult_income/pmml_output/naiv e_bayes
+/home/britta/poc/data/adult_income/pmml_output/n aive_bayes
+/home/britta/poc/data/adult_income/pmml_output/naive_ba yes
+/home/britta/poc/data/adult_income/pmml_output/naive_bayes_pre_process
+/home/britta/poc/data/adult_income/pmml_output/naive_  bayes

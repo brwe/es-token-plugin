@@ -1,0 +1,1 @@
+knime://knime.mountpoint/data/decision_tree_result.txt

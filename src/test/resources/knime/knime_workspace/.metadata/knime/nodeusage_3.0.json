@@ -1,0 +1,186 @@
+
+{
+    "version":"3.1.2.v201603311235",
+    "created":"2016-04-21 14:10",
+    "nodestats":{
+        "nodes":[
+            {
+                "id":"org.knime.base.node.io.filereader.FileReaderNodeFactory#File Reader",
+                "nrexecs":17,
+                "exectime":8153,
+                "nrcreated":0,
+                "successor":"org.knime.base.node.preproc.rename.RenameNodeFactory#Column Rename"
+            },
+            {
+                "id":"org.knime.base.node.preproc.pmml.missingval.compute.MissingValueHandlerNodeFactory#Missing Value",
+                "nrexecs":21,
+                "exectime":11078,
+                "nrcreated":0,
+                "successor":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLNodeFactory2#Normalizer (PMML)"
+            },
+            {
+                "id":"org.knime.base.node.mine.regression.logistic.learner3.LogRegLearnerNodeFactory3#Logistic Regression Learner",
+                "nrexecs":7,
+                "exectime":441895,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.mine.bayes.naivebayes.predictor3.NaiveBayesPredictorNodeFactory2#Naive Bayes Predictor"
+            },
+            {
+                "id":"org.knime.base.node.mine.regression.predict2.RegressionPredictorNodeFactory#Regression Predictor",
+                "nrexecs":5,
+                "exectime":4979,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.mine.scorer.accuracy.AccuracyScorerNodeFactory#Scorer"
+            },
+            {
+                "id":"org.knime.base.node.mine.scorer.accuracy.AccuracyScorerNodeFactory#Scorer",
+                "nrexecs":44,
+                "exectime":5913,
+                "nrcreated":3,
+                "successor":"org.knime.base.node.viz.table.TableNodeFactory#Interactive Table"
+            },
+            {
+                "id":"org.knime.base.node.pmml.modelappender.PMMLModelAppenderNodeFactory#PMML Model Appender",
+                "nrexecs":29,
+                "exectime":2955,
+                "nrcreated":0,
+                "successor":"org.knime.base.pmml.translation.pmmlpredictor.PMMLFastPredictorNodeFactory#PMML Compiling Predictor"
+            },
+            {
+                "id":"org.knime.base.node.io.pmml.write.PMMLWriterNodeFactory#PMML Writer",
+                "nrexecs":30,
+                "exectime":1226,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.mine.bayes.naivebayes.learner2.NaiveBayesLearnerNodeFactory3#Naive Bayes Learner",
+                "nrexecs":21,
+                "exectime":4482,
+                "nrcreated":0,
+                "successor":"org.knime.base.node.io.pmml.write.PMMLWriterNodeFactory#PMML Writer"
+            },
+            {
+                "id":"org.knime.base.node.mine.bayes.naivebayes.predictor3.NaiveBayesPredictorNodeFactory2#Naive Bayes Predictor",
+                "nrexecs":17,
+                "exectime":5650,
+                "nrcreated":0,
+                "successor":"org.knime.base.node.viz.table.TableNodeFactory#Interactive Table"
+            },
+            {
+                "id":"org.knime.base.node.preproc.pmml.columntrans2.One2ManyCol2PMMLNodeFactory2#One to Many (PMML)",
+                "nrexecs":3,
+                "exectime":5469,
+                "nrcreated":0,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLNodeFactory2#Normalizer (PMML)",
+                "nrexecs":14,
+                "exectime":19587,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.mine.decisiontree2.predictor2.DecTreePredictorNodeFactory#Decision Tree Predictor"
+            },
+            {
+                "id":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLApplyNodeFactory#Normalizer Apply (PMML)",
+                "nrexecs":4,
+                "exectime":6476,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.pmml.transappender.PMMLTransformationsAppenderNodeFactory#PMML Transformation Appender"
+            },
+            {
+                "id":"org.knime.base.node.mine.decisiontree2.learner2.DecisionTreeLearnerNodeFactory3#Decision Tree Learner",
+                "nrexecs":4,
+                "exectime":2637,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.mine.decisiontree2.predictor2.DecTreePredictorNodeFactory#Decision Tree Predictor"
+            },
+            {
+                "id":"org.knime.base.node.mine.decisiontree2.predictor2.DecTreePredictorNodeFactory#Decision Tree Predictor",
+                "nrexecs":4,
+                "exectime":4048,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.mine.scorer.accuracy.AccuracyScorerNodeFactory#Scorer"
+            },
+            {
+                "id":"org.knime.base.node.mine.svm.learner.SVMLearnerNodeFactory2#SVM Learner",
+                "nrexecs":3,
+                "exectime":36471395,
+                "nrcreated":0,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.mine.svm.predictor2.SVMPredictorNodeFactory#SVM Predictor",
+                "nrexecs":4,
+                "exectime":1831530,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.viz.table.TableNodeFactory#Interactive Table",
+                "nrexecs":8,
+                "exectime":2,
+                "nrcreated":2,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.ensembles.pmmlpredict2.PMMLPredictor2NodeFactory#PMML Predictor",
+                "nrexecs":19,
+                "exectime":5117,
+                "nrcreated":3,
+                "successor":"org.knime.base.node.viz.table.TableNodeFactory#Interactive Table"
+            },
+            {
+                "id":"org.knime.base.node.io.pmml.read.PMMLReaderNodeFactory#PMML Reader",
+                "nrexecs":18,
+                "exectime":26,
+                "nrcreated":3,
+                "successor":"org.knime.ensembles.pmmlpredict2.PMMLPredictor2NodeFactory#PMML Predictor"
+            },
+            {
+                "id":"org.knime.base.node.pmml.transappender.PMMLTransformationsAppenderNodeFactory#PMML Transformation Appender",
+                "nrexecs":15,
+                "exectime":391,
+                "nrcreated":3,
+                "successor":"org.knime.base.node.pmml.modelappender.PMMLModelAppenderNodeFactory#PMML Model Appender"
+            },
+            {
+                "id":"org.knime.base.node.pmml.createempty.EmptyPMMLCreatorNodeFactory#Empty PMML Creator",
+                "nrexecs":1,
+                "exectime":3,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.pmml.transappender.PMMLTransformationsAppenderNodeFactory#PMML Transformation Appender"
+            },
+            {
+                "id":"org.knime.base.pmml.translation.pmmlpredictor.PMMLFastPredictorNodeFactory#PMML Compiling Predictor",
+                "nrexecs":2,
+                "exectime":2052,
+                "nrcreated":1,
+                "successor":"n/a"
+            },
+            {
+                "id":"org.knime.base.node.preproc.pmml.missingval.apply.MissingValueApplyNodeFactory#Missing Value (Apply)",
+                "nrexecs":1,
+                "exectime":472,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLNodeFactory2#Normalizer (PMML)"
+            },
+            {
+                "id":"org.knime.base.node.preproc.rename.RenameNodeFactory#Column Rename",
+                "nrexecs":5,
+                "exectime":5,
+                "nrcreated":2,
+                "successor":"org.knime.base.node.mine.bayes.naivebayes.learner2.NaiveBayesLearnerNodeFactory3#Naive Bayes Learner"
+            }
+        ],
+        "metaNodes":{
+        },
+        "wrappedNodes":{
+        }
+    },
+    "uptime":32703025,
+    "launches":4,
+    "timeSinceLastStart":3302257,
+    "crashes":1,
+    "properlyShutDown":false
+}

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2">
+  <Header copyright="britta">
+    <Application name="KNIME" version="3.1.2"/>
+  </Header>
+  <DataDictionary numberOfFields="3">
+    <DataField dataType="integer" name="age" optype="continuous">
+      <Interval closure="closedClosed" leftMargin="21.0" rightMargin="71.0"/>
+    </DataField>
+    <DataField dataType="string" name="work" optype="categorical">
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Local-gov"/>
+      <Value value="State-gov"/>
+    </DataField>
+    <DataField dataType="string" name="class" optype="categorical">
+      <Value value="&lt;=50K"/>
+      <Value value=">50K"/>
+    </DataField>
+  </DataDictionary>
+  <TransformationDictionary>
+    <DerivedField dataType="double" displayName="age" name="age*" optype="continuous">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="age"/>
+        </Apply>
+        <Constant dataType="double">41.8</Constant>
+        <FieldRef field="age"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="string" displayName="work" name="work*" optype="categorical">
+      <Apply function="if">
+        <Apply function="isMissing">
+          <FieldRef field="work"/>
+        </Apply>
+        <Constant dataType="string">other</Constant>
+        <FieldRef field="work"/>
+      </Apply>
+    </DerivedField>
+    <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
+      <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 1 column(s)"/>
+      <NormContinuous field="age*">
+        <LinearNorm norm="-2.7920002845477194" orig="0.0"/>
+        <LinearNorm norm="-2.725206019367152" orig="1.0"/>
+      </NormContinuous>
+    </DerivedField>
+  </TransformationDictionary>
+  <TreeModel modelName="DecisionTree" functionName="classification" splitCharacteristic="multiSplit" missingValueStrategy="lastPrediction" noTrueChildStrategy="returnNullPrediction">
+    <MiningSchema>
+      <MiningField name="age" invalidValueTreatment="asIs"/>
+      <MiningField name="work" invalidValueTreatment="asIs"/>
+      <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
+    </MiningSchema>
+    <Node id="0" score="&lt;=50K" recordCount="18.0">
+      <True/>
+      <ScoreDistribution value="&lt;=50K" recordCount="13.0"/>
+      <ScoreDistribution value=">50K" recordCount="5.0"/>
+      <Node id="1" score="&lt;=50K" recordCount="9.0">
+        <SimplePredicate field="work*" operator="equal" value="Private"/>
+        <ScoreDistribution value="&lt;=50K" recordCount="7.0"/>
+        <ScoreDistribution value=">50K" recordCount="2.0"/>
+      </Node>
+      <Node id="8" score=">50K" recordCount="1.0">
+        <SimplePredicate field="work*" operator="equal" value="Self-emp-inc"/>
+        <ScoreDistribution value="&lt;=50K" recordCount="0.0"/>
+        <ScoreDistribution value=">50K" recordCount="1.0"/>
+      </Node>
+      <Node id="9" score="&lt;=50K" recordCount="1.0">
+        <SimplePredicate field="work*" operator="equal" value="Local-gov"/>
+        <ScoreDistribution value="&lt;=50K" recordCount="1.0"/>
+        <ScoreDistribution value=">50K" recordCount="0.0"/>
+      </Node>
+      <Node id="10" score="&lt;=50K" recordCount="4.0">
+        <SimplePredicate field="work*" operator="equal" value="other"/>
+        <ScoreDistribution value="&lt;=50K" recordCount="3.0"/>
+        <ScoreDistribution value=">50K" recordCount="1.0"/>
+      </Node>
+      <Node id="13" score="&lt;=50K" recordCount="3.0">
+        <SimplePredicate field="work*" operator="equal" value="State-gov"/>
+        <ScoreDistribution value="&lt;=50K" recordCount="2.0"/>
+        <ScoreDistribution value=">50K" recordCount="1.0"/>
+      </Node>
+    </Node>
+  </TreeModel>
+</PMML>
