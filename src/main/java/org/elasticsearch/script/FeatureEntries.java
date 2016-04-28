@@ -20,9 +20,7 @@
 package org.elasticsearch.script;
 
 import org.apache.lucene.index.Fields;
-import org.dmg.pmml.DataField;
-import org.dmg.pmml.DerivedField;
-import org.dmg.pmml.PPCell;
+import org.dmg.pmml.*;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.*;
@@ -35,7 +33,34 @@ public abstract class FeatureEntries {
     int offset;
     String field;
 
+    protected PreProcessingStep[] preProcessingSteps;
+
     public static final EsSparseVector EMPTY_SPARSE = new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+
+    protected Object applyPreProcessing(Object value) {
+        for (int i = 0; i < preProcessingSteps.length; i++) {
+            value = preProcessingSteps[i].apply(value);
+        }
+        return value;
+    }
+
+    public static class MissingValue implements PreProcessingStep {
+
+        private Object missingValue;
+
+        public MissingValue(Object missingValue) {
+            this.missingValue = missingValue;
+        }
+
+        @Override
+        public Object apply(Object value) {
+            if (value == null) {
+                return missingValue;
+            } else {
+                return value;
+            }
+        }
+    }
 
     public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
 
@@ -145,20 +170,22 @@ public abstract class FeatureEntries {
     /**
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
-     * */
+     */
     public static class SparseCategorical1OfKFeatureEntries extends FeatureEntries {
-        Map<String, Integer> categoryToIndexHashMap;
+        Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
-        public SparseCategorical1OfKFeatureEntries(String field) {
-            this.field = field;
-            categoryToIndexHashMap = new HashMap<>();
+        public SparseCategorical1OfKFeatureEntries(DataField dataField, DerivedField[] derivedFields) {
+            this.field = dataField.getName().getValue();
+            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            fillPreProcessingSteps(derivedFields);
         }
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             Tuple<int[], double[]> indicesAndValues;
             Object category = docLookup.get(field);
-            int index = categoryToIndexHashMap.get(category);
+            Object processedCategory = applyPreProcessing(category);
+            int index = categoryToIndexHashMap.get(processedCategory);
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
             return new EsSparseVector(indicesAndValues);
         }
@@ -173,40 +200,31 @@ public abstract class FeatureEntries {
             return categoryToIndexHashMap.size();
         }
 
-
     }
 
     /**
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
-     * */
+     */
     public static class ContinousSingleEntryFeatureEntries extends FeatureEntries {
         int index = -1;
-        PreProcessingStep[] preProcessingSteps;
 
-        public ContinousSingleEntryFeatureEntries(DataField dataField, DerivedField... derivedField) {
+        /**
+         * The derived fields must be given in backwards order of the processing chain.
+         */
+        public ContinousSingleEntryFeatureEntries(DataField dataField, DerivedField... derivedFields) {
             this.field = dataField.getName().getValue();
-            preProcessingSteps = new PreProcessingStep[derivedField.length];
-            fillPreProcessingSteps(derivedField);
+            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            fillPreProcessingSteps(derivedFields);
 
-        }
-
-        private void fillPreProcessingSteps(DerivedField[] derivedFields) {
-            int numProcessedFields = 0;
-            while (numProcessedFields < derivedFields.length) {
-                for (DerivedField derivedField : derivedFields) {
-                    if (derivedField != null) {// we set an entry null whenever we found one that fit the previous
-
-
-                    }
-                }
-            }
         }
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
             Tuple<int[], double[]> indicesAndValues;
-            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
+            Object value = docLookup.get(field);
+            value = applyPreProcessing(value);
+            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) value).doubleValue()});
             return new EsSparseVector(indicesAndValues);
         }
 
@@ -268,6 +286,50 @@ public abstract class FeatureEntries {
         @Override
         public int size() {
             return terms.length;
+        }
+    }
+
+    protected void fillPreProcessingSteps(DerivedField[] derivedFields) {
+        for (int i = derivedFields.length - 1; i >= 0; i--) {
+            DerivedField derivedField = derivedFields[i];
+            if (derivedField.getExpression() != null) {
+                if (derivedField.getExpression() instanceof Apply) {
+                    for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
+                        if (expression instanceof Apply) {
+                            if (((Apply) expression).getFunction().equals("isMissing")) {
+                                // now find the value that is supposed to replace the missing value
+
+                                for (Expression expression2 : ((Apply) derivedField.getExpression()).getExpressions()) {
+                                    if (expression2 instanceof Constant) {
+                                        String missingValue = ((Constant) expression2).getValue();
+                                        Object parsedMissingValue;
+                                        if (derivedField.getDataType().equals(DataType.DOUBLE)) {
+                                            parsedMissingValue = Double.parseDouble(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.FLOAT)) {
+                                            parsedMissingValue = Float.parseFloat(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.INTEGER)) {
+                                            parsedMissingValue = Integer.parseInt(missingValue);
+                                        } else if (derivedField.getDataType().equals(DataType.STRING)) {
+                                            parsedMissingValue = missingValue;
+                                        } else {
+                                            throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
+                                                    "far.");
+                                        }
+                                        preProcessingSteps[i] = new MissingValue(parsedMissingValue);
+                                        break;
+                                    }
+                                }
+                            } else {
+                                throw new UnsupportedOperationException("So far only if isMissing implemented.");
+                            }
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException("So far only Apply expression implemented.");
+                }
+            } else {
+                throw new UnsupportedOperationException("So far only Apply implemented.");
+            }
         }
     }
 }

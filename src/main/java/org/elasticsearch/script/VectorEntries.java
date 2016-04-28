@@ -109,52 +109,83 @@ public class VectorEntries {
     }
 
     FeatureEntries getFeatureEntryFromModel(PMML model, int modelIndex, String fieldName) {
+        /*We need to find the path from field to actual raw input field. To do so, we start with the field name that the model expects
+        and then trace back to the original fields via local transformations, tranfomration dictionary and finally data dictionary. */
         // try to find field in local transform dictionary of model
         if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
             throw new UnsupportedOperationException("Local transformations not implemented yet. ");
         }
-        for (DerivedField derivedField : model.getTransformationDictionary().getDerivedFields()) {
-            if (derivedField.getName().getValue().equals(fieldName)) {
-                // at this point we need to find all possible references to this field backwards until we finally
-                // arrive at a raw input field. for now we just implement simple one derived field per raw field.
-                // throw uoe if the original field cannot be found.
-                // try to find the field this derived field references.
-                String rawField = null;
-                if (derivedField.getExpression() == null) {
-                    // there is a million ways in which derived fields can reference other fields.
-                    // need to implement them all!
-                    throw new UnsupportedOperationException("So far only implemented if function for derived fields.");
+        // trace back all derived fields until we must arrive at an actual data field. This unfortunately means we have to
+        // loop over dervied fields as often as we find one..
+        DerivedField lastFoundDerivedField;
+        String lastFieldName = fieldName;
+        List <DerivedField> derivedFields = new ArrayList<>();
+        do {
+            lastFoundDerivedField = null;
+            for (DerivedField derivedField : model.getTransformationDictionary().getDerivedFields()) {
+                if (derivedField.getName().getValue().equals(lastFieldName)) {
+                    lastFoundDerivedField = derivedField;
+                    derivedFields.add(derivedField);
+                    // now get the next fieldname this field references
+                    // this is tricky, because this information can be anywhere...
+                    lastFieldName = getReferencedFieldName(derivedField);
+                    lastFoundDerivedField = derivedField;
                 }
-                if (derivedField.getExpression() instanceof Apply == false) {
-                    throw new UnsupportedOperationException("So far only Apply expression implemented.");
-                }
-                // TODO throw uoe in case the function is not "if missing" - much more to implement!
-                for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
-                    if (expression instanceof FieldRef) {
-                        rawField = ((FieldRef) expression).getField().getValue();
-                    }
-
-                }
-                if (rawField == null) {
-                    throw new UnsupportedOperationException("could not find raw field name. Maybe this derived field references another derived field? Did not implement that yet.");
-                }
-                // now find the actual dataField
-                for (DataField dataField : model.getDataDictionary().getDataFields()) {
-                    String rawDataFieldName = dataField.getName().getValue();
-                    if (rawDataFieldName.equals(rawField)) {
-                        return createVectorEntries(dataField, derivedField);
-                    }
-                }
-
             }
+        } while (lastFoundDerivedField != null);
 
-
+        // now find the actual dataField
+        DataField rawField = null;
+        for (DataField dataField : model.getDataDictionary().getDataFields()) {
+            String rawDataFieldName = dataField.getName().getValue();
+            if (rawDataFieldName.equals(lastFieldName)) {
+                rawField = dataField;
+                break;
+            }
+        }
+        if (rawField == null) {
+            throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
+                    "yet or the PMML file is faulty.");
+        }
+        OpType opType;
+        if (derivedFields.size() == 0) {
+            opType = rawField.getOpType();
+        } else {
+            opType = derivedFields.get(0).getOpType();
+        }
+        if (opType.value().equals("continuous")) {
+            return new FeatureEntries.ContinousSingleEntryFeatureEntries(rawField, derivedFields.toArray(new DerivedField[derivedFields
+                    .size()]));
+        } else if (opType.value().equals("categorical")) {
+            return new FeatureEntries.SparseCategorical1OfKFeatureEntries(rawField, derivedFields.toArray(new DerivedField[derivedFields
+                    .size()]));
+        } else {
+            throw new UnsupportedOperationException("Only iplemented continuous and categorical variables so far.");
         }
 
-        // try to find field in transform dictionary
-        // try to find field in dictionary
-        throw new UnsupportedOperationException();
+    }
 
+    private String getReferencedFieldName(DerivedField derivedField) {
+        String referencedField = null;
+        if (derivedField.getExpression() == null) {
+            // there is a million ways in which derived fields can reference other fields.
+            // need to implement them all!
+            throw new UnsupportedOperationException("So far only implemented if function for derived fields.");
+        }
+        if (derivedField.getExpression() instanceof Apply == false) {
+            throw new UnsupportedOperationException("So far only Apply expression implemented.");
+        }
+        // TODO throw uoe in case the function is not "if missing" - much more to implement!
+        for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
+            if (expression instanceof FieldRef) {
+                referencedField = ((FieldRef) expression).getField().getValue();
+            }
+
+        }
+        if (referencedField == null) {
+            throw new UnsupportedOperationException("could not find raw field name. Maybe this derived field references another derived field? Did not implement that yet.");
+        }
+        return referencedField;
     }
 
     private FeatureEntries createVectorEntries(DataField dataField, DerivedField derivedField) {
