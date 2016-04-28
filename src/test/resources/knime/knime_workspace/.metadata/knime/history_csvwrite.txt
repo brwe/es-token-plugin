@@ -1,4 +1,4 @@
 knime://knime.mountpoint/data/svm_result.txt
-knime://knime.mountpoint/data/decision_tree_result.txt
 knime://knime.mountpoint/data/naive_bayes_result.txt
+knime://knime.mountpoint/data/decision_tree_result.txt
 knime://knime.mountpoint/data/lr_result.txt

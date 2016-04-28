@@ -1,5 +1,5 @@
-knime://knime.mountpoint/data/adult.data
 knime://knime.mountpoint/data/test.data
 knime://knime.workflow/data.all
+knime://knime.mountpoint/data/adult.data
 file:/home/britta/poc/data/adult_income/adult.data
 file:/Users/britta/poc/data/adult/adult.data

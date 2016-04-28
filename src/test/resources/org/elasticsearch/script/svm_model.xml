@@ -10,7 +10,6 @@
     <DataField dataType="string" name="work" optype="categorical">
       <Value value="Private"/>
       <Value value="Self-emp-inc"/>
-      <Value value="Local-gov"/>
       <Value value="State-gov"/>
     </DataField>
     <DataField dataType="string" name="class" optype="categorical">

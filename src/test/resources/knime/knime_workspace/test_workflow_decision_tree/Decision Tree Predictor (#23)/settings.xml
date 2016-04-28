@@ -11,21 +11,21 @@
 <entry key="EnabledStatus" type="xboolean" value="true"/>
 </config>
 <entry key="UseGainRatio" type="xint" value="10000"/>
-<config key="change prediction_Internals">
-<entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
-<entry key="EnabledStatus" type="xboolean" value="true"/>
-</config>
-<entry key="change prediction" type="xboolean" value="false"/>
-<config key="prediction column name_Internals">
-<entry key="SettingsModelID" type="xstring" value="SMID_string"/>
-<entry key="EnabledStatus" type="xboolean" value="false"/>
-</config>
-<entry key="prediction column name" type="xstring" value="Prediction (class)"/>
 <config key="ShowDistribution_Internals">
 <entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
 <entry key="EnabledStatus" type="xboolean" value="true"/>
 </config>
 <entry key="ShowDistribution" type="xboolean" value="true"/>
+<config key="prediction column name_Internals">
+<entry key="SettingsModelID" type="xstring" value="SMID_string"/>
+<entry key="EnabledStatus" type="xboolean" value="false"/>
+</config>
+<entry key="prediction column name" type="xstring" value="Prediction (class)"/>
+<config key="change prediction_Internals">
+<entry key="SettingsModelID" type="xstring" value="SMID_boolean"/>
+<entry key="EnabledStatus" type="xboolean" value="true"/>
+</config>
+<entry key="change prediction" type="xboolean" value="false"/>
 <config key="class probability suffix_Internals">
 <entry key="SettingsModelID" type="xstring" value="SMID_string"/>
 <entry key="EnabledStatus" type="xboolean" value="true"/>
@@ -59,6 +59,6 @@
 </config>
 <config key="filestores">
 <entry key="file_store_location" type="xstring" isnull="true" value=""/>
-<entry key="file_store_id" type="xstring" value="06df0111-b3f5-49ab-80cc-46bb2ab01731"/>
+<entry key="file_store_id" type="xstring" value="eebc291f-eb99-41ff-a0d7-86c6954e1ad8"/>
 </config>
 </config>

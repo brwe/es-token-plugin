@@ -119,13 +119,15 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
             }
         }
 
+        @Override
+        public EsVector getVector(Map<String, Object> fieldValues) {
+            throw new UnsupportedOperationException("Remove this later, we should not get here.");
+        }
 
         @Override
         public int size() {
             return wordMap.size();
         }
-
-
     }
 
 
@@ -164,6 +166,11 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
             } catch (IOException ex) {
                 throw new ScriptException("Could not get tf vector: ", ex);
             }
+        }
+
+        @Override
+        public EsVector getVector(Map<String, Object> fieldValues) {
+            throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
         @Override

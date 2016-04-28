@@ -10,7 +10,6 @@
     <DataField dataType="string" name="work" optype="categorical">
       <Value value="Private"/>
       <Value value="Self-emp-inc"/>
-      <Value value="Local-gov"/>
       <Value value="State-gov"/>
     </DataField>
     <DataField dataType="string" name="class" optype="categorical">
@@ -65,20 +64,14 @@
       <BayesInput fieldName="work">
         <PairCounts value="Private">
           <TargetValueCounts>
-            <TargetValueCount value="&lt;=50K" count="7.0"/>
+            <TargetValueCount value="&lt;=50K" count="5.0"/>
             <TargetValueCount value=">50K" count="2.0"/>
           </TargetValueCounts>
         </PairCounts>
         <PairCounts value="Self-emp-inc">
           <TargetValueCounts>
-            <TargetValueCount value="&lt;=50K" count="0.0"/>
+            <TargetValueCount value="&lt;=50K" count="3.0"/>
             <TargetValueCount value=">50K" count="1.0"/>
-          </TargetValueCounts>
-        </PairCounts>
-        <PairCounts value="Local-gov">
-          <TargetValueCounts>
-            <TargetValueCount value="&lt;=50K" count="1.0"/>
-            <TargetValueCount value=">50K" count="0.0"/>
           </TargetValueCounts>
         </PairCounts>
         <PairCounts value="other">
