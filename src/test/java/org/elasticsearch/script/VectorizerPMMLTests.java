@@ -63,7 +63,7 @@ public class VectorizerPMMLTests extends ESTestCase {
         });
         pmml.getDataDictionary();
 
-        VectorEntries vectorEntries = new VectorEntries(pmml, 0);
+        VectorEntries vectorEntries = new VectorEntriesPMML(pmml, 0);
         assertThat(vectorEntries.features.size(), equalTo(10));
     }
 
