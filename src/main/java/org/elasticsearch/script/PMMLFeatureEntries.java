@@ -68,7 +68,8 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
             Object processedCategory = applyPreProcessing(category);
             Integer index = categoryToIndexHashMap.get(processedCategory);
             if (index == null) {
-                return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+                // TODO: Should we throw an exception here? Can this actually happen?
+                return new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
             } else {
                 indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
                 return new EsSparseVector(indicesAndValues);

@@ -6,50 +6,50 @@
         "nodes":[
             {
                 "id":"org.knime.base.node.io.filereader.FileReaderNodeFactory#File Reader",
-                "nrexecs":32,
-                "exectime":8257,
+                "nrexecs":36,
+                "exectime":8363,
                 "nrcreated":0,
-                "successor":"org.knime.base.node.preproc.rename.RenameNodeFactory#Column Rename"
+                "successor":"org.knime.base.node.preproc.pmml.missingval.compute.MissingValueHandlerNodeFactory#Missing Value"
             },
             {
                 "id":"org.knime.base.node.preproc.pmml.missingval.compute.MissingValueHandlerNodeFactory#Missing Value",
-                "nrexecs":36,
-                "exectime":11185,
-                "nrcreated":0,
-                "successor":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLNodeFactory2#Normalizer (PMML)"
+                "nrexecs":50,
+                "exectime":11437,
+                "nrcreated":1,
+                "successor":"org.knime.base.node.pmml.transappender.PMMLTransformationsAppenderNodeFactory#PMML Transformation Appender"
             },
             {
                 "id":"org.knime.base.node.mine.regression.logistic.learner3.LogRegLearnerNodeFactory3#Logistic Regression Learner",
-                "nrexecs":19,
-                "exectime":442174,
-                "nrcreated":1,
+                "nrexecs":28,
+                "exectime":442839,
+                "nrcreated":2,
                 "successor":"org.knime.base.node.mine.bayes.naivebayes.predictor3.NaiveBayesPredictorNodeFactory2#Naive Bayes Predictor"
             },
             {
                 "id":"org.knime.base.node.mine.regression.predict2.RegressionPredictorNodeFactory#Regression Predictor",
-                "nrexecs":9,
-                "exectime":5036,
+                "nrexecs":18,
+                "exectime":5784,
                 "nrcreated":1,
                 "successor":"org.knime.base.node.mine.scorer.accuracy.AccuracyScorerNodeFactory#Scorer"
             },
             {
                 "id":"org.knime.base.node.mine.scorer.accuracy.AccuracyScorerNodeFactory#Scorer",
-                "nrexecs":46,
-                "exectime":5921,
+                "nrexecs":47,
+                "exectime":5929,
                 "nrcreated":3,
                 "successor":"org.knime.base.node.viz.table.TableNodeFactory#Interactive Table"
             },
             {
                 "id":"org.knime.base.node.pmml.modelappender.PMMLModelAppenderNodeFactory#PMML Model Appender",
-                "nrexecs":42,
-                "exectime":3176,
+                "nrexecs":51,
+                "exectime":3524,
                 "nrcreated":0,
                 "successor":"org.knime.base.pmml.translation.pmmlpredictor.PMMLFastPredictorNodeFactory#PMML Compiling Predictor"
             },
             {
                 "id":"org.knime.base.node.io.pmml.write.PMMLWriterNodeFactory#PMML Writer",
-                "nrexecs":43,
-                "exectime":1296,
+                "nrexecs":52,
+                "exectime":1450,
                 "nrcreated":1,
                 "successor":"n/a"
             },
@@ -76,8 +76,8 @@
             },
             {
                 "id":"org.knime.base.node.preproc.pmml.normalize.NormalizerPMMLNodeFactory2#Normalizer (PMML)",
-                "nrexecs":29,
-                "exectime":19643,
+                "nrexecs":37,
+                "exectime":19773,
                 "nrcreated":2,
                 "successor":"org.knime.base.node.mine.decisiontree2.predictor2.DecTreePredictorNodeFactory#Decision Tree Predictor"
             },
@@ -139,8 +139,8 @@
             },
             {
                 "id":"org.knime.base.node.pmml.transappender.PMMLTransformationsAppenderNodeFactory#PMML Transformation Appender",
-                "nrexecs":29,
-                "exectime":758,
+                "nrexecs":37,
+                "exectime":1087,
                 "nrcreated":3,
                 "successor":"org.knime.base.node.pmml.modelappender.PMMLModelAppenderNodeFactory#PMML Model Appender"
             },
@@ -174,8 +174,8 @@
             },
             {
                 "id":"org.knime.base.node.io.csvwriter.CSVWriterNodeFactory#CSV Writer",
-                "nrexecs":7,
-                "exectime":14,
+                "nrexecs":16,
+                "exectime":50,
                 "nrcreated":0,
                 "successor":"n/a"
             }
@@ -185,9 +185,9 @@
         "wrappedNodes":{
         }
     },
-    "uptime":26430611,
-    "launches":5,
-    "timeSinceLastStart":1340957,
-    "crashes":2,
+    "uptime":22383756,
+    "launches":6,
+    "timeSinceLastStart":2149482,
+    "crashes":3,
     "properlyShutDown":false
 }
