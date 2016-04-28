@@ -19,31 +19,20 @@
 
 package org.elasticsearch.script;
 
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
+public class MissingValue implements PreProcessingStep {
 
-import java.util.ArrayList;
-import java.util.List;
+    private Object missingValue;
 
-
-public abstract class VectorEntries {
-
-    public boolean isSparse() {
-        return sparse;
+    public MissingValue(Object missingValue) {
+        this.missingValue = missingValue;
     }
 
-    boolean sparse;
-    List<FeatureEntries> features = new ArrayList<>();
-
-    public List<FeatureEntries> getEntries() {
-        return features;
+    @Override
+    public Object apply(Object value) {
+        if (value == null) {
+            return missingValue;
+        } else {
+            return value;
+        }
     }
-
-    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
-            sourceLookup);
-
-    protected int numEntries;
 }
-

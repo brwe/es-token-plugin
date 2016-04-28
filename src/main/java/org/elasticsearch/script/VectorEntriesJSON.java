@@ -34,7 +34,6 @@ import java.util.Map;
 public class VectorEntriesJSON extends VectorEntries {
 
 
-
     // number of entries
     public VectorEntriesJSON(Map<String, Object> source) {
         assert source.get("sparse") == null || source.get("sparse") instanceof Boolean;
@@ -49,12 +48,12 @@ public class VectorEntriesJSON extends VectorEntries {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                features.add(new FeatureEntries.SparseTermFeatureEntries((String) feature.get("field"),
+                features.add(new AnalyzedTextFeatureEntries.SparseTermFeatureEntries((String) feature.get("field"),
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                features.add(new FeatureEntries.DenseTermFeatureEntries((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
+                features.add(new AnalyzedTextFeatureEntries.DenseTermFeatureEntries((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
             }
             offset += features.get(features.size() - 1).size();
             numEntries += features.get(features.size() - 1).size();
