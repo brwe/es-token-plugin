@@ -97,38 +97,89 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         throw new UnsupportedOperationException("model script not supported in this context!");
     }
 
+    public static class FeaturesAndModel {
+        VectorEntries features;
+        EsModelEvaluator model;
+    }
+
     public static class Factory {
         public static final String VECTOR_MODEL_DELIMITER = "dont know what to put here";
+
+        public VectorEntries getFeatures() {
+            return features;
+        }
+
+        public EsModelEvaluator getModel() {
+            return model;
+        }
+
         VectorEntries features = null;
 
         private EsModelEvaluator model;
 
         public Factory(String spec) {
-            // split into vector and model
-            // TODO: lateron we want to have one spec for vector and model, this is a very clumsy workaround!
-            String[] vectorAndModel = spec.split(VECTOR_MODEL_DELIMITER);
-            Map<String, Object> parsedSource = null;
-            try {
-                XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(vectorAndModel[0]);
-                parsedSource = parser.mapOrdered();
-            } catch (IOException e) {
-                throw new ScriptException("pmml prediction failed", e);
-            }
-            features = new VectorEntriesJSON(parsedSource);
+            if (spec.contains(VECTOR_MODEL_DELIMITER)) {
+                // In case someone pulled the vectors from elasticsearch the the vector spec is stored in the same script
+                // as the model but as a json string
+                // this is a clumsy workaround which we probably should remove at some point.
+                // Would be much better if we figure out TextIndex in PMML:
+                // http://dmg.org/pmml/v4-2-1/Transformations.html#xsdElement_TextIndex
+                // or we remove the ability to pull vectors from elasticsearch via this plugin altogether...
 
-            if (model == null) {
+                // split into vector and model
+                String[] vectorAndModel = spec.split(VECTOR_MODEL_DELIMITER);
+                Map<String, Object> parsedSource = null;
                 try {
-                    model = initModel(vectorAndModel[1]);
-
-
+                    XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(vectorAndModel[0]);
+                    parsedSource = parser.mapOrdered();
                 } catch (IOException e) {
                     throw new ScriptException("pmml prediction failed", e);
-                } catch (SAXException e) {
-                    throw new ScriptException("pmml prediction failed", e);
-                } catch (JAXBException e) {
-                    throw new ScriptException("pmml prediction failed", e);
                 }
+                features = new VectorEntriesJSON(parsedSource);
+
+                if (model == null) {
+                    try {
+                        model = initModel(vectorAndModel[1]);
+
+
+                    } catch (IOException e) {
+                        throw new ScriptException("pmml prediction failed", e);
+                    } catch (SAXException e) {
+                        throw new ScriptException("pmml prediction failed", e);
+                    } catch (JAXBException e) {
+                        throw new ScriptException("pmml prediction failed", e);
+                    }
+                }
+            } else {
+                FeaturesAndModel featuresAndModel = initFeaturesAndModel(spec);
+                features = featuresAndModel.features;
+                model = featuresAndModel.model;
             }
+        }
+
+        static private FeaturesAndModel initFeaturesAndModel(final String pmmlString) {
+            // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
+            PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+                public PMML run() {
+                    try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                        Source transformedSource = ImportFilter.apply(new InputSource(is));
+                        return JAXBUtil.unmarshalPMML(transformedSource);
+                    } catch (SAXException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    } catch (JAXBException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    } catch (IOException e) {
+                        throw new ElasticsearchException("could not convert xml to pmml model", e);
+                    }
+                }
+            });
+            if (pmml.getModels().size() > 1) {
+                throw new UnsupportedOperationException("Only implemented PMML for one model so far.");
+            }
+            VectorEntries features = new VectorEntriesPMML(pmml, 0);
+            Model model = pmml.getModels().get(0);
+            return null;
+
         }
 
         public static EsModelEvaluator initModel(final String pmmlString) throws IOException, SAXException, JAXBException {
@@ -157,6 +208,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             }
 
         }
+
         protected static EsModelEvaluator initLogisticRegression(RegressionModel pmmlModel) {
             return new EsLogisticRegressionModel(pmmlModel);
         }

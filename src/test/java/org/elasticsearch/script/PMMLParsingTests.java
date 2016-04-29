@@ -21,6 +21,7 @@ package org.elasticsearch.script;
 
 import org.dmg.pmml.PMML;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.test.ESTestCase;
 import org.hamcrest.Matchers;
 import org.jpmml.model.ImportFilter;
@@ -44,9 +45,9 @@ import java.util.Map;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
 
-public class VectorizerPMMLTests extends ESTestCase {
+public class PMMLParsingTests extends ESTestCase {
 
-    public void testVectorizerParsing() throws IOException {
+    public void testSimplePipelineParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/logistic_regression.xml");
         PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
             public PMML run() {
@@ -67,7 +68,7 @@ public class VectorizerPMMLTests extends ESTestCase {
         assertThat(vectorEntries.features.size(), equalTo(14));
     }
 
-    public void testVectorizerParsingWithNormalization() throws IOException {
+    public void testTwoStepPipelineParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
             public PMML run() {
@@ -130,5 +131,26 @@ public class VectorizerPMMLTests extends ESTestCase {
                 fail("work input was " + workInput);
             }
         }
+    }
+
+    public void testModelAndFeatureParsing() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
+        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+            public PMML run() {
+                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                    Source transformedSource = ImportFilter.apply(new InputSource(is));
+                    return JAXBUtil.unmarshalPMML(transformedSource);
+                } catch (SAXException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (JAXBException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (IOException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                }
+            }
+        });
+
+        PMMLModelScriptEngineService.Factory scriptFactory = new PMMLModelScriptEngineService.Factory(pmmlString);
+
     }
 }
