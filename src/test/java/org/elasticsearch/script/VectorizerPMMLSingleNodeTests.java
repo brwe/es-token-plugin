@@ -38,10 +38,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 import org.elasticsearch.test.ESSingleNodeTestCase;
-import org.hamcrest.Matchers;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.xml.sax.InputSource;
@@ -108,12 +108,14 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
             }
         });
         docLookup.setDocument(0);
-        VectorEntriesPMML vectorEntries = new VectorEntriesPMML(pmml, 0);
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorEntriesPMML vectorEntries = (VectorEntriesPMML
+                ) featuresAndModel.getFeatures();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(2));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(2));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2});
-        assertThat(1.1724330344107299, Matchers.closeTo(((double[]) vector.get("values"))[0], 1.e-7));
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
         reader.close();
 
         // test missing values
@@ -126,15 +128,17 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         leafReaderContext = reader.leaves().get(0);
         docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
         docLookup.setDocument(0);
-        vectorEntries = new VectorEntriesPMML(pmml, 0);
+        featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        vectorEntries = (VectorEntriesPMML
+                ) featuresAndModel.getFeatures();
         vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(2));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(2));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2});
-        assertThat(-48.20951464010758, Matchers.closeTo(((double[]) vector.get("values"))[0], 1.e-7));
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
         reader.close();
 
-        // test missing string field - we expect in this case nothig to be in the vector although that might be a problem with the model...
+        // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
         writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
         doc = new Document();
         fieldType = new FieldType();
@@ -146,12 +150,14 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         leafReaderContext = reader.leaves().get(0);
         docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
         docLookup.setDocument(0);
-        vectorEntries = new VectorEntriesPMML(pmml, 0);
+        featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        vectorEntries = (VectorEntriesPMML
+                ) featuresAndModel.getFeatures();
         vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(2));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(2));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4});
-        assertThat(1.1724330344107299, Matchers.closeTo(((double[]) vector.get("values"))[0], 1.e-7));
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
         reader.close();
     }
 }

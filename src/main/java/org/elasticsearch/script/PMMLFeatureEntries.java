@@ -180,4 +180,34 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
             }
         }
     }
+
+    public static class Intercept extends PMMLFeatureEntries {
+        int index;
+        private String interceptName;
+
+        public Intercept(String interceptName) {
+            super();
+            this.interceptName = interceptName;
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            this.index = indexCounter;
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+        }
+
+        @Override
+        public EsVector getVector(Map<String, List> fieldValues) {
+            return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+        }
+    }
 }

@@ -19,140 +19,23 @@
 
 package org.elasticsearch.script;
 
-import org.dmg.pmml.*;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 public class VectorEntriesPMML extends VectorEntries {
 
-    public VectorEntriesPMML(PMML pmml, int modelNum /* for which model find the vectors?**/) {
-        Model model = pmml.getModels().get(modelNum);
-        if (model instanceof GeneralRegressionModel) {
-            GeneralRegressionModel grModel = (GeneralRegressionModel) model;
-            if (grModel.getAlgorithmName().equals("LogisticRegression") && grModel.getModelType().value().equals
-                    ("multinomialLogistic")) {
-                //get all the field names for multinomialLogistic model
-                List<String> usedFields = new ArrayList<>();
-                for (Predictor predictor : grModel.getFactorList().getPredictors()) {
-                    usedFields.add(predictor.getName().getValue());
-                }
-                for (Predictor predictor : grModel.getCovariateList().getPredictors()) {
-                    usedFields.add(predictor.getName().getValue());
-                }
-                // for each predictor: get vector entries?
-                Map<String, PMMLFeatureEntries> featureEntriesMap = new HashMap();
-                int indexCounter = 0;
-                for (PPCell ppcell : grModel.getPPMatrix().getPPCells()) {
-                    String fieldName = ppcell.getField().getValue();
-                    if (featureEntriesMap.containsKey(ppcell.getField().getValue()) == false) {
-                        featureEntriesMap.put(ppcell.getField().getValue(), getFeatureEntryFromModel(pmml, modelNum, fieldName));
-                    }
-                    PMMLFeatureEntries featureEntries = featureEntriesMap.get(fieldName);
-                    featureEntries.addVectorEntry(indexCounter, ppcell);
-                    indexCounter++;
-                }
-                for (Map.Entry<String, PMMLFeatureEntries> entry : featureEntriesMap.entrySet()) {
-                    features.add(entry.getValue());
-                    numEntries += entry.getValue().size();
-                }
-
-            } else {
-                throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
-            }
-
-        } else {
-            throw new UnsupportedOperationException("Only implemented general regression model so far.");
-        }
-
-    }
-
-    PMMLFeatureEntries getFeatureEntryFromModel(PMML model, int modelIndex, String fieldName) {
-        /*We need to find the path from field to actual raw input field. To do so, we start with the field name that the model expects
-        and then trace back to the original fields via local transformations, tranfomration dictionary and finally data dictionary. */
-        // try to find field in local transform dictionary of model
-        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
-            throw new UnsupportedOperationException("Local transformations not implemented yet. ");
-        }
-        // trace back all derived fields until we must arrive at an actual data field. This unfortunately means we have to
-        // loop over dervied fields as often as we find one..
-        DerivedField lastFoundDerivedField;
-        String lastFieldName = fieldName;
-        List<DerivedField> derivedFields = new ArrayList<>();
-        do {
-            lastFoundDerivedField = null;
-            for (DerivedField derivedField : model.getTransformationDictionary().getDerivedFields()) {
-                if (derivedField.getName().getValue().equals(lastFieldName)) {
-                    lastFoundDerivedField = derivedField;
-                    derivedFields.add(derivedField);
-                    // now get the next fieldname this field references
-                    // this is tricky, because this information can be anywhere...
-                    lastFieldName = getReferencedFieldName(derivedField);
-                    lastFoundDerivedField = derivedField;
-                }
-            }
-        } while (lastFoundDerivedField != null);
-
-        // now find the actual dataField
-        DataField rawField = null;
-        for (DataField dataField : model.getDataDictionary().getDataFields()) {
-            String rawDataFieldName = dataField.getName().getValue();
-            if (rawDataFieldName.equals(lastFieldName)) {
-                rawField = dataField;
-                break;
-            }
-        }
-        if (rawField == null) {
-            throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
-                    "yet or the PMML file is faulty.");
-        }
-        OpType opType;
-        if (derivedFields.size() == 0) {
-            opType = rawField.getOpType();
-        } else {
-            opType = derivedFields.get(0).getOpType();
-        }
-        if (opType.value().equals("continuous")) {
-            return new PMMLFeatureEntries.ContinousSingleEntryFeatureEntries(rawField, derivedFields.toArray(new DerivedField[derivedFields
-                    .size()]));
-        } else if (opType.value().equals("categorical")) {
-            return new PMMLFeatureEntries.SparseCategorical1OfKFeatureEntries(rawField, derivedFields.toArray(new DerivedField[derivedFields
-                    .size()]));
-        } else {
-            throw new UnsupportedOperationException("Only iplemented continuous and categorical variables so far.");
-        }
-    }
-
-    private String getReferencedFieldName(DerivedField derivedField) {
-        String referencedField = null;
-        if (derivedField.getExpression() != null) {
-            if (derivedField.getExpression() instanceof Apply) {
-                // TODO throw uoe in case the function is not "if missing" - much more to implement!
-                for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
-                    if (expression instanceof FieldRef) {
-                        referencedField = ((FieldRef) expression).getField().getValue();
-                    }
-                }
-            } else if (derivedField.getExpression() instanceof NormContinuous) {
-                referencedField = ((NormContinuous)derivedField.getExpression()).getField().getValue();
-            } else {
-                throw new UnsupportedOperationException("So far only Apply expression implemented.");
-            }
-        } else {
-            // there is a million ways in which derived fields can reference other fields.
-            // need to implement them all!
-            throw new UnsupportedOperationException("So far only implemented if function for derived fields.");
-        }
-
-        if (referencedField == null) {
-            throw new UnsupportedOperationException("could not find raw field name. Maybe this derived field references another derived field? Did not implement that yet.");
-        }
-        return referencedField;
+    public VectorEntriesPMML(List<FeatureEntries> features, int numEntries) {
+        this.features = features;
+        this.numEntries = numEntries;
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
@@ -160,12 +43,15 @@ public class VectorEntriesPMML extends VectorEntries {
         HashMap<String, List> fieldValues = new HashMap<>();
         for (FeatureEntries featureEntries : features) {
             String field = featureEntries.getField();
-            // TODO: We assume here doc lookup will always give us something back. What if not?
-            fieldValues.put(field, ((ScriptDocValues)docLookup.get(field)).getValues());
+            if (field != null) {
+                // TODO: We assume here doc lookup will always give us something back. What if not?
+                fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
+            }
         }
         return vector(fieldValues);
     }
-    protected Object vector(Map<String, List> fieldValues) {
+
+    public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
         for (FeatureEntries featureEntries : features) {
             EsVector entries = featureEntries.getVector(fieldValues);
@@ -189,6 +75,20 @@ public class VectorEntriesPMML extends VectorEntries {
         finalVector.put("indices", indices);
         finalVector.put("length", numEntries);
         return finalVector;
+    }
+
+    public static class VectorEntriesPMMLGeneralizedRegression extends VectorEntriesPMML {
+
+        public String[] getOrderedParameterList() {
+            return orderedParameterList;
+        }
+
+        private final String[] orderedParameterList;
+
+        public VectorEntriesPMMLGeneralizedRegression(List<FeatureEntries> features, int numEntries, String[] orderedParameterList) {
+            super(features, numEntries);
+            this.orderedParameterList = orderedParameterList;
+        }
     }
 }
 
