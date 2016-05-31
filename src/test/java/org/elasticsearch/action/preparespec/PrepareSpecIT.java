@@ -27,8 +27,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.VectorEntries;
-import org.elasticsearch.script.VectorEntriesJSON;
+import org.elasticsearch.script.FieldsToVector;
+import org.elasticsearch.script.FieldsToVectorJSON;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
@@ -63,7 +63,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         String script = (String)spec.getSourceAsMap().get("script");
         XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
         Map<String, Object> parsedSource = parser.mapOrdered();
-        VectorEntries entries = new VectorEntriesJSON(parsedSource);
+        FieldsToVector entries = new FieldsToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
@@ -78,7 +78,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         String script = (String)spec.getSourceAsMap().get("script");
         XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
         Map<String, Object> parsedSource = parser.mapOrdered();
-        VectorEntries entries = new VectorEntriesJSON(parsedSource);
+        FieldsToVector entries = new FieldsToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
@@ -93,7 +93,7 @@ public class PrepareSpecIT extends ESIntegTestCase {
         String script = (String)spec.getSourceAsMap().get("script");
         XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
         Map<String, Object> parsedSource = parser.mapOrdered();
-        VectorEntries entries = new VectorEntriesJSON(parsedSource);
+        FieldsToVector entries = new FieldsToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }

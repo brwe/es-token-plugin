@@ -19,25 +19,13 @@
 
 package org.elasticsearch.script;
 
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.elasticsearch.common.collect.Tuple;
 
-public abstract class FeatureEntries {
+public class EsSparseNumericVector implements EsVector {
+    public Tuple<int[], double[]> values;
 
-    protected String field;
-
-    public abstract int size();
-
-    public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
-
-    public abstract EsVector getVector(Map<String, List> fieldValues);
-
-    public String getField() {
-        return field;
+    public EsSparseNumericVector(Tuple<int[], double[]> indicesAndValues) {
+        this.values = indicesAndValues;
     }
 }

@@ -85,7 +85,7 @@ public class PMMLVectorScriptEngineService extends AbstractComponent implements 
     }
 
     public static class Factory {
-        VectorEntries features = null;
+        FieldsToVector features = null;
 
         public Factory(String spec) {
             Map<String, Object> parsedSource = null;
@@ -95,7 +95,7 @@ public class PMMLVectorScriptEngineService extends AbstractComponent implements 
             } catch (IOException e) {
                 throw new ScriptException("vector script failed", e);
             }
-            features = new VectorEntriesJSON(parsedSource);
+            features = new FieldsToVectorJSON(parsedSource);
         }
 
         public VectorizerScript newScript(LeafSearchLookup lookup) {
@@ -125,7 +125,7 @@ public class PMMLVectorScriptEngineService extends AbstractComponent implements 
 
     public static class VectorizerScript implements LeafSearchScript {
 
-        private final VectorEntries features;
+        private final FieldsToVector features;
         private LeafSearchLookup lookup;
 
         /**
@@ -137,7 +137,7 @@ public class PMMLVectorScriptEngineService extends AbstractComponent implements 
         /**
          * @throws ScriptException
          */
-        private VectorizerScript(VectorEntries features, LeafSearchLookup lookup) throws ScriptException {
+        private VectorizerScript(FieldsToVector features, LeafSearchLookup lookup) throws ScriptException {
             this.lookup = lookup;
             this.features = features;
 

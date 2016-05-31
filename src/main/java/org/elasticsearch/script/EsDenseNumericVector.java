@@ -19,31 +19,13 @@
 
 package org.elasticsearch.script;
 
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
+/**
+ * Created by britta on 04.03.16.
+ */
+public class EsDenseNumericVector implements EsVector{
+    public double[] values;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
-public abstract class VectorEntries {
-
-    public boolean isSparse() {
-        return sparse;
+    public EsDenseNumericVector(double[] tfs) {
+        this.values = tfs;
     }
-
-    boolean sparse;
-    List<FeatureEntries> features = new ArrayList<>();
-
-    public List<FeatureEntries> getEntries() {
-        return features;
-    }
-
-    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
-            sourceLookup);
-
-    protected int numEntries;
 }
-

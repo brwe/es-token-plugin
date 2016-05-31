@@ -19,13 +19,31 @@
 
 package org.elasticsearch.script;
 
-/**
- * Created by britta on 04.03.16.
- */
-public class EsDenseVector implements EsVector{
-    public double[] values;
+import org.elasticsearch.search.lookup.LeafDocLookup;
+import org.elasticsearch.search.lookup.LeafFieldsLookup;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
+import org.elasticsearch.search.lookup.SourceLookup;
 
-    public EsDenseVector(double[] tfs) {
-        this.values = tfs;
+import java.util.ArrayList;
+import java.util.List;
+
+
+public abstract class FieldsToVector {
+
+    public boolean isSparse() {
+        return sparse;
     }
+
+    boolean sparse;
+    List<FieldToVector> features = new ArrayList<>();
+
+    public List<FieldToVector> getEntries() {
+        return features;
+    }
+
+    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
+            sourceLookup);
+
+    protected int numEntries;
 }
+

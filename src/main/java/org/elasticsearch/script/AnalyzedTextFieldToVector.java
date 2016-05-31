@@ -29,10 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
+public abstract class AnalyzedTextFieldToVector extends FieldToVector {
     int offset;
     String field;
-    public static final EsSparseVector EMPTY_SPARSE = new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+    public static final EsSparseNumericVector EMPTY_SPARSE = new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
 
     public enum FeatureType {
         OCCURRENCE,
@@ -69,11 +69,11 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
         }
     }
 
-    public static class SparseTermFeatureEntries extends AnalyzedTextFeatureEntries {
+    public static class SparseTermFieldToVector extends AnalyzedTextFieldToVector {
         private String number;
         Map<String, Integer> wordMap;
 
-        public SparseTermFeatureEntries(String field, String[] terms, String number, int offset) {
+        public SparseTermFieldToVector(String field, String[] terms, String number, int offset) {
             this.number = number;
             this.field = field;
             wordMap = new HashMap<>();
@@ -87,7 +87,7 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
             try {
                 /** here be the vectorizer **/
                 Tuple<int[], double[]> indicesAndValues;
-                if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.TF)) {
+                if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
@@ -97,10 +97,10 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
                     }
 
-                } else if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.OCCURRENCE)) {
+                } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.OCCURRENCE)) {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
-                } else if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.TF_IDF)) {
+                } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF_IDF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
@@ -114,7 +114,7 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
                 } else {
                     throw new ScriptException(number + " not implemented yet for sparse vector");
                 }
-                return new EsSparseVector(indicesAndValues);
+                return new EsSparseNumericVector(indicesAndValues);
             } catch (IOException ex) {
                 throw new ScriptException("Could not create sparse vector: ", ex);
             }
@@ -132,11 +132,11 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
     }
 
 
-    public static class DenseTermFeatureEntries extends AnalyzedTextFeatureEntries {
+    public static class DenseTermFieldToVector extends AnalyzedTextFieldToVector {
         String[] terms;
         String number;
 
-        public DenseTermFeatureEntries(String field, String[] terms, String number, int offset) {
+        public DenseTermFieldToVector(String field, String[] terms, String number, int offset) {
             this.terms = terms;
             this.number = number;
             this.offset = offset;
@@ -150,11 +150,11 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
                 IndexField indexField = leafIndexLookup.get(field);
                 for (int i = 0; i < terms.length; i++) {
                     IndexFieldTerm indexTermField = indexField.get(terms[i]);
-                    if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.TF)) {
+                    if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF)) {
                         values[i] = indexTermField.tf();
-                    } else if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.OCCURRENCE)) {
+                    } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.OCCURRENCE)) {
                         values[i] = indexTermField.tf() > 0 ? 1 : 0;
-                    } else if (AnalyzedTextFeatureEntries.FeatureType.fromString(number).equals(AnalyzedTextFeatureEntries.FeatureType.TF_IDF)) {
+                    } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF_IDF)) {
                         double tf = indexTermField.tf();
                         double df = indexTermField.df();
                         double numDocs = indexField.docCount();
@@ -163,7 +163,7 @@ public abstract class AnalyzedTextFeatureEntries extends FeatureEntries {
                         throw new ScriptException(number + " not implemented yet for dense vector");
                     }
                 }
-                return new EsDenseVector(values);
+                return new EsDenseNumericVector(values);
             } catch (IOException ex) {
                 throw new ScriptException("Could not get tf vector: ", ex);
             }
