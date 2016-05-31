@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class PMMLFeatureEntries extends FeatureEntries {
+public abstract class PMMLFieldToVector extends FieldToVector {
 
     protected PreProcessingStep[] preProcessingSteps;
 
@@ -48,10 +48,10 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      */
-    public static class SparseCategorical1OfKFeatureEntries extends PMMLFeatureEntries {
+    public static class SparseCategorical1OfKFieldToVector extends PMMLFieldToVector {
         Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
-        public SparseCategorical1OfKFeatureEntries(DataField dataField, DerivedField[] derivedFields) {
+        public SparseCategorical1OfKFieldToVector(DataField dataField, DerivedField[] derivedFields) {
             this.field = dataField.getName().getValue();
             preProcessingSteps = new PreProcessingStep[derivedFields.length];
             fillPreProcessingSteps(derivedFields);
@@ -70,10 +70,10 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
             Integer index = categoryToIndexHashMap.get(processedCategory);
             if (index == null) {
                 // TODO: Should we throw an exception here? Can this actually happen?
-                return new EsSparseVector(new Tuple<>(new int[]{}, new double[]{}));
+                return new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
             } else {
                 indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
-                return new EsSparseVector(indicesAndValues);
+                return new EsSparseNumericVector(indicesAndValues);
             }
         }
 
@@ -93,13 +93,13 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      */
-    public static class ContinousSingleEntryFeatureEntries extends PMMLFeatureEntries {
+    public static class ContinousSingleEntryFieldToVector extends PMMLFieldToVector {
         int index = -1;
 
         /**
          * The derived fields must be given in backwards order of the processing chain.
          */
-        public ContinousSingleEntryFeatureEntries(DataField dataField, DerivedField... derivedFields) {
+        public ContinousSingleEntryFieldToVector(DataField dataField, DerivedField... derivedFields) {
             this.field = dataField.getName().getValue();
             preProcessingSteps = new PreProcessingStep[derivedFields.length];
             fillPreProcessingSteps(derivedFields);
@@ -117,7 +117,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
             List value = fieldValues.get(field);
             Object finalValue = applyPreProcessing(value.size() == 0 ? null : value.get(0));
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) finalValue).doubleValue()});
-            return new EsSparseVector(indicesAndValues);
+            return new EsSparseNumericVector(indicesAndValues);
         }
 
         @Override
@@ -181,7 +181,7 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
         }
     }
 
-    public static class Intercept extends PMMLFeatureEntries {
+    public static class Intercept extends PMMLFieldToVector {
         int index;
         private String interceptName;
 
@@ -202,12 +202,12 @@ public abstract class PMMLFeatureEntries extends FeatureEntries {
 
         @Override
         public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
-            return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+            return new EsSparseNumericVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
         }
 
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
-            return new EsSparseVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+            return new EsSparseNumericVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
         }
     }
 }

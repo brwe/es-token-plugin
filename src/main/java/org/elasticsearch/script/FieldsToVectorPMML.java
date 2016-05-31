@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 
-public class VectorEntriesPMML extends VectorEntries {
+public class FieldsToVectorPMML extends FieldsToVector {
 
-    public VectorEntriesPMML(List<FeatureEntries> features, int numEntries) {
+    public FieldsToVectorPMML(List<FieldToVector> features, int numEntries) {
         this.features = features;
         this.numEntries = numEntries;
     }
@@ -41,8 +41,8 @@ public class VectorEntriesPMML extends VectorEntries {
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
 
         HashMap<String, List> fieldValues = new HashMap<>();
-        for (FeatureEntries featureEntries : features) {
-            String field = featureEntries.getField();
+        for (FieldToVector fieldToVector : features) {
+            String field = fieldToVector.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
                 fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
@@ -53,10 +53,10 @@ public class VectorEntriesPMML extends VectorEntries {
 
     public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
-        for (FeatureEntries featureEntries : features) {
-            EsVector entries = featureEntries.getVector(fieldValues);
-            assert entries instanceof EsSparseVector;
-            EsSparseVector sparseVector = (EsSparseVector) entries;
+        for (FieldToVector fieldToVector : features) {
+            EsVector entries = fieldToVector.getVector(fieldValues);
+            assert entries instanceof EsSparseNumericVector;
+            EsSparseNumericVector sparseVector = (EsSparseNumericVector) entries;
             for (int i = 0; i < sparseVector.values.v1().length; i++) {
                 assert indicesAndValues.containsKey(sparseVector.values.v1()[i]) == false;
                 indicesAndValues.put(sparseVector.values.v1()[i], sparseVector.values.v2()[i]);
@@ -77,7 +77,7 @@ public class VectorEntriesPMML extends VectorEntries {
         return finalVector;
     }
 
-    public static class VectorEntriesPMMLGeneralizedRegression extends VectorEntriesPMML {
+    public static class FieldsToVectorPMMLGeneralizedRegression extends FieldsToVectorPMML {
 
         public String[] getOrderedParameterList() {
             return orderedParameterList;
@@ -85,7 +85,7 @@ public class VectorEntriesPMML extends VectorEntries {
 
         private final String[] orderedParameterList;
 
-        public VectorEntriesPMMLGeneralizedRegression(List<FeatureEntries> features, int numEntries, String[] orderedParameterList) {
+        public FieldsToVectorPMMLGeneralizedRegression(List<FieldToVector> features, int numEntries, String[] orderedParameterList) {
             super(features, numEntries);
             this.orderedParameterList = orderedParameterList;
         }

@@ -41,12 +41,12 @@ import static org.hamcrest.Matchers.instanceOf;
 public class VectorizerTests extends ESTestCase {
 
     public void testVectorizerParsing() throws IOException {
-        VectorEntries entries = new VectorEntriesJSON(createSpecSource());
+        FieldsToVector entries = new FieldsToVectorJSON(createSpecSource());
         assertParameters(entries);
     }
 
     public void testVectorizerParsingFromActualSource() throws IOException {
-        VectorEntries entries = new VectorEntriesJSON(createSpecSourceFromSpec());
+        FieldsToVector entries = new FieldsToVectorJSON(createSpecSourceFromSpec());
         assertParameters(entries);
     }
 
@@ -60,14 +60,14 @@ public class VectorizerTests extends ESTestCase {
         return parser.mapOrdered();
     }
 
-    public void assertParameters(VectorEntries entries) {
+    public void assertParameters(FieldsToVector entries) {
         assertThat(entries.sparse, equalTo(false));
-        assertThat(entries.features.get(0), instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
-        assertThat(entries.features.get(1), instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
-        AnalyzedTextFeatureEntries.DenseTermFeatureEntries entry1 = (AnalyzedTextFeatureEntries.DenseTermFeatureEntries) entries.features.get(0);
-        AnalyzedTextFeatureEntries.DenseTermFeatureEntries entry2 = (AnalyzedTextFeatureEntries.DenseTermFeatureEntries) entries.features.get(1);
-        assertThat(entry1, instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
-        assertThat(entry2, instanceOf(AnalyzedTextFeatureEntries.DenseTermFeatureEntries.class));
+        assertThat(entries.features.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        assertThat(entries.features.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.features.get(0);
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.features.get(1);
+        assertThat(entry1, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        assertThat(entry2, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
         assertThat(entry1.size(), equalTo(3));
         assertThat(entry2.size(), equalTo(3));
         assertThat(entry1.offset, equalTo(0));

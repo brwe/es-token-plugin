@@ -20,27 +20,16 @@
 package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.script.VectorEntriesPMML;
+import org.elasticsearch.script.FieldsToVectorPMML;
 import org.elasticsearch.test.ESTestCase;
-import org.jpmml.model.ImportFilter;
-import org.jpmml.model.JAXBUtil;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.transform.Source;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.elasticsearch.script.pmml.ProcessPMMLHelper.parsePmml;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
 
@@ -48,20 +37,7 @@ public class PMMLParsingTests extends ESTestCase {
 
     public void testSimplePipelineParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/logistic_regression.xml");
-        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
-            public PMML run() {
-                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-                    Source transformedSource = ImportFilter.apply(new InputSource(is));
-                    return JAXBUtil.unmarshalPMML(transformedSource);
-                } catch (SAXException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (JAXBException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (IOException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                }
-            }
-        });
+        PMML pmml = parsePmml(pmmlString);
 
         PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         assertThat(featuresAndModel.features.getEntries().size(), equalTo(15));
@@ -69,51 +45,23 @@ public class PMMLParsingTests extends ESTestCase {
 
     public void testTwoStepPipelineParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
-        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
-            public PMML run() {
-                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-                    Source transformedSource = ImportFilter.apply(new InputSource(is));
-                    return JAXBUtil.unmarshalPMML(transformedSource);
-                } catch (SAXException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (JAXBException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (IOException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                }
-            }
-        });
+        PMML pmml = parsePmml(pmmlString);
         PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries = (VectorEntriesPMML
-                .VectorEntriesPMMLGeneralizedRegression) featuresAndModel.features;
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
         assertThat(vectorEntries.getEntries().size(), equalTo(3));
         assertVectorsCorrect(vectorEntries);
     }
 
     public void testTwoStepPipelineParsingReordered() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_reordered.xml");
-        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
-            public PMML run() {
-                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-                    Source transformedSource = ImportFilter.apply(new InputSource(is));
-                    return JAXBUtil.unmarshalPMML(transformedSource);
-                } catch (SAXException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (JAXBException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (IOException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                }
-            }
-        });
+        PMML pmml = parsePmml(pmmlString);
         PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries = (VectorEntriesPMML
-                .VectorEntriesPMMLGeneralizedRegression) featuresAndModel.features;
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
         assertThat(vectorEntries.getEntries().size(), equalTo(3));
         assertVectorsCorrect(vectorEntries);
     }
 
-    public void assertVectorsCorrect(VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries) throws IOException {
+    public void assertVectorsCorrect(FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries) throws IOException {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
         String testDataLines[] = testData.split("\\r?\\n");
@@ -135,7 +83,7 @@ public class PMMLParsingTests extends ESTestCase {
             Map<String, Object> result = (Map<String, Object>) vectorEntries.vector(input);
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             double expectedAgeValue = Double.parseDouble(expectedResult[0]);
-           // assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
+            // assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
             if (workInput.size() == 0) {
                 // this might be a problem with the model. not sure. the "other" value does not appear in it.
                 assertArrayEquals(((double[]) result.get("values")), new double[]{expectedAgeValue, 1.0d}, 1.e-7);
@@ -157,20 +105,7 @@ public class PMMLParsingTests extends ESTestCase {
 
     public void testModelAndFeatureParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
-        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
-            public PMML run() {
-                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
-                    Source transformedSource = ImportFilter.apply(new InputSource(is));
-                    return JAXBUtil.unmarshalPMML(transformedSource);
-                } catch (SAXException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (JAXBException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                } catch (IOException e) {
-                    throw new ElasticsearchException("could not convert xml to pmml model", e);
-                }
-            }
-        });
+        PMML pmml = parsePmml(pmmlString);
 
         PMMLModelScriptEngineService.Factory scriptFactory = new PMMLModelScriptEngineService.Factory(pmmlString);
 

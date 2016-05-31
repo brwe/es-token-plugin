@@ -31,11 +31,11 @@ import java.util.List;
 import java.util.Map;
 
 
-public class VectorEntriesJSON extends VectorEntries {
+public class FieldsToVectorJSON extends FieldsToVector {
 
 
     // number of entries
-    public VectorEntriesJSON(Map<String, Object> source) {
+    public FieldsToVectorJSON(Map<String, Object> source) {
         assert source.get("sparse") == null || source.get("sparse") instanceof Boolean;
         sparse = TransportPrepareSpecAction.getSparse(source.get("sparse"));
         assert (source.containsKey("features"));
@@ -48,12 +48,12 @@ public class VectorEntriesJSON extends VectorEntries {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                features.add(new AnalyzedTextFeatureEntries.SparseTermFeatureEntries((String) feature.get("field"),
+                features.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                features.add(new AnalyzedTextFeatureEntries.DenseTermFeatureEntries((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
+                features.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
             }
             offset += features.get(features.size() - 1).size();
             numEntries += features.get(features.size() - 1).size();
@@ -76,9 +76,9 @@ public class VectorEntriesJSON extends VectorEntries {
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
         if (sparse) {
             int length = 0;
-            List<EsSparseVector> entries = new ArrayList<>();
-            for (FeatureEntries fieldEntry : features) {
-                EsSparseVector vec = (EsSparseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
+            List<EsSparseNumericVector> entries = new ArrayList<>();
+            for (FieldToVector fieldEntry : features) {
+                EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec);
                 length += vec.values.v1().length;
             }
@@ -88,7 +88,7 @@ public class VectorEntriesJSON extends VectorEntries {
             double[] values = new double[length];
             int[] indices = new int[length];
             int curPos = 0;
-            for (EsSparseVector vector : entries) {
+            for (EsSparseNumericVector vector : entries) {
                 int numValues = vector.values.v1().length;
                 System.arraycopy(vector.values.v1(), 0, indices, curPos, numValues);
                 System.arraycopy(vector.values.v2(), 0, values, curPos, numValues);
@@ -102,8 +102,8 @@ public class VectorEntriesJSON extends VectorEntries {
         } else {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
-            for (FeatureEntries fieldEntry : features) {
-                EsDenseVector vec = (EsDenseVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
+            for (FieldToVector fieldEntry : features) {
+                EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec.values);
                 length += vec.values.length;
             }
