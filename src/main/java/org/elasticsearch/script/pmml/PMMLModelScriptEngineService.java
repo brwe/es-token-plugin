@@ -32,11 +32,11 @@ import org.dmg.pmml.NormContinuous;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.PPCell;
+import org.dmg.pmml.Parameter;
 import org.dmg.pmml.Predictor;
 import org.dmg.pmml.RegressionModel;
 import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -77,9 +77,11 @@ import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Provides the infrastructure for Groovy as a scripting language for Elasticsearch
@@ -127,8 +129,22 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     }
 
     public static class FeaturesAndModel {
-        VectorEntries features;
-        EsModelEvaluator model;
+        public FeaturesAndModel(VectorEntries features, EsModelEvaluator model) {
+            this.features = features;
+            this.model = model;
+        }
+
+        public VectorEntries getFeatures() {
+            return features;
+        }
+
+        final VectorEntries features;
+
+        public EsModelEvaluator getModel() {
+            return model;
+        }
+
+        final EsModelEvaluator model;
     }
 
     public static class Factory {
@@ -250,26 +266,12 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         }
     }
 
-    private static FeaturesAndModel getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
+    public static FeaturesAndModel getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
 
         Model model = pmml.getModels().get(modelNum);
         if (model instanceof GeneralRegressionModel) {
 
-            GeneralRegressionModel grModel = (GeneralRegressionModel) model;
-            if (grModel.getAlgorithmName().equals("LogisticRegression") && grModel.getModelType().value().equals
-                    ("multinomialLogistic")) {
-                List<FeatureEntries> features = new ArrayList<>();
-                Map<String, List<PPCell>> fieldToPPCellMap = mapCellsToFields(grModel);
-                Map<String, PMMLFeatureEntries> featureEntriesMap = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap);
-                String[] orderedParameterList = getOrderedParameterList(grModel, fieldToPPCellMap);
-                VectorEntriesPMML vectorEntries = createVectorEntries(features, featureEntriesMap);
-
-                // now finally create the model!
-                return null;
-
-            } else {
-                throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
-            }
+            return getGeneralRegressionFeaturesAndModel(pmml, modelNum);
 
         } else {
             throw new UnsupportedOperationException("Only implemented general regression model so far.");
@@ -277,55 +279,87 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     }
 
-    private static VectorEntriesPMML createVectorEntries(List<FeatureEntries> features, Map<String, PMMLFeatureEntries> featureEntriesMap) {
-        int numEntries = 0;
-        for (Map.Entry<String, PMMLFeatureEntries> entry : featureEntriesMap.entrySet()) {
-            features.add(entry.getValue());
-            numEntries += entry.getValue().size();
+    private static FeaturesAndModel getGeneralRegressionFeaturesAndModel(PMML pmml, int modelNum) {
+        GeneralRegressionModel grModel = (GeneralRegressionModel) pmml.getModels().get(modelNum);
+        if (grModel.getAlgorithmName().equals("LogisticRegression") && grModel.getModelType().value().equals
+                ("multinomialLogistic")) {
+            TreeMap<String, List<PPCell>> fieldToPPCellMap = mapCellsToFields(grModel);
+            List<String> orderedParameterList = new ArrayList<>();
+            List<FeatureEntries> featureEntriesList = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap, orderedParameterList);
+            //add intercept if any
+            addIntercept(grModel, featureEntriesList, fieldToPPCellMap, orderedParameterList);
+
+            assert orderedParameterList.size() == grModel.getParameterList().getParameters().size();
+            VectorEntriesPMML vectorEntries = createGeneralizedRegressionModelVectorEntries(featureEntriesList, orderedParameterList
+                    .toArray(new String[orderedParameterList.size()]));
+
+            // now finally create the model!
+            return new FeaturesAndModel(vectorEntries, null);
+
+        } else {
+            throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
         }
-        return new VectorEntriesPMML(features, numEntries);
     }
 
-    private static String[] getOrderedParameterList(GeneralRegressionModel grModel, Map<String, List<PPCell>> fieldToPPCellMap) {
+    private static void addIntercept(GeneralRegressionModel grModel, List<FeatureEntries> featureEntriesMap, Map<String, List<PPCell>>
+            fieldToPPCellMap, List<String> orderedParameterList) {
         // now, find the order of vector entries to model parameters. This is extremely annoying but we have to do it at some
         // point...
-        int numModelParameters = grModel.getParameterList().getParameters().size();
-        String[] orderedParameterList = new String[numModelParameters];
-        // now we have to find in which order the vector will return the vector entries...
-        int parameterCounter = 0;
+
+
+        int numFeatures = 0; // current index?
+        Set<String> allFieldParameters = new HashSet<>();
         for (Map.Entry<String, List<PPCell>> fieldAndCells : fieldToPPCellMap.entrySet()) {
-            for(PPCell cell : fieldAndCells.getValue()) {
-                if (parameterCounter == numModelParameters) {
-                    throw new ElasticsearchParseException("Screwed up PMML parsing. Got more cells than parameters ");
-                }
-                orderedParameterList[parameterCounter] = cell.getParameterName();
-                parameterCounter++;
+            for (PPCell cell : fieldAndCells.getValue()) {
+                allFieldParameters.add(cell.getParameterName());
+                numFeatures++;
             }
         }
-        if (parameterCounter != numModelParameters) {
-            throw new ElasticsearchParseException("Screwed up PMML parsing. Got less cells than parameters!");
+        // now find the parameters which do not come form a field
+        for (Parameter parameter : grModel.getParameterList().getParameters()) {
+            if (allFieldParameters.contains(parameter.getName()) == false) {
+                PMMLFeatureEntries.Intercept intercept = new PMMLFeatureEntries.Intercept(parameter.getName());
+                intercept.addVectorEntry(numFeatures, null);
+                numFeatures++;
+                featureEntriesMap.add(intercept);
+                orderedParameterList.add(parameter.getName());
+            }
         }
-        return orderedParameterList;
+
     }
 
-    private static Map<String, PMMLFeatureEntries> convertToFeatureEntries(PMML pmml, int modelNum, Map<String, List<PPCell>> fieldToPPCellMap) {
+    private static VectorEntriesPMML createGeneralizedRegressionModelVectorEntries(List<FeatureEntries>
+                                                                                           featureEntriesList, String[] orderedParameterList) {
+        int numEntries = 0;
+        for (FeatureEntries entry : featureEntriesList) {
+
+            numEntries += entry.size();
+        }
+        return new VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression(featureEntriesList, numEntries, orderedParameterList);
+    }
+
+    private static List<FeatureEntries> convertToFeatureEntries(PMML pmml, int modelNum, TreeMap<String, List<PPCell>> fieldToPPCellMap,
+                                                                List<String> orderedParameterList) {
         // for each predictor: get vector entries?
-        Map<String, PMMLFeatureEntries> featureEntriesMap = new HashMap();
+        List<FeatureEntries> featureEntriesList = new ArrayList<>();
         int indexCounter = 0;
         // for each of the fields create the feature entries
-        for (Map.Entry<String, List<PPCell>> fieldAndCells : fieldToPPCellMap.entrySet()) {
-            PMMLFeatureEntries featureEntries = getFeatureEntryFromGeneralRegressionModel(pmml, modelNum, fieldAndCells.getKey(),
-                    fieldAndCells.getValue(), indexCounter);
+        for (String fieldname : fieldToPPCellMap.keySet()) {
+            PMMLFeatureEntries featureEntries = getFeatureEntryFromGeneralRegressionModel(pmml, modelNum, fieldname,
+                    fieldToPPCellMap.get(fieldname), indexCounter);
+            for (PPCell cell : fieldToPPCellMap.get(fieldname)) {
+                orderedParameterList.add(cell.getParameterName());
+            }
             indexCounter += featureEntries.size();
-            featureEntriesMap.put(fieldAndCells.getKey(), featureEntries);
+            featureEntriesList.add(featureEntries);
 
         }
-        return featureEntriesMap;
+        return featureEntriesList;
     }
 
-    private static Map<String, List<PPCell>> mapCellsToFields(GeneralRegressionModel grModel) {
+    private static TreeMap<String, List<PPCell>> mapCellsToFields(GeneralRegressionModel grModel) {
         //get all the field names for multinomialLogistic model
-        Map<String, List<PPCell>> fieldToPPCellMap = new HashMap<>();
+        TreeMap<String, List<PPCell>> fieldToPPCellMap = new TreeMap<>();
         for (Predictor predictor : grModel.getFactorList().getPredictors()) {
             fieldToPPCellMap.put(predictor.getName().toString(), new ArrayList<PPCell>());
         }
@@ -356,7 +390,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         PMMLFeatureEntries featureEntries;
         if (rawField == null) {
-            featureEntries = getIntercept(model, modelIndex, fieldName);
+            throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
+                    "yet or the PMML file is faulty.");
         } else {
             featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField);
         }
@@ -389,27 +424,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             featureEntries.addVectorEntry(indexCounter, cell);
             indexCounter++;
         }
-        return featureEntries;
-    }
-
-    private static PMMLFeatureEntries getIntercept(PMML model, int modelIndex, String fieldName) {
-        PMMLFeatureEntries featureEntries;// check if it is an intercept
-        GeneralRegressionModel generalRegressionModel = (GeneralRegressionModel) model.getModels().get(modelIndex);
-        for (Predictor predictor : generalRegressionModel.getCovariateList().getPredictors()) {
-
-            if (predictor.getName().toString().equals(fieldName)) {// if this is an actual field we need to be able to backtrace it!
-                throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
-                        "yet or the PMML file is faulty.");
-            }
-        }
-        for (Predictor predictor : generalRegressionModel.getFactorList().getPredictors()) {
-            if (predictor.getName().toString().equals(fieldName)) {// if this is an actual field we need to be able to backtrace it!
-                throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
-                        "yet or the PMML file is faulty.");
-            }
-        }
-        // it was not contained in the fields list which means it is an intercept
-        featureEntries = new PMMLFeatureEntries.Intercept(fieldName);
         return featureEntries;
     }
 

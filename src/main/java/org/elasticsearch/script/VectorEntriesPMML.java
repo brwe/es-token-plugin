@@ -19,26 +19,12 @@
 
 package org.elasticsearch.script;
 
-import org.dmg.pmml.Apply;
-import org.dmg.pmml.DataField;
-import org.dmg.pmml.DerivedField;
-import org.dmg.pmml.Expression;
-import org.dmg.pmml.FieldRef;
-import org.dmg.pmml.GeneralRegressionModel;
-import org.dmg.pmml.Model;
-import org.dmg.pmml.NormContinuous;
-import org.dmg.pmml.OpType;
-import org.dmg.pmml.PMML;
-import org.dmg.pmml.PPCell;
-import org.dmg.pmml.Predictor;
-import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +43,15 @@ public class VectorEntriesPMML extends VectorEntries {
         HashMap<String, List> fieldValues = new HashMap<>();
         for (FeatureEntries featureEntries : features) {
             String field = featureEntries.getField();
-            // TODO: We assume here doc lookup will always give us something back. What if not?
-            fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
+            if (field != null) {
+                // TODO: We assume here doc lookup will always give us something back. What if not?
+                fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
+            }
         }
         return vector(fieldValues);
     }
 
-    protected Object vector(Map<String, List> fieldValues) {
+    public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
         for (FeatureEntries featureEntries : features) {
             EsVector entries = featureEntries.getVector(fieldValues);
@@ -87,6 +75,20 @@ public class VectorEntriesPMML extends VectorEntries {
         finalVector.put("indices", indices);
         finalVector.put("length", numEntries);
         return finalVector;
+    }
+
+    public static class VectorEntriesPMMLGeneralizedRegression extends VectorEntriesPMML {
+
+        public String[] getOrderedParameterList() {
+            return orderedParameterList;
+        }
+
+        private final String[] orderedParameterList;
+
+        public VectorEntriesPMMLGeneralizedRegression(List<FeatureEntries> features, int numEntries, String[] orderedParameterList) {
+            super(features, numEntries);
+            this.orderedParameterList = orderedParameterList;
+        }
     }
 }
 
