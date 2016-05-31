@@ -23,7 +23,6 @@ import org.dmg.pmml.PMML;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.script.VectorEntriesPMML;
 import org.elasticsearch.test.ESTestCase;
-import org.hamcrest.Matchers;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.xml.sax.InputSource;
@@ -88,6 +87,33 @@ public class PMMLParsingTests extends ESTestCase {
         VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries = (VectorEntriesPMML
                 .VectorEntriesPMMLGeneralizedRegression) featuresAndModel.features;
         assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        assertVectorsCorrect(vectorEntries);
+    }
+
+    public void testTwoStepPipelineParsingReordered() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_reordered.xml");
+        PMML pmml = AccessController.doPrivileged(new PrivilegedAction<PMML>() {
+            public PMML run() {
+                try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {
+                    Source transformedSource = ImportFilter.apply(new InputSource(is));
+                    return JAXBUtil.unmarshalPMML(transformedSource);
+                } catch (SAXException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (JAXBException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                } catch (IOException e) {
+                    throw new ElasticsearchException("could not convert xml to pmml model", e);
+                }
+            }
+        });
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries = (VectorEntriesPMML
+                .VectorEntriesPMMLGeneralizedRegression) featuresAndModel.features;
+        assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        assertVectorsCorrect(vectorEntries);
+    }
+
+    public void assertVectorsCorrect(VectorEntriesPMML.VectorEntriesPMMLGeneralizedRegression vectorEntries) throws IOException {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
         String testDataLines[] = testData.split("\\r?\\n");

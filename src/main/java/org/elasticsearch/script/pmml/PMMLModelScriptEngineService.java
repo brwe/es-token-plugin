@@ -305,8 +305,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             fieldToPPCellMap, List<String> orderedParameterList) {
         // now, find the order of vector entries to model parameters. This is extremely annoying but we have to do it at some
         // point...
-
-
         int numFeatures = 0; // current index?
         Set<String> allFieldParameters = new HashSet<>();
         for (Map.Entry<String, List<PPCell>> fieldAndCells : fieldToPPCellMap.entrySet()) {
@@ -325,7 +323,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 orderedParameterList.add(parameter.getName());
             }
         }
-
     }
 
     private static VectorEntriesPMML createGeneralizedRegressionModelVectorEntries(List<FeatureEntries>
