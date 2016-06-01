@@ -111,6 +111,18 @@ public class GeneralizedLinearRegressionHelper {
     }
 
     static TreeMap<String, List<PPCell>> mapCellsToFields(GeneralRegressionModel grModel) {
+
+        // check that correlation matrix only has one entry per parameter
+        // we nned to implement correlations later, see http://dmg.org/pmml/v4-2-1/GeneralRegression.html (PPMatrix) but not now...
+        Set<String> parametersInPPMatrix = new HashSet<>();
+        for (PPCell ppcell : grModel.getPPMatrix().getPPCells()) {
+            if (parametersInPPMatrix.contains(ppcell.getParameterName())) {
+                throw new UnsupportedOperationException("Don't support correlated predictors for GeneralRegressionModel yet");
+            } else {
+                parametersInPPMatrix.add(ppcell.getParameterName());
+            }
+        }
+
         //get all the field names for multinomialLogistic model
         TreeMap<String, List<PPCell>> fieldToPPCellMap = new TreeMap<>();
         for (Predictor predictor : grModel.getFactorList().getPredictors()) {
