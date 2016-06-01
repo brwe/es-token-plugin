@@ -29,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+* Maps a single field to vector entries. Includes pre processing.
+* */
 public abstract class PMMLFieldToVector extends FieldToVector {
 
     protected PreProcessingStep[] preProcessingSteps;

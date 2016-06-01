@@ -110,6 +110,7 @@ public class ProcessPMMLHelper {
     }
 
     public static PMML parsePmml(final String pmmlString) {
+        // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
         return AccessController.doPrivileged(new PrivilegedAction<PMML>() {
             public PMML run() {
                 try (InputStream is = new ByteArrayInputStream(pmmlString.getBytes(Charset.defaultCharset()))) {

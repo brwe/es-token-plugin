@@ -40,6 +40,7 @@ import java.util.TreeMap;
 
 
 public class GeneralizedLinearRegressionHelper {
+
     static PMMLFieldToVector getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField) {
         PMMLFieldToVector featureEntries;
         OpType opType;
@@ -155,7 +156,7 @@ public class GeneralizedLinearRegressionHelper {
 
     static PMMLModelScriptEngineService.FeaturesAndModel getGeneralRegressionFeaturesAndModel(PMML pmml, int modelNum) {
         GeneralRegressionModel grModel = (GeneralRegressionModel) pmml.getModels().get(modelNum);
-        if (grModel.getAlgorithmName().equals("LogisticRegression") && grModel.getModelType().value().equals
+        if (grModel.getFunctionName().value().equals("classification") && grModel.getModelType().value().equals
                 ("multinomialLogistic")) {
             TreeMap<String, List<PPCell>> fieldToPPCellMap = mapCellsToFields(grModel);
             List<String> orderedParameterList = new ArrayList<>();
@@ -168,6 +169,8 @@ public class GeneralizedLinearRegressionHelper {
                     .toArray(new String[orderedParameterList.size()]));
 
             // now finally create the model!
+
+
             return new PMMLModelScriptEngineService.FeaturesAndModel(vectorEntries, null);
 
         } else {

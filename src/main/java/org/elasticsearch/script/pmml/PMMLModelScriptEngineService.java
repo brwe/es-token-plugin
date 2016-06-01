@@ -174,7 +174,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         }
 
         static private FeaturesAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
-            // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
+
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {
                 throw new UnsupportedOperationException("Only implemented PMML for one model so far.");
