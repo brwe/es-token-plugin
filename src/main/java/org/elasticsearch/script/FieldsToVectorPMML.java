@@ -34,6 +34,7 @@ import java.util.TreeMap;
 public class FieldsToVectorPMML extends FieldsToVector {
 
     public FieldsToVectorPMML(List<FieldToVector> features, int numEntries) {
+        this.sparse = true;
         this.features = features;
         this.numEntries = numEntries;
     }

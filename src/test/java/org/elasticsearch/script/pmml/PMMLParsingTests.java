@@ -20,6 +20,7 @@
 package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
+import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.script.FieldsToVectorPMML;
 import org.elasticsearch.test.ESTestCase;
 
@@ -106,8 +107,97 @@ public class PMMLParsingTests extends ESTestCase {
     public void testModelAndFeatureParsing() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
+        assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        assertModelCorrect(featuresAndModel);
+    }
 
-        PMMLModelScriptEngineService.Factory scriptFactory = new PMMLModelScriptEngineService.Factory(pmmlString);
+    public void testBigModelAndFeatureParsing() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
+        PMML pmml = parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
+        assertThat(vectorEntries.getEntries().size(), equalTo(15));
+        assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/lr_result_adult_full.txt");
+    }
 
+    public void testBigModelCorrectSingleValue() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
+        PMML pmml = parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
+        assertThat(vectorEntries.getEntries().size(), equalTo(15));
+        assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/singlevalueforintegtest.txt", "/org/elasticsearch/script/singleresultforintegtest.txt");
+    }
+
+    private void assertModelCorrect(PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel) throws IOException {
+        final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
+        final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
+        String testDataLines[] = testData.split("\\r?\\n");
+        String expectedResultsLines[] = expectedResults.split("\\r?\\n");
+        for (int i = 0; i < testDataLines.length; i++) {
+            String[] testDataValues = testDataLines[i].split(",");
+            List ageInput = new ArrayList<Double>();
+            ;
+            if (testDataValues[0].equals("") == false) {
+                ageInput.add(Double.parseDouble(testDataValues[0]));
+            }
+            List workInput = new ArrayList<>();
+            if (testDataValues[1].trim().equals("") == false) {
+                workInput.add(testDataValues[1].trim());
+            }
+            Map<String, List> input = new HashMap<>();
+            input.put("age", ageInput);
+            input.put("work", workInput);
+            Map<String, Object> result = (Map<String, Object>) ((FieldsToVectorPMML) featuresAndModel.features).vector(input);
+            String[] expectedResult = expectedResultsLines[i + 1].split(",");
+            String expectedClass = expectedResult[expectedResult.length - 1];
+            expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
+            String classValue = featuresAndModel.getModel().evaluate(new Tuple<>((int[]) result.get("indices"), (double[]) result.get
+                    ("values")));
+            assertThat(expectedClass, equalTo(classValue));
+        }
+    }
+
+    private void assertBiggerModelCorrect(PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel, String inputData, String
+            resultData) throws IOException {
+        final String testData = copyToStringFromClasspath(inputData);
+        final String expectedResults = copyToStringFromClasspath(resultData);
+        String testDataLines[] = testData.split("\\r?\\n");
+        String expectedResultsLines[] = expectedResults.split("\\r?\\n");
+        String[] fields = expectedResultsLines[0].split(",");
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = fields[i].trim();
+            fields[i] = fields[i].substring(1, fields[i].length() - 1);
+        }
+        for (int i = 0; i < testDataLines.length; i++) {
+            String[] testDataValues = testDataLines[i].split(",");
+            // trimm spaces and add value
+            Map<String, List> input = new HashMap<>();
+            for (int j = 0; j < testDataValues.length; j++) {
+                testDataValues[j] = testDataValues[j].trim();
+                if (testDataValues[j].equals("") == false) {
+                    List fieldInput = new ArrayList<>();
+                    if (j == 0 || j == 2 || j == 4 || j == 10 || j == 11 || j == 12) {
+                        fieldInput.add(Double.parseDouble(testDataValues[j]));
+                    } else {
+                        fieldInput.add(testDataValues[j]);
+                    }
+                    input.put(fields[j], fieldInput);
+                } else {
+                    if (randomBoolean()) {
+                        input.put(fields[j], new ArrayList<>());
+                    }
+                }
+            }
+            Map<String, Object> result = (Map<String, Object>) ((FieldsToVectorPMML) featuresAndModel.features).vector(input);
+            String[] expectedResult = expectedResultsLines[i + 1].split(",");
+            String expectedClass = expectedResult[expectedResult.length - 1];
+            expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
+            String classValue = featuresAndModel.getModel().evaluate(new Tuple<>((int[]) result.get("indices"), (double[]) result.get
+                    ("values")));
+            assertThat(expectedClass, equalTo(classValue));
+        }
     }
 }

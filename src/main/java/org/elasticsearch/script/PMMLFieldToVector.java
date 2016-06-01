@@ -69,7 +69,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
             List category = fieldValues.get(field);
-            Object processedCategory = applyPreProcessing(category.size() == 0 ? null : category.get(0));
+            Object processedCategory = applyPreProcessing(category == null || category.size() == 0 ? null : category.get(0));
             Integer index = categoryToIndexHashMap.get(processedCategory);
             if (index == null) {
                 // TODO: Should we throw an exception here? Can this actually happen?
