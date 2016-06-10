@@ -171,7 +171,7 @@ public class PMMLParsingTests extends ESTestCase {
             fields[i] = fields[i].trim();
             fields[i] = fields[i].substring(1, fields[i].length() - 1);
         }
-        for (int i = 0; i < testDataLines.length; i++) {
+        for (int i = 1; i < testDataLines.length; i++) {
             String[] testDataValues = testDataLines[i].split(",");
             // trimm spaces and add value
             Map<String, List> input = new HashMap<>();
@@ -192,7 +192,7 @@ public class PMMLParsingTests extends ESTestCase {
                 }
             }
             Map<String, Object> result = (Map<String, Object>) ((FieldsToVectorPMML) featuresAndModel.features).vector(input);
-            String[] expectedResult = expectedResultsLines[i + 1].split(",");
+            String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
             String classValue = featuresAndModel.getModel().evaluate(new Tuple<>((int[]) result.get("indices"), (double[]) result.get

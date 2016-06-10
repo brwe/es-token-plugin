@@ -174,7 +174,7 @@ public class FullPMMLIT extends ESIntegTestCase {
             fields[i] = fields[i].substring(1, fields[i].length() - 1);
         }
         List<IndexRequestBuilder> docs = new ArrayList<>();
-        for (int i = 0; i < testDataLines.length; i++) {
+        for (int i = 1; i < testDataLines.length; i++) {
             String[] testDataValues = testDataLines[i].split(",");
             // trimm spaces and add value
             Map<String, Object> input = new HashMap<>();
@@ -189,7 +189,7 @@ public class FullPMMLIT extends ESIntegTestCase {
                 }
             }
             // get the class that the lr_model predicted
-            String[] expectedResultLine = expectedResultsLines[i + 1].split(",");
+            String[] expectedResultLine = expectedResultsLines[i].split(",");
             String expectedPrediction = expectedResultLine[expectedResultLine.length - 1];
             expectedPrediction = expectedPrediction.substring(1, expectedPrediction.length() - 1);
             input.put("expected_model_prediction", expectedPrediction);
