@@ -38,10 +38,10 @@
       <Value value="Preschool"/>
       <Value value="12th"/>
     </DataField>
-    <DataField dataType="integer" name="education-num" optype="continuous">
+    <DataField dataType="integer" name="education_num" optype="continuous">
       <Interval closure="closedClosed" leftMargin="1.0" rightMargin="16.0"/>
     </DataField>
-    <DataField dataType="string" name="marital-status" optype="categorical">
+    <DataField dataType="string" name="marital_status" optype="categorical">
       <Value value="Never-married"/>
       <Value value="Married-civ-spouse"/>
       <Value value="Divorced"/>
@@ -85,16 +85,16 @@
       <Value value="Male"/>
       <Value value="Female"/>
     </DataField>
-    <DataField dataType="integer" name="capital-gain" optype="continuous">
+    <DataField dataType="integer" name="capital_gain" optype="continuous">
       <Interval closure="closedClosed" leftMargin="0.0" rightMargin="99999.0"/>
     </DataField>
-    <DataField dataType="integer" name="capital-loss" optype="continuous">
+    <DataField dataType="integer" name="capital_loss" optype="continuous">
       <Interval closure="closedClosed" leftMargin="0.0" rightMargin="4356.0"/>
     </DataField>
-    <DataField dataType="integer" name="hours-per-week" optype="continuous">
+    <DataField dataType="integer" name="hours_per_week" optype="continuous">
       <Interval closure="closedClosed" leftMargin="1.0" rightMargin="99.0"/>
     </DataField>
-    <DataField dataType="string" name="native-country" optype="categorical">
+    <DataField dataType="string" name="native_country" optype="categorical">
       <Value value="United-States"/>
       <Value value="Cuba"/>
       <Value value="Jamaica"/>
@@ -182,19 +182,19 @@
     <DerivedField dataType="integer" displayName="education-num" name="education-num*" optype="continuous">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="education-num"/>
+          <FieldRef field="education_num"/>
         </Apply>
         <Constant dataType="integer">0</Constant>
-        <FieldRef field="education-num"/>
+        <FieldRef field="education_num"/>
       </Apply>
     </DerivedField>
-    <DerivedField dataType="string" displayName="marital-status" name="marital-status*" optype="categorical">
+    <DerivedField dataType="string" displayName="marital_status" name="marital-status*" optype="categorical">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="marital-status"/>
+          <FieldRef field="marital_status"/>
         </Apply>
         <Constant dataType="string">Bigamist</Constant>
-        <FieldRef field="marital-status"/>
+        <FieldRef field="marital_status"/>
       </Apply>
     </DerivedField>
     <DerivedField dataType="string" displayName="occupation" name="occupation*" optype="categorical">
@@ -233,40 +233,40 @@
         <FieldRef field="sex"/>
       </Apply>
     </DerivedField>
-    <DerivedField dataType="integer" displayName="capital-gain" name="capital-gain*" optype="continuous">
+    <DerivedField dataType="integer" displayName="capital_gain" name="capital-gain*" optype="continuous">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="capital-gain"/>
+          <FieldRef field="capital_gain"/>
         </Apply>
         <Constant dataType="integer">0</Constant>
-        <FieldRef field="capital-gain"/>
+        <FieldRef field="capital_gain"/>
       </Apply>
     </DerivedField>
-    <DerivedField dataType="integer" displayName="capital-loss" name="capital-loss*" optype="continuous">
+    <DerivedField dataType="integer" displayName="capital_loss" name="capital-loss*" optype="continuous">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="capital-loss"/>
+          <FieldRef field="capital_loss"/>
         </Apply>
         <Constant dataType="integer">0</Constant>
-        <FieldRef field="capital-loss"/>
+        <FieldRef field="capital_loss"/>
       </Apply>
     </DerivedField>
-    <DerivedField dataType="integer" displayName="hours-per-week" name="hours-per-week*" optype="continuous">
+    <DerivedField dataType="integer" displayName="hours_per_week" name="hours-per-week*" optype="continuous">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="hours-per-week"/>
+          <FieldRef field="hours_per_week"/>
         </Apply>
         <Constant dataType="integer">40</Constant>
-        <FieldRef field="hours-per-week"/>
+        <FieldRef field="hours_per_week"/>
       </Apply>
     </DerivedField>
-    <DerivedField dataType="string" displayName="native-country" name="native-country*" optype="categorical">
+    <DerivedField dataType="string" displayName="native_country" name="native-country*" optype="categorical">
       <Apply function="if">
         <Apply function="isMissing">
-          <FieldRef field="native-country"/>
+          <FieldRef field="native_country"/>
         </Apply>
         <Constant dataType="string">Atlantis</Constant>
-        <FieldRef field="native-country"/>
+        <FieldRef field="native_country"/>
       </Apply>
     </DerivedField>
     <DerivedField dataType="double" displayName="age" name="age**" optype="continuous">
@@ -276,7 +276,7 @@
         <LinearNorm norm="-2.7551653224848733" orig="1.0"/>
       </NormContinuous>
     </DerivedField>
-    <DerivedField dataType="double" displayName="hours-per-week" name="hours-per-week**" optype="continuous">
+    <DerivedField dataType="double" displayName="hours_per_week" name="hours-per-week**" optype="continuous">
       <Extension extender="KNIME" name="summary" value="Z-Score (Gaussian) normalization on 2 column(s)"/>
       <NormContinuous field="hours-per-week*">
         <LinearNorm norm="-3.274969784755323" orig="0.0"/>
@@ -290,16 +290,16 @@
       <MiningField name="workclass" invalidValueTreatment="asIs"/>
       <MiningField name="fnlwgt" invalidValueTreatment="asIs"/>
       <MiningField name="education" invalidValueTreatment="asIs"/>
-      <MiningField name="education-num" invalidValueTreatment="asIs"/>
-      <MiningField name="marital-status" invalidValueTreatment="asIs"/>
+      <MiningField name="education_num" invalidValueTreatment="asIs"/>
+      <MiningField name="marital_status" invalidValueTreatment="asIs"/>
       <MiningField name="occupation" invalidValueTreatment="asIs"/>
       <MiningField name="relationship" invalidValueTreatment="asIs"/>
       <MiningField name="race" invalidValueTreatment="asIs"/>
       <MiningField name="sex" invalidValueTreatment="asIs"/>
-      <MiningField name="capital-gain" invalidValueTreatment="asIs"/>
-      <MiningField name="capital-loss" invalidValueTreatment="asIs"/>
-      <MiningField name="hours-per-week" invalidValueTreatment="asIs"/>
-      <MiningField name="native-country" invalidValueTreatment="asIs"/>
+      <MiningField name="capital_gain" invalidValueTreatment="asIs"/>
+      <MiningField name="capital_loss" invalidValueTreatment="asIs"/>
+      <MiningField name="hours_per_week" invalidValueTreatment="asIs"/>
+      <MiningField name="native_country" invalidValueTreatment="asIs"/>
       <MiningField name="class" invalidValueTreatment="asIs" usageType="target"/>
     </MiningSchema>
     <ParameterList>

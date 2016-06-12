@@ -119,10 +119,10 @@ public class FullPMMLIT extends ESIntegTestCase {
                 .field("type", "string")
                 .field("analyzer", "keyword")
                 .endObject()
-                .startObject("education-num")
+                .startObject("education_num")
                 .field("type", "double")
                 .endObject()
-                .startObject("marital-status")
+                .startObject("marital_status")
                 .field("type", "string")
                 .field("analyzer", "keyword")
                 .endObject()
@@ -142,16 +142,16 @@ public class FullPMMLIT extends ESIntegTestCase {
                 .field("type", "string")
                 .field("analyzer", "keyword")
                 .endObject()
-                .startObject("capital-gain")
+                .startObject("capital_gain")
                 .field("type", "double")
                 .endObject()
-                .startObject("capital-loss")
+                .startObject("capital_loss")
                 .field("type", "double")
                 .endObject()
-                .startObject("hours-per-week")
+                .startObject("hours_per_week")
                 .field("type", "double")
                 .endObject()
-                .startObject("native-country")
+                .startObject("native_country")
                 .field("type", "string")
                 .field("analyzer", "keyword")
                 .endObject()
@@ -182,6 +182,7 @@ public class FullPMMLIT extends ESIntegTestCase {
                 testDataValues[j] = testDataValues[j].trim();
                 if (testDataValues[j].equals("") == false) {
                     input.put(fields[j], testDataValues[j]);
+                    logger.info("{} {}",fields[j],testDataValues[j]);
                 } else {
                     if (randomBoolean()) {
                         input.put(fields[j], null);
