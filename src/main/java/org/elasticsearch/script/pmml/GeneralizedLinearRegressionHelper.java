@@ -49,7 +49,8 @@ import java.util.TreeMap;
 
 public class GeneralizedLinearRegressionHelper {
 
-    static PMMLFieldToVector getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField) {
+    static PMMLFieldToVector getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField,
+                                            MiningField miningField) {
         PMMLFieldToVector featureEntries;
         OpType opType;
         if (derivedFields.size() == 0) {
@@ -59,15 +60,15 @@ public class GeneralizedLinearRegressionHelper {
         }
 
         if (opType.value().equals("continuous")) {
-            featureEntries = new PMMLFieldToVector.ContinousSingleEntryFieldToVector(rawField, derivedFields.toArray(new
+            featureEntries = new PMMLFieldToVector.ContinousSingleEntryFieldToVector(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLFieldToVector.SparseCategorical1OfKFieldToVector(rawField, derivedFields.toArray(new
+            featureEntries = new PMMLFieldToVector.SparseCategorical1OfKFieldToVector(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else {
-            throw new UnsupportedOperationException("Only iplemented continuous and categorical variables so far.");
+            throw new UnsupportedOperationException("Only implemented continuous and categorical variables so far.");
         }
 
         for (PPCell cell : cells) {
@@ -81,11 +82,16 @@ public class GeneralizedLinearRegressionHelper {
         if (model.getModels().get(modelIndex) instanceof GeneralRegressionModel == false) {
             throw new UnsupportedOperationException("Can only do GeneralRegressionModel so far");
         }
-        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
-            throw new UnsupportedOperationException("Local transformations not implemented yet. ");
-        }
         List<DerivedField> derivedFields = new ArrayList<>();
-        String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, model.getTransformationDictionary(), derivedFields);
+        List<DerivedField> allDerivedFields = new ArrayList<>();
+        if (model.getTransformationDictionary() != null) {
+            allDerivedFields.addAll(model.getTransformationDictionary().getDerivedFields());
+        }
+        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
+            allDerivedFields.addAll(model.getModels().get(modelIndex).getLocalTransformations().getDerivedFields());
+        }
+
+        String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
         DataField rawField = ProcessPMMLHelper.getRawDataField(model, rawFieldName);
 
         PMMLFieldToVector featureEntries;
@@ -93,7 +99,14 @@ public class GeneralizedLinearRegressionHelper {
             throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
                     "yet or the PMML file is faulty.");
         } else {
-            featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField);
+            MiningField miningField = null;
+            // also pass in the mining schema for additional parameters
+            for(MiningField aMiningField : model.getModels().get(modelIndex).getMiningSchema().getMiningFields()) {
+                if (aMiningField.getKey().getValue().equals(rawFieldName)) {
+                    miningField = aMiningField;
+                }
+            }
+            featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
         }
         return featureEntries;
 
@@ -176,8 +189,10 @@ public class GeneralizedLinearRegressionHelper {
 
     static PMMLModelScriptEngineService.FeaturesAndModel getGeneralRegressionFeaturesAndModel(PMML pmml, int modelNum) {
         GeneralRegressionModel grModel = (GeneralRegressionModel) pmml.getModels().get(modelNum);
-        if (grModel.getFunctionName().value().equals("classification") && grModel.getModelType().value().equals
-                ("multinomialLogistic")) {
+        if (grModel.getFunctionName().value().equals("classification") &&(grModel.getModelType().value().equals
+                ("multinomialLogistic") || (grModel.getModelType().value().equals
+                ("generalizedLinear") && grModel.getDistribution().value().equals("binomial") && grModel.getLinkFunction().value().equals
+                ("logit")))) {
             TreeMap<String, List<PPCell>> fieldToPPCellMap = mapCellsToFields(grModel);
             List<String> orderedParameterList = new ArrayList<>();
             List<FieldToVector> fieldToVectorList = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap, orderedParameterList);
@@ -233,6 +248,17 @@ public class GeneralizedLinearRegressionHelper {
                     break;
                 }
             }
+            if (targetVariable == null) {
+                // fall back to find the "predicted" field
+                for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
+                    FieldUsageType fieldUsageType = miningField.getUsageType();
+                    if ( fieldUsageType != null &&fieldUsageType.value().equals("predicted")) {
+                        targetVariable = miningField.getName().getValue();
+                        break;
+                    }
+                }
+            }
+
             if (targetVariable == null) {
                 throw new ElasticsearchParseException("could not find target variable");
             }

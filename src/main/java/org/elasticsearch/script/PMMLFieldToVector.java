@@ -54,9 +54,14 @@ public abstract class PMMLFieldToVector extends FieldToVector {
     public static class SparseCategorical1OfKFieldToVector extends PMMLFieldToVector {
         Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
-        public SparseCategorical1OfKFieldToVector(DataField dataField, DerivedField[] derivedFields) {
+        public SparseCategorical1OfKFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
             this.field = dataField.getName().getValue();
-            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            if (miningField.getMissingValueReplacement() != null) {
+                preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
+                preProcessingSteps[0] = new MissingValuePreProcess(miningField.getMissingValueReplacement());
+            } else {
+                preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            }
             fillPreProcessingSteps(derivedFields);
         }
 
@@ -102,9 +107,14 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         /**
          * The derived fields must be given in backwards order of the processing chain.
          */
-        public ContinousSingleEntryFieldToVector(DataField dataField, DerivedField... derivedFields) {
+        public ContinousSingleEntryFieldToVector(DataField dataField, MiningField miningField, DerivedField... derivedFields) {
             this.field = dataField.getName().getValue();
-            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            if (miningField.getMissingValueReplacement() != null) {
+                preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
+                preProcessingSteps[0] = new MissingValuePreProcess(miningField.getMissingValueReplacement());
+            } else {
+                preProcessingSteps = new PreProcessingStep[derivedFields.length];
+            }
             fillPreProcessingSteps(derivedFields);
 
         }
@@ -137,8 +147,13 @@ public abstract class PMMLFieldToVector extends FieldToVector {
     }
 
     protected void fillPreProcessingSteps(DerivedField[] derivedFields) {
-        for (int i = derivedFields.length - 1; i >= 0; i--) {
-            DerivedField derivedField = derivedFields[i];
+
+
+        int derivedFieldIndex = derivedFields.length - 1;
+        // don't start at the beginning, we might have a pre processing step there already from the mining field
+        for (int preProcessingStepIndex = preProcessingSteps.length - derivedFields.length; preProcessingStepIndex < preProcessingSteps.length;
+             preProcessingStepIndex++) {
+            DerivedField derivedField = derivedFields[derivedFieldIndex];
             if (derivedField.getExpression() != null) {
                 if (derivedField.getExpression() instanceof Apply) {
                     for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
@@ -162,7 +177,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
                                             throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
                                                     "far.");
                                         }
-                                        preProcessingSteps[derivedFields.length - i - 1] = new MissingValuePreProcess(parsedMissingValue);
+                                        preProcessingSteps[preProcessingStepIndex] = new MissingValuePreProcess(parsedMissingValue);
                                         break;
                                     }
                                 }
@@ -172,7 +187,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
                         }
                     }
                 } else if (derivedField.getExpression() instanceof NormContinuous) {
-                    preProcessingSteps[derivedFields.length - i - 1] = new NormContinousPreProcess((NormContinuous) derivedField
+                    preProcessingSteps[preProcessingStepIndex] = new NormContinousPreProcess((NormContinuous) derivedField
                             .getExpression());
                 } else {
                     throw new UnsupportedOperationException("So far only Apply expression implemented.");
@@ -181,6 +196,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
             } else {
                 throw new UnsupportedOperationException("So far only Apply implemented.");
             }
+            derivedFieldIndex--;
         }
     }
 

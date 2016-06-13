@@ -122,6 +122,16 @@ public class PMMLParsingTests extends ESTestCase {
         assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/knime_glm_adult_result.csv");
     }
 
+    public void testBigModelAndFeatureParsingFromRExport() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/glm-adult-full-r.xml");
+        PMML pmml = parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
+        assertThat(vectorEntries.getEntries().size(), equalTo(12));
+        assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/r_glm_adult_result" +
+                ".csv");
+    }
+
     public void testBigModelCorrectSingleValue() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
         PMML pmml = parsePmml(pmmlString);

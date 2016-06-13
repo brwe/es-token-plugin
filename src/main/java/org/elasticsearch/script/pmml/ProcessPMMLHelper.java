@@ -59,7 +59,7 @@ public class ProcessPMMLHelper {
         return rawField;
     }
 
-    public static String getDerivedFields(String fieldName, TransformationDictionary transformationDictionary, List<DerivedField>
+    public static String getDerivedFields(String fieldName, List<DerivedField> allDerivedFields, List<DerivedField>
             derivedFields) {
         // trace back all derived fields until we must arrive at an actual data field. This unfortunately means we have to
         // loop over dervived fields as often as we find one..
@@ -68,7 +68,7 @@ public class ProcessPMMLHelper {
 
         do {
             lastFoundDerivedField = null;
-            for (DerivedField derivedField : transformationDictionary.getDerivedFields()) {
+            for (DerivedField derivedField : allDerivedFields) {
                 if (derivedField.getName().getValue().equals(lastFieldName)) {
                     lastFoundDerivedField = derivedField;
                     derivedFields.add(derivedField);
