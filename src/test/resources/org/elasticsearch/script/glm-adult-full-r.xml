@@ -311,7 +311,6 @@
       <PPCell value="Preschool" predictorName="education" parameterName="p22"/>
       <PPCell value="Prof-school" predictorName="education" parameterName="p23"/>
       <PPCell value="Some-college" predictorName="education" parameterName="p24"/>
-      <PPCell value="_num_z" predictorName="education" parameterName="p25"/>
       <PPCell value="1" predictorName="education_num_z" parameterName="p25"/>
       <PPCell value="Married-AF-spouse" predictorName="marital_status" parameterName="p26"/>
       <PPCell value="Married-civ-spouse" predictorName="marital_status" parameterName="p27"/>
