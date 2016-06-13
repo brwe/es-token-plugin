@@ -21,8 +21,11 @@ mydata$workclass <- factor(mydata$workclass)
 # pre processing
 mydataWrapped<-WrapData(mydata)
 mydataWrapped<-ZScoreXform(mydataWrapped,xformInfo="age->age_z")
+mydataWrapped<-ZScoreXform(mydataWrapped,xformInfo="education_num->education_num_z")
+mydataWrapped<-ZScoreXform(mydataWrapped,xformInfo="hours_per_week->hours_per_week_z")
+
 # train model
-mylogit <- glm(class ~ age_z + workclass + education + education_num + marital_status + occupation + relationship + race + sex + hours_per_week + native_country, 
+mylogit <- glm(class ~ age_z + workclass + education + education_num_z + marital_status + occupation + relationship + race + sex + hours_per_week_z + native_country , 
                data = mydataWrapped$data, family = "binomial", na.action = na.pass)
 
 # convert to pmmlgetwd
