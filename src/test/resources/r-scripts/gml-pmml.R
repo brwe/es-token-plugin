@@ -22,7 +22,7 @@ mydata$workclass <- factor(mydata$workclass)
 mydataWrapped<-WrapData(mydata)
 mydataWrapped<-ZScoreXform(mydataWrapped,xformInfo="age->age_z")
 # train model
-mylogit <- glm(class ~ age + workclass + fnlwgt + education + education_num + marital_status + occupation + relationship + race + sex + capital_gain + capital_loss + hours_per_week + native_country, 
+mylogit <- glm(class ~ age_z + workclass + education + education_num + marital_status + occupation + relationship + race + sex + hours_per_week + native_country, 
                data = mydataWrapped$data, family = "binomial", na.action = na.pass)
 
 # convert to pmml
@@ -33,4 +33,6 @@ pmmlModel <- pmml(mylogit, transform=mydataWrapped)
 attributes <- data.frame(c("too-cool-to-work"),c("hedonist"),c("Fiji"))
 rownames(attributes) <- c("missingValueReplacement")
 colnames(attributes) <- c("workclass", "occupation","native_country")
-addMSAttributes(pmmlModel, attributes=attributes, field="workclass")
+pmmlModel <- addMSAttributes(pmmlModel, attributes=attributes)
+
+
