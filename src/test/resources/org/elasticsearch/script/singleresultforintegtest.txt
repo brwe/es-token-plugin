@@ -1,2 +1,2 @@
-"age","workclass","fnlwgt","education","education_num","marital_status","occupation","relationship","race","sex","capital_gain","capital_loss","hours_per_week","native_country","class"
--0.5558215786441867,"Private",183043,"Masters",14,"Married-civ-spouse","Exec-managerial","Husband","White","Male",0,1977,0.6124792734454787,"United-States",">50K",0.0868242729063769,0.913175727093623,">50K"
+class0Prob,class1Prob,predictedClass
+0.0868242729063769,0.913175727093623,">50K"

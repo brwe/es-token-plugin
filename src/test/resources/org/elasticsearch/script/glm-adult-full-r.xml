@@ -3,7 +3,7 @@
   <Header copyright="Copyright (c) 2016 britta" description="Generalized Linear Regression Model">
     <Extension name="user" value="britta" extender="Rattle/PMML"/>
     <Application name="Rattle/PMML" version="1.4"/>
-    <Timestamp>2016-06-13 15:33:39</Timestamp>
+    <Timestamp>2016-06-13 16:25:26</Timestamp>
   </Header>
   <DataDictionary numberOfFields="12">
     <DataField name="class" optype="categorical" dataType="string">

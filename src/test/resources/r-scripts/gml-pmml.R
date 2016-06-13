@@ -39,3 +39,12 @@ colnames(attributes) <- c("workclass", "occupation","native_country")
 pmmlModel <- addMSAttributes(pmmlModel, attributes=attributes)
 write(toString.XMLNode(pmmlModel), file = "/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/glm-adult-full-r.xml")
 
+prob <-predict(mylogit, newdata = mydataWrapped$data, type = "response")
+
+result<-sapply(prediction, function(x)if(x>0.5){">50K"}else{"<=50K"})
+
+compresult = data.frame(sapply(prob,function(x){1.0-x}),prob,  result)
+
+colnames(compresult)<-c("probClass0", "probClass1" ,"predictedClass")
+
+write.table(compresult, file="/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/r_glm_adult_result.csv",row.names = F)

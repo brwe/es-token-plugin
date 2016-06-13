@@ -62,35 +62,41 @@ public class FullPMMLIT extends ESIntegTestCase {
     @Test
     public void testAdult() throws IOException, ExecutionException, InterruptedException {
 
-        indexAdultData("/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/lr_result_adult_full.txt");
+        indexAdultData("/org/elasticsearch/script/adult.data");
         assertHitCount(client().prepareSearch().get(), 32561);
-        indexAdultModel();
-        checkClassificationCorrect();
+        indexAdultModel("/org/elasticsearch/script/lr_model_adult_full.xml");
+        checkClassificationCorrect("/org/elasticsearch/script/knime_glm_adult_result.csv");
     }
 
     @Test
     public void testSingleAdult() throws IOException, ExecutionException, InterruptedException {
 
-        indexAdultData("/org/elasticsearch/script/singlevalueforintegtest.txt", "/org/elasticsearch/script/singleresultforintegtest.txt");
+        indexAdultData("/org/elasticsearch/script/singlevalueforintegtest.txt");
         assertHitCount(client().prepareSearch().get(), 1);
-        indexAdultModel();
-        checkClassificationCorrect();
+        indexAdultModel("/org/elasticsearch/script/lr_model_adult_full.xml");
+        checkClassificationCorrect("/org/elasticsearch/script/singleresultforintegtest.txt");
     }
 
-    private void checkClassificationCorrect() {
+    private void checkClassificationCorrect(String resultFile) throws IOException {
+        final String testData = copyToStringFromClasspath(resultFile);
+        String resultLines[] = testData.split("\\r?\\n");
+        Map<String, String> expectedResults = new HashMap<>();
+        for (int i = 1; i< resultLines.length; i++) {
+            expectedResults.put(Integer.toString(i), resultLines[i]);
+        }
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
                 .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             String label = (String) (hit.field("pmml").values().get(0));
-            String predictedLabel = (String) (hit.sourceAsMap().get("expected_model_prediction"));
-            assertThat(label, equalTo(predictedLabel));
+            String[] expectedResult = expectedResults.get(hit.id()).split(",");
+            assertThat(label, equalTo(expectedResult[2].substring(1,expectedResult[2].length()-1)));
         }
     }
 
-    private void indexAdultModel() throws IOException {
+    private void indexAdultModel(String modelFile) throws IOException {
 
-        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
+        final String pmmlString = copyToStringFromClasspath(modelFile);
         // create spec
         client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
                 jsonBuilder().startObject()
@@ -99,7 +105,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         ).get();
     }
 
-    private void indexAdultData(String data, String result) throws IOException, ExecutionException, InterruptedException {
+    private void indexAdultData(String data) throws IOException, ExecutionException, InterruptedException {
 
         XContentBuilder mappingBuilder = jsonBuilder();
         mappingBuilder.startObject();
@@ -165,10 +171,8 @@ public class FullPMMLIT extends ESIntegTestCase {
         mappingBuilder.endObject();
         assertAcked(client().admin().indices().prepareCreate("test").addMapping("type", mappingBuilder).get());
         final String testData = copyToStringFromClasspath(data);
-        final String expectedResults = copyToStringFromClasspath(result);
         String testDataLines[] = testData.split("\\r?\\n");
-        String expectedResultsLines[] = expectedResults.split("\\r?\\n");
-        String[] fields = expectedResultsLines[0].split(",");
+        String[] fields = testDataLines[0].split(",");
         for (int i = 0; i < fields.length; i++) {
             fields[i] = fields[i].trim();
             fields[i] = fields[i].substring(1, fields[i].length() - 1);
@@ -182,18 +186,12 @@ public class FullPMMLIT extends ESIntegTestCase {
                 testDataValues[j] = testDataValues[j].trim();
                 if (testDataValues[j].equals("") == false) {
                     input.put(fields[j], testDataValues[j]);
-                    logger.info("{} {}",fields[j],testDataValues[j]);
                 } else {
                     if (randomBoolean()) {
                         input.put(fields[j], null);
                     }
                 }
             }
-            // get the class that the lr_model predicted
-            String[] expectedResultLine = expectedResultsLines[i].split(",");
-            String expectedPrediction = expectedResultLine[expectedResultLine.length - 1];
-            expectedPrediction = expectedPrediction.substring(1, expectedPrediction.length() - 1);
-            input.put("expected_model_prediction", expectedPrediction);
             input.remove("class");
             docs.add(client().prepareIndex("test", "type", Integer.toString(i)).setSource(input));
         }

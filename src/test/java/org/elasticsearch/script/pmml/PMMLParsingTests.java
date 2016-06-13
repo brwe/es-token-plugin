@@ -119,7 +119,7 @@ public class PMMLParsingTests extends ESTestCase {
         PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) featuresAndModel.features;
         assertThat(vectorEntries.getEntries().size(), equalTo(15));
-        assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/lr_result_adult_full.txt");
+        assertBiggerModelCorrect(featuresAndModel, "/org/elasticsearch/script/adult.data", "/org/elasticsearch/script/knime_glm_adult_result.csv");
     }
 
     public void testBigModelCorrectSingleValue() throws IOException {
@@ -166,7 +166,7 @@ public class PMMLParsingTests extends ESTestCase {
         final String expectedResults = copyToStringFromClasspath(resultData);
         String testDataLines[] = testData.split("\\r?\\n");
         String expectedResultsLines[] = expectedResults.split("\\r?\\n");
-        String[] fields = expectedResultsLines[0].split(",");
+        String[] fields = testDataLines[0].split(",");
         for (int i = 0; i < fields.length; i++) {
             fields[i] = fields[i].trim();
             fields[i] = fields[i].substring(1, fields[i].length() - 1);
