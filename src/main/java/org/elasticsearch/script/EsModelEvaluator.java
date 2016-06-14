@@ -21,10 +21,13 @@ package org.elasticsearch.script;
 
 import org.elasticsearch.common.collect.Tuple;
 
+import java.util.Map;
+
 
 public interface EsModelEvaluator {
-    String evaluate(Tuple<int[], double[]> featureValues);
-    String evaluate(double[] featureValues);
+    Map<String, Object> evaluate(Tuple<int[], double[]> featureValues);
+
+    Map<String, Object> evaluate(double[] featureValues);
 }
 
 

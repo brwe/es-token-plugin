@@ -22,6 +22,9 @@ package org.elasticsearch.script;
 import org.dmg.pmml.NaiveBayesModel;
 import org.elasticsearch.common.collect.Tuple;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class EsNaiveBayesModel implements EsModelEvaluator {
 
     private double[][] thetas;
@@ -39,16 +42,23 @@ public class EsNaiveBayesModel implements EsModelEvaluator {
     }
 
     @Override
-    public String evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
 
         double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
         double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
-        return valClass0 > valClass1 ? labels[0] : labels[1];
+        return prepareResult(valClass0, valClass1);
     }
 
-    public String evaluate(double[] featureValues) {
+    protected Map<String, Object> prepareResult(double valClass0, double valClass1) {
+        Map<String, Object> results = new HashMap<>();
+        String classValue = valClass0 > valClass1 ? labels[0] : labels[1];
+        results.put("class", classValue);
+        return results;
+    }
+
+    public Map<String, Object> evaluate(double[] featureValues) {
         double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
         double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
-        return valClass0 > valClass1 ? labels[0] : labels[1];
+        return prepareResult(valClass0, valClass1);
     }
 }

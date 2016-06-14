@@ -25,6 +25,7 @@ import org.dmg.pmml.RegressionTable;
 import org.elasticsearch.common.collect.Tuple;
 
 import java.util.List;
+import java.util.Map;
 
 
 public abstract class EsRegressionModelEvaluator implements EsModelEvaluator {
@@ -52,7 +53,7 @@ public abstract class EsRegressionModelEvaluator implements EsModelEvaluator {
         this.classes = classes;
     }
 
-    abstract public String evaluate(Tuple<int[], double[]> featureValues);
+    abstract public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues);
 
     protected static double linearFunction(Tuple<int[], double[]> featureValues, double intercept, double[] coefficients) {
         double val = 0.0;

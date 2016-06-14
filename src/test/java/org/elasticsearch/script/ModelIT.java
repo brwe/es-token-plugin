@@ -125,7 +125,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String)((Map<String, Object>) (searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -157,7 +157,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>)(searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 1, 1, 0};
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -191,7 +191,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml",new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>) (searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             SVMModel svmModel = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
             double mllibResult = svmModel.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -228,7 +228,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>)(searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -263,7 +263,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String)((Map<String, Object>) (searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 1, 1, 0};
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -299,7 +299,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>)(searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
@@ -336,7 +336,7 @@ public class ModelIT extends ESIntegTestCase {
             // call PMML script with needed parameters
             SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script("1", ScriptService.ScriptType.INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).get();
             assertSearchResponse(searchResponse);
-            String label = (String) (searchResponse.getHits().getAt(0).field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>)(searchResponse.getHits().getAt(0).field("pmml").values().get(0))).get("class");
             SVMModel svmm = new SVMModel(new DenseVector(modelParams), intercept);
             int[] vals = new int[]{1, 2, 1, 0};
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));

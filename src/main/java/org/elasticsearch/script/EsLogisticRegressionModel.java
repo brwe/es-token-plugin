@@ -22,6 +22,9 @@ package org.elasticsearch.script;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 
     public EsLogisticRegressionModel(RegressionModel model) {
@@ -29,21 +32,28 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
     }
 
     public EsLogisticRegressionModel(double[] coefficients,
-            double intercept, String[] classes) {
-        super(coefficients,  intercept, classes);
+                                     double intercept, String[] classes) {
+        super(coefficients, intercept, classes);
     }
 
     @Override
-    public String evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
+        return prepareResult(val);
+    }
+
+    protected Map<String, Object> prepareResult(double val) {
+        // TODO: this should be several classes really...
         double prob = 1 / (1 + Math.exp(-1.0 * val));
-        return prob > 0.5 ? classes[0] : classes[1];
+        String classValue = prob > 0.5 ? classes[0] : classes[1];
+        Map<String, Object> result = new HashMap<>();
+        result.put("class", classValue);
+        return result;
     }
 
     @Override
-    public String evaluate(double[] featureValues) {
+    public Map<String, Object> evaluate(double[] featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
-        double prob = 1 / (1 + Math.exp(-1.0 * val));
-        return prob > 0.5 ? classes[0] : classes[1];
+        return prepareResult(val);
     }
 }

@@ -73,13 +73,14 @@ public class ModelTests extends ESTestCase {
             params.put(new FieldName("field_0"), new Double(vals[0]));
             params.put(new FieldName("field_1"), new Double(vals[1]));
             params.put(new FieldName("field_2"), new Double(vals[2]));
-            String result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            Map<String, Object> result = esLinearSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1],
+                    vals[2]}));
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+            assertThat(mllibResult, equalTo(Double.parseDouble((String)result.get("class"))));
 
             EsModelEvaluator esSVMModel = new EsLinearSVMModel(modelParams, 0.1, new String[]{"1", "0"});
-            String esLabel = esSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble(esLabel)));
+            result = esSVMModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble((String)result.get("class"))));
         }
     }
 
@@ -100,12 +101,12 @@ public class ModelTests extends ESTestCase {
             params.put(new FieldName("field_2"), new Double(vals[2]));
             params.put(new FieldName("field_3"), new Double(vals[3]));
             double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            String result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+            Map<String, Object> result = esLogisticRegressionModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble((String)result.get("class"))));
 
             EsModelEvaluator esLLRModel = new EsLogisticRegressionModel(modelParams, 0.1, new String[]{"1", "0"});
-            String esLabel = esLLRModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble(esLabel)));
+            result = esLLRModel.evaluate(new Tuple<>(new int[]{0, 1, 2}, new double[]{vals[0], vals[1], vals[2]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble((String)result.get("class"))));
 
         }
     }
@@ -124,8 +125,8 @@ public class ModelTests extends ESTestCase {
             EsModelEvaluator esNaiveBayesModel = new EsNaiveBayesModel(thetas, pis, labels);
             int[] vals = {randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10)};
             double mllibResult = nb.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            String result = esNaiveBayesModel.evaluate(new Tuple<>(new int[]{0, 1, 2, 3}, new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble(result)));
+            Map<String, Object> result = esNaiveBayesModel.evaluate(new Tuple<>(new int[]{0, 1, 2, 3}, new double[]{vals[0], vals[1], vals[2], vals[3]}));
+            assertThat(mllibResult, equalTo(Double.parseDouble((String)result.get("class"))));
         }
     }
 

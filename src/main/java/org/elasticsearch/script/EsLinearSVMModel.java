@@ -22,6 +22,9 @@ package org.elasticsearch.script;
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class EsLinearSVMModel extends EsRegressionModelEvaluator {
 
     public EsLinearSVMModel(RegressionModel regressionModel) {
@@ -34,14 +37,22 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
     }
 
     @Override
-    public String evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
-        return val > 0.0 ? classes[0] : classes[1];
+        return prepareResult(val);
     }
 
     @Override
-    public String evaluate(double[] featureValues) {
+    public Map<String, Object> evaluate(double[] featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
-        return val > 0.0 ? classes[0] : classes[1];
+        return prepareResult(val);
     }
+
+    protected Map<String, Object> prepareResult(double val) {
+        String classValue = val > 0 ? classes[0] : classes[1];
+        Map<String, Object> result = new HashMap<>();
+        result.put("class", classValue);
+        return result;
+    }
+
 }

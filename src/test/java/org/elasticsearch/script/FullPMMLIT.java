@@ -88,7 +88,7 @@ public class FullPMMLIT extends ESIntegTestCase {
                 .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
-            String label = (String) (hit.field("pmml").values().get(0));
+            String label = (String) ((Map<String, Object>)(hit.field("pmml").values().get(0))).get("class");
             String[] expectedResult = expectedResults.get(hit.id()).split(",");
             assertThat(label, equalTo(expectedResult[2].substring(1,expectedResult[2].length()-1)));
         }
