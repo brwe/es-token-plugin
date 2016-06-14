@@ -1,0 +1,378 @@
+<?xml version="1.0"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4.2" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+  <Header copyright="Copyright (c) 2016 britta" description="RPart Decision Tree Model">
+    <Extension name="user" value="britta" extender="Rattle/PMML"/>
+    <Application name="Rattle/PMML" version="1.4"/>
+    <Timestamp>2016-06-14 15:13:48</Timestamp>
+  </Header>
+  <DataDictionary numberOfFields="12">
+    <DataField name="class" optype="categorical" dataType="string">
+      <Value value="&lt;=50K"/>
+      <Value value="&gt;50K"/>
+    </DataField>
+    <DataField name="age" optype="continuous" dataType="double"/>
+    <DataField name="workclass" optype="categorical" dataType="string">
+      <Value value="Federal-gov"/>
+      <Value value="Local-gov"/>
+      <Value value="Never-worked"/>
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Self-emp-not-inc"/>
+      <Value value="State-gov"/>
+      <Value value="too-cool-to-work"/>
+      <Value value="Without-pay"/>
+    </DataField>
+    <DataField name="education" optype="categorical" dataType="string">
+      <Value value="10th"/>
+      <Value value="11th"/>
+      <Value value="12th"/>
+      <Value value="1st-4th"/>
+      <Value value="5th-6th"/>
+      <Value value="7th-8th"/>
+      <Value value="9th"/>
+      <Value value="Assoc-acdm"/>
+      <Value value="Assoc-voc"/>
+      <Value value="Bachelors"/>
+      <Value value="Doctorate"/>
+      <Value value="HS-grad"/>
+      <Value value="Masters"/>
+      <Value value="Preschool"/>
+      <Value value="Prof-school"/>
+      <Value value="Some-college"/>
+    </DataField>
+    <DataField name="education_num" optype="continuous" dataType="double"/>
+    <DataField name="marital_status" optype="categorical" dataType="string">
+      <Value value="Divorced"/>
+      <Value value="Married-AF-spouse"/>
+      <Value value="Married-civ-spouse"/>
+      <Value value="Married-spouse-absent"/>
+      <Value value="Never-married"/>
+      <Value value="Separated"/>
+      <Value value="Widowed"/>
+    </DataField>
+    <DataField name="occupation" optype="categorical" dataType="string">
+      <Value value="Adm-clerical"/>
+      <Value value="Armed-Forces"/>
+      <Value value="Craft-repair"/>
+      <Value value="Exec-managerial"/>
+      <Value value="Farming-fishing"/>
+      <Value value="Handlers-cleaners"/>
+      <Value value="hedonist"/>
+      <Value value="Machine-op-inspct"/>
+      <Value value="Other-service"/>
+      <Value value="Priv-house-serv"/>
+      <Value value="Prof-specialty"/>
+      <Value value="Protective-serv"/>
+      <Value value="Sales"/>
+      <Value value="Tech-support"/>
+      <Value value="Transport-moving"/>
+    </DataField>
+    <DataField name="relationship" optype="categorical" dataType="string">
+      <Value value="Husband"/>
+      <Value value="Not-in-family"/>
+      <Value value="Other-relative"/>
+      <Value value="Own-child"/>
+      <Value value="Unmarried"/>
+      <Value value="Wife"/>
+    </DataField>
+    <DataField name="race" optype="categorical" dataType="string">
+      <Value value="Amer-Indian-Eskimo"/>
+      <Value value="Asian-Pac-Islander"/>
+      <Value value="Black"/>
+      <Value value="Other"/>
+      <Value value="White"/>
+    </DataField>
+    <DataField name="sex" optype="categorical" dataType="string">
+      <Value value="Female"/>
+      <Value value="Male"/>
+    </DataField>
+    <DataField name="hours_per_week" optype="continuous" dataType="double"/>
+    <DataField name="native_country" optype="categorical" dataType="string">
+      <Value value="Cambodia"/>
+      <Value value="Canada"/>
+      <Value value="China"/>
+      <Value value="Columbia"/>
+      <Value value="Cuba"/>
+      <Value value="Dominican-Republic"/>
+      <Value value="Ecuador"/>
+      <Value value="El-Salvador"/>
+      <Value value="England"/>
+      <Value value="Fiji"/>
+      <Value value="France"/>
+      <Value value="Germany"/>
+      <Value value="Greece"/>
+      <Value value="Guatemala"/>
+      <Value value="Haiti"/>
+      <Value value="Holand-Netherlands"/>
+      <Value value="Honduras"/>
+      <Value value="Hong"/>
+      <Value value="Hungary"/>
+      <Value value="India"/>
+      <Value value="Iran"/>
+      <Value value="Ireland"/>
+      <Value value="Italy"/>
+      <Value value="Jamaica"/>
+      <Value value="Japan"/>
+      <Value value="Laos"/>
+      <Value value="Mexico"/>
+      <Value value="Nicaragua"/>
+      <Value value="Outlying-US(Guam-USVI-etc)"/>
+      <Value value="Peru"/>
+      <Value value="Philippines"/>
+      <Value value="Poland"/>
+      <Value value="Portugal"/>
+      <Value value="Puerto-Rico"/>
+      <Value value="Scotland"/>
+      <Value value="South"/>
+      <Value value="Taiwan"/>
+      <Value value="Thailand"/>
+      <Value value="Trinadad&amp;Tobago"/>
+      <Value value="United-States"/>
+      <Value value="Vietnam"/>
+      <Value value="Yugoslavia"/>
+    </DataField>
+  </DataDictionary>
+  <TreeModel modelName="RPart_Model" functionName="classification" algorithmName="rpart" splitCharacteristic="binarySplit" missingValueStrategy="defaultChild" noTrueChildStrategy="returnLastPrediction">
+    <MiningSchema>
+      <MiningField name="class" usageType="predicted"/>
+      <MiningField name="age" usageType="active"/>
+      <MiningField name="workclass" usageType="active" missingValueReplacement="too-cool-to-work"/>
+      <MiningField name="education" usageType="active"/>
+      <MiningField name="education_num" usageType="active"/>
+      <MiningField name="marital_status" usageType="active"/>
+      <MiningField name="occupation" usageType="active" missingValueReplacement="hedonist"/>
+      <MiningField name="relationship" usageType="active"/>
+      <MiningField name="race" usageType="active"/>
+      <MiningField name="sex" usageType="active"/>
+      <MiningField name="hours_per_week" usageType="active"/>
+      <MiningField name="native_country" usageType="active" missingValueReplacement="Fiji"/>
+    </MiningSchema>
+    <Output>
+      <OutputField name="Predicted_class" optype="categorical" dataType="string" feature="predictedValue"/>
+      <OutputField name="Probability_&lt;=50K" optype="continuous" dataType="double" feature="probability" value="&lt;=50K"/>
+      <OutputField name="Probability_&gt;50K" optype="continuous" dataType="double" feature="probability" value="&gt;50K"/>
+    </Output>
+    <LocalTransformations>
+      <DerivedField name="age_z" dataType="double" optype="continuous">
+        <NormContinuous field="age">
+          <LinearNorm orig="38.5816467553208" norm="0"/>
+          <LinearNorm orig="52.2220793089021" norm="1"/>
+        </NormContinuous>
+      </DerivedField>
+      <DerivedField name="education_num_z" dataType="double" optype="continuous">
+        <NormContinuous field="education_num">
+          <LinearNorm orig="10.0806793403151" norm="0"/>
+          <LinearNorm orig="12.6533996723825" norm="1"/>
+        </NormContinuous>
+      </DerivedField>
+      <DerivedField name="hours_per_week_z" dataType="double" optype="continuous">
+        <NormContinuous field="hours_per_week">
+          <LinearNorm orig="40.437455852093" norm="0"/>
+          <LinearNorm orig="52.7848845338248" norm="1"/>
+        </NormContinuous>
+      </DerivedField>
+    </LocalTransformations>
+    <Node id="1" score="&lt;=50K" recordCount="32561" defaultChild="2">
+      <True/>
+      <ScoreDistribution value="&lt;=50K" recordCount="24720" confidence="0.759190442553976"/>
+      <ScoreDistribution value="&gt;50K" recordCount="7841" confidence="0.240809557446024"/>
+      <Node id="2" score="&lt;=50K" recordCount="17800">
+        <CompoundPredicate booleanOperator="surrogate">
+          <SimpleSetPredicate field="relationship" booleanOperator="isIn">
+            <Array n="4" type="string">"Not-in-family" "Other-relative" "Own-child" "Unmarried"</Array>
+          </SimpleSetPredicate>
+          <SimpleSetPredicate field="marital_status" booleanOperator="isIn">
+            <Array n="5" type="string">"Divorced" "Married-spouse-absent" "Never-married" "Separated" "Widowed"</Array>
+          </SimpleSetPredicate>
+          <SimpleSetPredicate field="sex" booleanOperator="isIn">
+            <Array n="1" type="string">"Female"</Array>
+          </SimpleSetPredicate>
+          <SimplePredicate field="age_z" operator="lessThan" value="-0.372542933324103"/>
+          <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+            <Array n="9" type="string">"Adm-clerical" "Armed-Forces" "Handlers-cleaners" "hedonist" "Machine-op-inspct" "Other-service" "Priv-house-serv" "Sales" "Tech-support"</Array>
+          </SimpleSetPredicate>
+          <SimplePredicate field="hours_per_week_z" operator="lessThan" value="0.248030924239155"/>
+        </CompoundPredicate>
+        <ScoreDistribution value="&lt;=50K" recordCount="16622" confidence="0.933820224719101"/>
+        <ScoreDistribution value="&gt;50K" recordCount="1178" confidence="0.0661797752808989"/>
+      </Node>
+      <Node id="3" score="&lt;=50K" recordCount="14761" defaultChild="6">
+        <CompoundPredicate booleanOperator="surrogate">
+          <SimpleSetPredicate field="relationship" booleanOperator="isIn">
+            <Array n="2" type="string">"Husband" "Wife"</Array>
+          </SimpleSetPredicate>
+          <SimpleSetPredicate field="marital_status" booleanOperator="isIn">
+            <Array n="2" type="string">"Married-AF-spouse" "Married-civ-spouse"</Array>
+          </SimpleSetPredicate>
+          <SimpleSetPredicate field="sex" booleanOperator="isIn">
+            <Array n="1" type="string">"Male"</Array>
+          </SimpleSetPredicate>
+          <SimplePredicate field="age_z" operator="greaterOrEqual" value="-0.372542933324103"/>
+          <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+            <Array n="6" type="string">"Craft-repair" "Exec-managerial" "Farming-fishing" "Prof-specialty" "Protective-serv" "Transport-moving"</Array>
+          </SimpleSetPredicate>
+          <SimplePredicate field="hours_per_week_z" operator="greaterOrEqual" value="0.248030924239155"/>
+        </CompoundPredicate>
+        <ScoreDistribution value="&lt;=50K" recordCount="8098" confidence="0.548607817898516"/>
+        <ScoreDistribution value="&gt;50K" recordCount="6663" confidence="0.451392182101484"/>
+        <Node id="6" score="&lt;=50K" recordCount="10329" defaultChild="12">
+          <CompoundPredicate booleanOperator="surrogate">
+            <SimpleSetPredicate field="education" booleanOperator="isIn">
+              <Array n="12" type="string">"10th" "11th" "12th" "1st-4th" "5th-6th" "7th-8th" "9th" "Assoc-acdm" "Assoc-voc" "HS-grad" "Preschool" "Some-college"</Array>
+            </SimpleSetPredicate>
+            <SimplePredicate field="education_num_z" operator="lessThan" value="0.94037452478979"/>
+            <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+              <Array n="13" type="string">"Adm-clerical" "Armed-Forces" "Craft-repair" "Farming-fishing" "Handlers-cleaners" "hedonist" "Machine-op-inspct" "Other-service" "Priv-house-serv" "Protective-serv" "Sales" "Tech-support" "Transport-moving"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="native_country" booleanOperator="isIn">
+              <Array n="32" type="string">"Cambodia" "Canada" "Columbia" "Cuba" "Dominican-Republic" "Ecuador" "El-Salvador" "Fiji" "Germany" "Greece" "Guatemala" "Haiti" "Honduras" "Hong" "Hungary" "Ireland" "Italy" "Jamaica" "Laos" "Mexico" "Nicaragua" "Outlying-US(Guam-USVI-etc)" "Peru" "Poland" "Portugal" "Puerto-Rico" "Scotland" "Thailand" "Trinadad&amp;Tobago" "United-States" "Vietnam" "Yugoslavia"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="race" booleanOperator="isIn">
+              <Array n="4" type="string">"Amer-Indian-Eskimo" "Black" "Other" "White"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+              <Array n="8" type="string">"Federal-gov" "Local-gov" "Never-worked" "Private" "Self-emp-inc" "Self-emp-not-inc" "too-cool-to-work" "Without-pay"</Array>
+            </SimpleSetPredicate>
+          </CompoundPredicate>
+          <ScoreDistribution value="&lt;=50K" recordCount="6873" confidence="0.665408074353761"/>
+          <ScoreDistribution value="&gt;50K" recordCount="3456" confidence="0.334591925646239"/>
+          <Node id="12" score="&lt;=50K" recordCount="6293">
+            <CompoundPredicate booleanOperator="surrogate">
+              <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+                <Array n="9" type="string">"Armed-Forces" "Craft-repair" "Farming-fishing" "Handlers-cleaners" "hedonist" "Machine-op-inspct" "Other-service" "Priv-house-serv" "Transport-moving"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="education" booleanOperator="isIn">
+                <Array n="10" type="string">"10th" "11th" "12th" "1st-4th" "5th-6th" "7th-8th" "9th" "Assoc-voc" "HS-grad" "Preschool"</Array>
+              </SimpleSetPredicate>
+              <SimplePredicate field="education_num_z" operator="lessThan" value="-0.225706359559291"/>
+              <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+                <Array n="5" type="string">"Never-worked" "Private" "Self-emp-not-inc" "too-cool-to-work" "Without-pay"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="sex" booleanOperator="isIn">
+                <Array n="1" type="string">"Male"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="relationship" booleanOperator="isIn">
+                <Array n="1" type="string">"Husband"</Array>
+              </SimpleSetPredicate>
+            </CompoundPredicate>
+            <ScoreDistribution value="&lt;=50K" recordCount="4737" confidence="0.752741140950262"/>
+            <ScoreDistribution value="&gt;50K" recordCount="1556" confidence="0.247258859049738"/>
+          </Node>
+          <Node id="13" score="&lt;=50K" recordCount="4036" defaultChild="26">
+            <CompoundPredicate booleanOperator="surrogate">
+              <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+                <Array n="6" type="string">"Adm-clerical" "Exec-managerial" "Prof-specialty" "Protective-serv" "Sales" "Tech-support"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="education" booleanOperator="isIn">
+                <Array n="2" type="string">"Assoc-acdm" "Some-college"</Array>
+              </SimpleSetPredicate>
+              <SimplePredicate field="education_num_z" operator="greaterOrEqual" value="-0.225706359559291"/>
+              <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+                <Array n="4" type="string">"Federal-gov" "Local-gov" "Self-emp-inc" "State-gov"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="sex" booleanOperator="isIn">
+                <Array n="1" type="string">"Female"</Array>
+              </SimpleSetPredicate>
+              <SimpleSetPredicate field="relationship" booleanOperator="isIn">
+                <Array n="1" type="string">"Wife"</Array>
+              </SimpleSetPredicate>
+            </CompoundPredicate>
+            <ScoreDistribution value="&lt;=50K" recordCount="2136" confidence="0.529236868186323"/>
+            <ScoreDistribution value="&gt;50K" recordCount="1900" confidence="0.470763131813677"/>
+            <Node id="26" score="&lt;=50K" recordCount="941">
+              <CompoundPredicate booleanOperator="surrogate">
+                <SimplePredicate field="age_z" operator="lessThan" value="-0.3725429"/>
+                <SimpleSetPredicate field="native_country" booleanOperator="isIn">
+                  <Array n="8" type="string">"Guatemala" "Hong" "Ireland" "Nicaragua" "Outlying-US(Guam-USVI-etc)" "Peru" "Taiwan" "Thailand"</Array>
+                </SimpleSetPredicate>
+                <SimpleSetPredicate field="marital_status" booleanOperator="isIn">
+                  <Array n="1" type="string">"Married-AF-spouse"</Array>
+                </SimpleSetPredicate>
+                <SimpleSetPredicate field="race" booleanOperator="isIn">
+                  <Array n="1" type="string">"Other"</Array>
+                </SimpleSetPredicate>
+              </CompoundPredicate>
+              <ScoreDistribution value="&lt;=50K" recordCount="667" confidence="0.708820403825717"/>
+              <ScoreDistribution value="&gt;50K" recordCount="274" confidence="0.291179596174283"/>
+            </Node>
+            <Node id="27" score="&gt;50K" recordCount="3095" defaultChild="54">
+              <CompoundPredicate booleanOperator="surrogate">
+                <SimplePredicate field="age_z" operator="greaterOrEqual" value="-0.3725429"/>
+                <SimpleSetPredicate field="native_country" booleanOperator="isIn">
+                  <Array n="32" type="string">"Cambodia" "Canada" "China" "Columbia" "Cuba" "Dominican-Republic" "Ecuador" "El-Salvador" "England" "Fiji" "France" "Germany" "Greece" "Haiti" "Hungary" "India" "Iran" "Italy" "Jamaica" "Japan" "Laos" "Mexico" "Philippines" "Poland" "Portugal" "Puerto-Rico" "Scotland" "South" "Trinadad&amp;Tobago" "United-States" "Vietnam" "Yugoslavia"</Array>
+                </SimpleSetPredicate>
+                <SimpleSetPredicate field="marital_status" booleanOperator="isIn">
+                  <Array n="1" type="string">"Married-civ-spouse"</Array>
+                </SimpleSetPredicate>
+                <SimpleSetPredicate field="race" booleanOperator="isIn">
+                  <Array n="4" type="string">"Amer-Indian-Eskimo" "Asian-Pac-Islander" "Black" "White"</Array>
+                </SimpleSetPredicate>
+              </CompoundPredicate>
+              <ScoreDistribution value="&lt;=50K" recordCount="1469" confidence="0.474636510500808"/>
+              <ScoreDistribution value="&gt;50K" recordCount="1626" confidence="0.525363489499192"/>
+              <Node id="54" score="&lt;=50K" recordCount="1432">
+                <CompoundPredicate booleanOperator="surrogate">
+                  <SimpleSetPredicate field="education" booleanOperator="isIn">
+                    <Array n="9" type="string">"10th" "11th" "12th" "1st-4th" "5th-6th" "7th-8th" "9th" "HS-grad" "Preschool"</Array>
+                  </SimpleSetPredicate>
+                  <SimplePredicate field="education_num_z" operator="lessThan" value="-0.225706359559291"/>
+                  <SimplePredicate field="age_z" operator="greaterOrEqual" value="1.02037477110833"/>
+                  <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+                    <Array n="2" type="string">"Adm-clerical" "Sales"</Array>
+                  </SimpleSetPredicate>
+                  <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+                    <Array n="2" type="string">"Self-emp-not-inc" "Without-pay"</Array>
+                  </SimpleSetPredicate>
+                  <SimplePredicate field="hours_per_week_z" operator="lessThan" value="-0.399877252127645"/>
+                </CompoundPredicate>
+                <ScoreDistribution value="&lt;=50K" recordCount="803" confidence="0.560754189944134"/>
+                <ScoreDistribution value="&gt;50K" recordCount="629" confidence="0.439245810055866"/>
+              </Node>
+              <Node id="55" score="&gt;50K" recordCount="1663">
+                <CompoundPredicate booleanOperator="surrogate">
+                  <SimpleSetPredicate field="education" booleanOperator="isIn">
+                    <Array n="3" type="string">"Assoc-acdm" "Assoc-voc" "Some-college"</Array>
+                  </SimpleSetPredicate>
+                  <SimplePredicate field="education_num_z" operator="greaterOrEqual" value="-0.225706359559291"/>
+                  <SimplePredicate field="age_z" operator="lessThan" value="1.02037477110833"/>
+                  <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+                    <Array n="4" type="string">"Exec-managerial" "Prof-specialty" "Protective-serv" "Tech-support"</Array>
+                  </SimpleSetPredicate>
+                  <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+                    <Array n="5" type="string">"Federal-gov" "Local-gov" "Private" "Self-emp-inc" "State-gov"</Array>
+                  </SimpleSetPredicate>
+                  <SimplePredicate field="hours_per_week_z" operator="greaterOrEqual" value="-0.399877252127645"/>
+                </CompoundPredicate>
+                <ScoreDistribution value="&lt;=50K" recordCount="666" confidence="0.400481058328322"/>
+                <ScoreDistribution value="&gt;50K" recordCount="997" confidence="0.599518941671678"/>
+              </Node>
+            </Node>
+          </Node>
+        </Node>
+        <Node id="7" score="&gt;50K" recordCount="4432">
+          <CompoundPredicate booleanOperator="surrogate">
+            <SimpleSetPredicate field="education" booleanOperator="isIn">
+              <Array n="4" type="string">"Bachelors" "Doctorate" "Masters" "Prof-school"</Array>
+            </SimpleSetPredicate>
+            <SimplePredicate field="education_num_z" operator="greaterOrEqual" value="0.94037452478979"/>
+            <SimpleSetPredicate field="occupation" booleanOperator="isIn">
+              <Array n="2" type="string">"Exec-managerial" "Prof-specialty"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="native_country" booleanOperator="isIn">
+              <Array n="9" type="string">"China" "England" "France" "India" "Iran" "Japan" "Philippines" "South" "Taiwan"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="race" booleanOperator="isIn">
+              <Array n="1" type="string">"Asian-Pac-Islander"</Array>
+            </SimpleSetPredicate>
+            <SimpleSetPredicate field="workclass" booleanOperator="isIn">
+              <Array n="1" type="string">"State-gov"</Array>
+            </SimpleSetPredicate>
+          </CompoundPredicate>
+          <ScoreDistribution value="&lt;=50K" recordCount="1225" confidence="0.276398916967509"/>
+          <ScoreDistribution value="&gt;50K" recordCount="3207" confidence="0.723601083032491"/>
+        </Node>
+      </Node>
+    </Node>
+  </TreeModel>
+</PMML>
+ 
