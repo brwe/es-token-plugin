@@ -23,6 +23,7 @@ import org.dmg.pmml.PMML;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.script.FieldsToVectorPMML;
 import org.elasticsearch.test.ESTestCase;
+import org.hamcrest.Matchers;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -209,6 +210,10 @@ public class PMMLParsingTests extends ESTestCase {
                     result.get
                     ("values")));
             assertThat(expectedClass, equalTo(resultValues.get("class")));
+            double prob0 = (Double)((Map<String,Object>)resultValues.get("probs")).get("<=50K");
+            double prob1 = (Double)((Map<String,Object>)resultValues.get("probs")).get(">50K");
+            assertThat(prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
+            assertThat(prob1, Matchers.closeTo(Double.parseDouble(expectedResult[1]), 1.e-7));
         }
     }
 }
