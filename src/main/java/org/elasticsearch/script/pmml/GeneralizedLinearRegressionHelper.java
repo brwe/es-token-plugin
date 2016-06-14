@@ -32,7 +32,7 @@ import org.dmg.pmml.Parameter;
 import org.dmg.pmml.Predictor;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
-import org.elasticsearch.script.EsLogisticRegressionModel;
+import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.FieldToVector;
 import org.elasticsearch.script.FieldsToVectorPMML;
 import org.elasticsearch.script.PMMLFieldToVector;
@@ -111,6 +111,7 @@ public class GeneralizedLinearRegressionHelper {
         return featureEntries;
 
     }
+
 
     static List<FieldToVector> convertToFeatureEntries(PMML pmml, int modelNum, TreeMap<String, List<PPCell>> fieldToPPCellMap,
                                                        List<String> orderedParameterList) {
@@ -194,6 +195,8 @@ public class GeneralizedLinearRegressionHelper {
                 ("generalizedLinear") && grModel.getDistribution().value().equals("binomial") && grModel.getLinkFunction().value().equals
                 ("logit")))) {
             TreeMap<String, List<PPCell>> fieldToPPCellMap = mapCellsToFields(grModel);
+            // this list stores the order of the parameters as the vectors will return them. So, if p5 is a parameter that has index 11
+            // in the vetor then this parameter will be at position 11 in the ordered parameter list.
             List<String> orderedParameterList = new ArrayList<>();
             List<FieldToVector> fieldToVectorList = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap, orderedParameterList);
             //add intercept if any
@@ -206,85 +209,105 @@ public class GeneralizedLinearRegressionHelper {
             // now finally create the model!
             // find all the coefficients for each class
             // first: sort all by target class
-            Map<String, List<PCell>> targetClassPCellMap = new HashMap<>();
-            for (PCell pCell : grModel.getParamMatrix().getPCells()){
-                String targetClassName = pCell.getTargetCategory();
-                if (targetClassPCellMap.containsKey(targetClassName) == false) {
-                    targetClassPCellMap.put(targetClassName, new ArrayList<PCell>());
-                }
-                targetClassPCellMap.get(targetClassName).add(pCell);
-            }
+            Map<String, List<PCell>> targetClassPCellMap = mapParametersToTargetCategory(grModel);
 
             if (targetClassPCellMap.size()!= 1) {
                 throw new UnsupportedOperationException("We do not support more than two classes for GeneralizedRegression for " +
                         "classification");
             }
 
-            List<PCell> coefficientCells = targetClassPCellMap.values().iterator().next();
-            if (coefficientCells.size() > orderedParameterList.size()) {
-                throw new ElasticsearchParseException("Parameter list contains more entries than parameters");
-            }
-            double[] coefficients = new double[orderedParameterList.size()];
-            Arrays.fill(coefficients, 0.0);
-            for (int i = 0; i< coefficients.length; i++) {
-                String parameter = orderedParameterList.get(i);
-                for (PCell pCell : coefficientCells) {
-                    if (pCell.getParameterName().equals(parameter)) {
-                        coefficients[i] = pCell.getBeta();
-                        // TODO: what to do with df? I don't get the documentation: http://dmg.org/pmml/v4-2-1/GeneralRegression.html
-                    }
-                }
-            }
-
-            String[] targetCategories = new String[2]; // this need to be more if we implement more than two class
+            double[] coefficients = getGLMCoefficients(orderedParameterList, targetClassPCellMap);
 
             //get the target class values. one we can get from the Pmatrix but the other one we have to find in the data dictionary
-            String targetVariable = null;
+            String targetVariable = findTargetVariableName(grModel);
 
-            for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
-                FieldUsageType fieldUsageType = miningField.getUsageType();
-                if ( fieldUsageType != null &&fieldUsageType.value().equals("target")) {
-                    targetVariable = miningField.getName().getValue();
-                    break;
-                }
-            }
-            if (targetVariable == null) {
-                // fall back to find the "predicted" field
-                for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
-                    FieldUsageType fieldUsageType = miningField.getUsageType();
-                    if ( fieldUsageType != null &&fieldUsageType.value().equals("predicted")) {
-                        targetVariable = miningField.getName().getValue();
-                        break;
-                    }
-                }
-            }
-
-            if (targetVariable == null) {
-                throw new ElasticsearchParseException("could not find target variable");
-            }
-            String class1 = targetClassPCellMap.keySet().iterator().next();
-            targetCategories[0] =class1;
-            // find it in the datafields
-            for (DataField dataField :pmml.getDataDictionary().getDataFields()) {
-                if (dataField.getName().toString().equals(targetVariable)) {
-                    for (Value value : dataField.getValues()) {
-                        String valueString = value.getValue();
-                        if (valueString.equals(class1) == false) {
-                            targetCategories[1] = valueString;
-                        }
-                    }
-                    if (targetCategories[1] == null) {
-                        throw new ElasticsearchParseException("could not find target class");
-                    }
-                    break;
-                }
-            }
+             // this need to be more if we implement more than two class
+            String[] targetCategories = findTargetCategories(pmml, targetClassPCellMap, targetVariable);
             EsLogisticRegressionModel logisticRegressionModel = new EsLogisticRegressionModel(coefficients, 0.0, targetCategories);
             return new PMMLModelScriptEngineService.FeaturesAndModel(vectorEntries, logisticRegressionModel);
 
         } else {
             throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
         }
+    }
+
+    private static Map<String, List<PCell>> mapParametersToTargetCategory(GeneralRegressionModel grModel) {
+        Map<String, List<PCell>> targetClassPCellMap = new HashMap<>();
+        for (PCell pCell : grModel.getParamMatrix().getPCells()){
+            String targetClassName = pCell.getTargetCategory();
+            if (targetClassPCellMap.containsKey(targetClassName) == false) {
+                targetClassPCellMap.put(targetClassName, new ArrayList<PCell>());
+            }
+            targetClassPCellMap.get(targetClassName).add(pCell);
+        }
+        return targetClassPCellMap;
+    }
+
+    private static String[] findTargetCategories(PMML pmml, Map<String, List<PCell>> targetClassPCellMap, String targetVariable) {
+        String[] targetCategories = new String[2];
+        String class1 = targetClassPCellMap.keySet().iterator().next();
+        targetCategories[0] =class1;
+        // find it in the datafields
+        for (DataField dataField :pmml.getDataDictionary().getDataFields()) {
+            if (dataField.getName().toString().equals(targetVariable)) {
+                for (Value value : dataField.getValues()) {
+                    String valueString = value.getValue();
+                    if (valueString.equals(class1) == false) {
+                        targetCategories[1] = valueString;
+                    }
+                }
+                if (targetCategories[1] == null) {
+                    throw new ElasticsearchParseException("could not find target class");
+                }
+                break;
+            }
+        }
+        return targetCategories;
+    }
+
+    private static String findTargetVariableName(GeneralRegressionModel grModel) {
+        String targetVariable = null;
+        for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
+            FieldUsageType fieldUsageType = miningField.getUsageType();
+            if ( fieldUsageType != null &&fieldUsageType.value().equals("target")) {
+                targetVariable = miningField.getName().getValue();
+                break;
+            }
+        }
+        if (targetVariable == null) {
+            // fall back to find the "predicted" field
+            for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
+                FieldUsageType fieldUsageType = miningField.getUsageType();
+                if ( fieldUsageType != null &&fieldUsageType.value().equals("predicted")) {
+                    targetVariable = miningField.getName().getValue();
+                    break;
+                }
+            }
+        }
+        if (targetVariable == null) {
+            throw new ElasticsearchParseException("could not find target variable");
+        }
+        return targetVariable;
+    }
+
+    // get the model coefficients ad return them in the order defined by orderedParameterList
+    private static double[] getGLMCoefficients(List<String> orderedParameterList, Map<String, List<PCell>> targetClassPCellMap) {
+        List<PCell> coefficientCells = targetClassPCellMap.values().iterator().next();
+        if (coefficientCells.size() > orderedParameterList.size()) {
+            throw new ElasticsearchParseException("Parameter list contains more entries than parameters");
+        }
+        double[] coefficients = new double[orderedParameterList.size()];
+        Arrays.fill(coefficients, 0.0);
+        for (int i = 0; i< coefficients.length; i++) {
+            String parameter = orderedParameterList.get(i);
+            for (PCell pCell : coefficientCells) {
+                if (pCell.getParameterName().equals(parameter)) {
+                    coefficients[i] = pCell.getBeta();
+                    // TODO: what to do with df? I don't get the documentation: http://dmg.org/pmml/v4-2-1/GeneralRegression.html
+                }
+            }
+        }
+        return coefficients;
     }
 
     private static FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(List<FieldToVector>

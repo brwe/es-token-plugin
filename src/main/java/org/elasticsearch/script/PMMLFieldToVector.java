@@ -143,11 +143,9 @@ public abstract class PMMLFieldToVector extends FieldToVector {
             return 1;
         }
 
-
     }
 
     protected void fillPreProcessingSteps(DerivedField[] derivedFields) {
-
 
         int derivedFieldIndex = derivedFields.length - 1;
         // don't start at the beginning, we might have a pre processing step there already from the mining field
@@ -155,48 +153,52 @@ public abstract class PMMLFieldToVector extends FieldToVector {
              preProcessingStepIndex++) {
             DerivedField derivedField = derivedFields[derivedFieldIndex];
             if (derivedField.getExpression() != null) {
-                if (derivedField.getExpression() instanceof Apply) {
-                    for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
-                        if (expression instanceof Apply) {
-                            if (((Apply) expression).getFunction().equals("isMissing")) {
-                                // now find the value that is supposed to replace the missing value
-
-                                for (Expression expression2 : ((Apply) derivedField.getExpression()).getExpressions()) {
-                                    if (expression2 instanceof Constant) {
-                                        String missingValue = ((Constant) expression2).getValue();
-                                        Object parsedMissingValue;
-                                        if (derivedField.getDataType().equals(DataType.DOUBLE)) {
-                                            parsedMissingValue = Double.parseDouble(missingValue);
-                                        } else if (derivedField.getDataType().equals(DataType.FLOAT)) {
-                                            parsedMissingValue = Float.parseFloat(missingValue);
-                                        } else if (derivedField.getDataType().equals(DataType.INTEGER)) {
-                                            parsedMissingValue = Integer.parseInt(missingValue);
-                                        } else if (derivedField.getDataType().equals(DataType.STRING)) {
-                                            parsedMissingValue = missingValue;
-                                        } else {
-                                            throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
-                                                    "far.");
-                                        }
-                                        preProcessingSteps[preProcessingStepIndex] = new MissingValuePreProcess(parsedMissingValue);
-                                        break;
-                                    }
-                                }
-                            } else {
-                                throw new UnsupportedOperationException("So far only if isMissing implemented.");
-                            }
-                        }
-                    }
-                } else if (derivedField.getExpression() instanceof NormContinuous) {
-                    preProcessingSteps[preProcessingStepIndex] = new NormContinousPreProcess((NormContinuous) derivedField
-                            .getExpression());
-                } else {
-                    throw new UnsupportedOperationException("So far only Apply expression implemented.");
-                }
+                handleExpression(preProcessingStepIndex, derivedField);
 
             } else {
                 throw new UnsupportedOperationException("So far only Apply implemented.");
             }
             derivedFieldIndex--;
+        }
+    }
+
+    private void handleExpression(int preProcessingStepIndex, DerivedField derivedField) {
+        if (derivedField.getExpression() instanceof Apply) {
+            for (Expression expression : ((Apply) derivedField.getExpression()).getExpressions()) {
+                if (expression instanceof Apply) {
+                    if (((Apply) expression).getFunction().equals("isMissing")) {
+                        // now find the value that is supposed to replace the missing value
+
+                        for (Expression expression2 : ((Apply) derivedField.getExpression()).getExpressions()) {
+                            if (expression2 instanceof Constant) {
+                                String missingValue = ((Constant) expression2).getValue();
+                                Object parsedMissingValue;
+                                if (derivedField.getDataType().equals(DataType.DOUBLE)) {
+                                    parsedMissingValue = Double.parseDouble(missingValue);
+                                } else if (derivedField.getDataType().equals(DataType.FLOAT)) {
+                                    parsedMissingValue = Float.parseFloat(missingValue);
+                                } else if (derivedField.getDataType().equals(DataType.INTEGER)) {
+                                    parsedMissingValue = Integer.parseInt(missingValue);
+                                } else if (derivedField.getDataType().equals(DataType.STRING)) {
+                                    parsedMissingValue = missingValue;
+                                } else {
+                                    throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
+                                            "far.");
+                                }
+                                preProcessingSteps[preProcessingStepIndex] = new MissingValuePreProcess(parsedMissingValue);
+                                break;
+                            }
+                        }
+                    } else {
+                        throw new UnsupportedOperationException("So far only if isMissing implemented.");
+                    }
+                }
+            }
+        } else if (derivedField.getExpression() instanceof NormContinuous) {
+            preProcessingSteps[preProcessingStepIndex] = new NormContinousPreProcess((NormContinuous) derivedField
+                    .getExpression());
+        } else {
+            throw new UnsupportedOperationException("So far only Apply expression implemented.");
         }
     }
 

@@ -28,6 +28,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
+import org.elasticsearch.script.models.EsNaiveBayesModel;
 import org.elasticsearch.search.lookup.IndexField;
 import org.elasticsearch.search.lookup.IndexFieldTerm;
 import org.elasticsearch.search.lookup.LeafIndexLookup;

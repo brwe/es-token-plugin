@@ -26,6 +26,7 @@ import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.script.models.EsNaiveBayesModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.models;
 
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
@@ -25,14 +25,14 @@ import org.elasticsearch.common.collect.Tuple;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsLinearSVMModel extends EsRegressionModelEvaluator {
+public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 
-    public EsLinearSVMModel(RegressionModel regressionModel) {
-        super(regressionModel);
+    public EsLogisticRegressionModel(RegressionModel model) {
+        super(model);
     }
 
-    public EsLinearSVMModel(double[] coefficients,
-                            double intercept, String[] classes) {
+    public EsLogisticRegressionModel(double[] coefficients,
+                                     double intercept, String[] classes) {
         super(coefficients, intercept, classes);
     }
 
@@ -42,17 +42,22 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
         return prepareResult(val);
     }
 
+    protected Map<String, Object> prepareResult(double val) {
+        // TODO: this should be several classes really...
+        double prob = 1 / (1 + Math.exp(-1.0 * val));
+        String classValue = prob > 0.5 ? classes[0] : classes[1];
+        Map<String, Object> result = new HashMap<>();
+        result.put("class", classValue);
+        Map<String, Object> probs = new HashMap<>();
+        probs.put(classes[0], prob);
+        probs.put(classes[1], 1.0-prob);
+        result.put("probs", probs);
+        return result;
+    }
+
     @Override
     public Map<String, Object> evaluate(double[] featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
         return prepareResult(val);
     }
-
-    protected Map<String, Object> prepareResult(double val) {
-        String classValue = val > 0 ? classes[0] : classes[1];
-        Map<String, Object> result = new HashMap<>();
-        result.put("class", classValue);
-        return result;
-    }
-
 }

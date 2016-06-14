@@ -19,9 +19,6 @@
 
 package org.elasticsearch.script;
 
-/**
- * Created by britta on 04.03.16.
- */
 public class EsDenseNumericVector implements EsVector{
     public double[] values;
 

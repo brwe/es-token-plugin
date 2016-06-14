@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.models;
 
 import org.dmg.pmml.NaiveBayesModel;
 import org.elasticsearch.common.collect.Tuple;
