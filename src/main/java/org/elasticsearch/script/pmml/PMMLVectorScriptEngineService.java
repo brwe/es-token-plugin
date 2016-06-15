@@ -30,6 +30,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.*;
+import org.elasticsearch.script.modelinput.FieldsToVector;
+import org.elasticsearch.script.modelinput.FieldsToVectorJSON;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 

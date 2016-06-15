@@ -17,33 +17,30 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+/*
+* Maps one field to a (partial) vector.
+* */
 
-public abstract class FieldsToVector {
+public abstract class FieldToVector {
 
-    public boolean isSparse() {
-        return sparse;
+    protected String field;
+
+    public abstract int size();
+
+    public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
+
+    public abstract EsVector getVector(Map<String, List> fieldValues);
+
+    public String getField() {
+        return field;
     }
-
-    boolean sparse;
-    List<FieldToVector> features = new ArrayList<>();
-
-    public List<FieldToVector> getEntries() {
-        return features;
-    }
-
-    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
-            sourceLookup);
-
-    protected int numEntries;
 }
-

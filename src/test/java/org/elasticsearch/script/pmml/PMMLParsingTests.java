@@ -21,7 +21,7 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.script.FieldsToVectorPMML;
+import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
 import org.elasticsearch.test.ESTestCase;
 import org.hamcrest.Matchers;
 

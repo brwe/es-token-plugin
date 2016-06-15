@@ -33,9 +33,9 @@ import org.dmg.pmml.Predictor;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
-import org.elasticsearch.script.FieldToVector;
-import org.elasticsearch.script.FieldsToVectorPMML;
-import org.elasticsearch.script.PMMLFieldToVector;
+import org.elasticsearch.script.modelinput.FieldToVector;
+import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
+import org.elasticsearch.script.modelinput.PMMLFieldToVector;
 
 import java.util.ArrayList;
 import java.util.Arrays;

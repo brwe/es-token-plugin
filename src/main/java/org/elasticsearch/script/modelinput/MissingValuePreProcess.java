@@ -17,15 +17,22 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
+public class MissingValuePreProcess implements PreProcessingStep {
 
-import org.elasticsearch.common.collect.Tuple;
+    private Object missingValue;
 
-public class EsSparseNumericVector implements EsVector {
-    public Tuple<int[], double[]> values;
+    public MissingValuePreProcess(Object missingValue) {
+        this.missingValue = missingValue;
+    }
 
-    public EsSparseNumericVector(Tuple<int[], double[]> indicesAndValues) {
-        this.values = indicesAndValues;
+    @Override
+    public Object apply(Object value) {
+        if (value == null) {
+            return missingValue;
+        } else {
+            return value;
+        }
     }
 }

@@ -129,7 +129,8 @@ public class SharedMethods {
         return new EsNaiveBayesModel(thetas, pi, new String[]{Double.toString(labels[0]), Double.toString(labels[1])});
     }
 
-    static Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String> docValues) {
+    static public Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String>
+            docValues) {
         Tuple<int[], double[]> indicesAndValues;
         List<Integer> indices = new ArrayList<>();
 

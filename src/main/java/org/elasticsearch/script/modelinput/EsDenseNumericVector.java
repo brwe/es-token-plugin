@@ -17,7 +17,12 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
-public interface EsVector {
+public class EsDenseNumericVector implements EsVector {
+    public double[] values;
+
+    public EsDenseNumericVector(double[] tfs) {
+        this.values = tfs;
+    }
 }

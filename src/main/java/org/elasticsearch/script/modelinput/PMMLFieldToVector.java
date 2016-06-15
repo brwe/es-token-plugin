@@ -17,9 +17,17 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
-import org.dmg.pmml.*;
+import org.dmg.pmml.Apply;
+import org.dmg.pmml.Constant;
+import org.dmg.pmml.DataField;
+import org.dmg.pmml.DataType;
+import org.dmg.pmml.DerivedField;
+import org.dmg.pmml.Expression;
+import org.dmg.pmml.MiningField;
+import org.dmg.pmml.NormContinuous;
+import org.dmg.pmml.PPCell;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;

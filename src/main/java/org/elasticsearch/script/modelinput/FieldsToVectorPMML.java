@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.elasticsearch.index.fielddata.ScriptDocValues;
 import org.elasticsearch.search.lookup.LeafDocLookup;
@@ -35,14 +35,14 @@ public class FieldsToVectorPMML extends FieldsToVector {
 
     public FieldsToVectorPMML(List<FieldToVector> features, int numEntries) {
         this.sparse = true;
-        this.features = features;
+        this.fieldToVector = features;
         this.numEntries = numEntries;
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
 
         HashMap<String, List> fieldValues = new HashMap<>();
-        for (FieldToVector fieldToVector : features) {
+        for (FieldToVector fieldToVector : this.fieldToVector) {
             String field = fieldToVector.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
@@ -54,7 +54,7 @@ public class FieldsToVectorPMML extends FieldsToVector {
 
     public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
-        for (FieldToVector fieldToVector : features) {
+        for (FieldToVector fieldToVector : this.fieldToVector) {
             EsVector entries = fieldToVector.getVector(fieldValues);
             assert entries instanceof EsSparseNumericVector;
             EsSparseNumericVector sparseVector = (EsSparseNumericVector) entries;

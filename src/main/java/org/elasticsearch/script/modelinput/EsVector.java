@@ -17,9 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
-
-public interface PreProcessingStep {
-    Object apply(Object o);
+public interface EsVector {
 }

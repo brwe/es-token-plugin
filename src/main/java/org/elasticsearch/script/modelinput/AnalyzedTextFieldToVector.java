@@ -17,11 +17,13 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.apache.lucene.index.Fields;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
+import org.elasticsearch.script.ScriptException;
+import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.lookup.*;
 
 import java.io.IOException;

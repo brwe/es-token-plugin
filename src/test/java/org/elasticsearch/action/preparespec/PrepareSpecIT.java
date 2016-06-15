@@ -27,8 +27,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.FieldsToVector;
-import org.elasticsearch.script.FieldsToVectorJSON;
+import org.elasticsearch.script.modelinput.FieldsToVector;
+import org.elasticsearch.script.modelinput.FieldsToVectorJSON;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 

@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.search.lookup.LeafDocLookup;
@@ -48,15 +48,15 @@ public class FieldsToVectorJSON extends FieldsToVector {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                features.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
+                fieldToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                features.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
+                fieldToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
             }
-            offset += features.get(features.size() - 1).size();
-            numEntries += features.get(features.size() - 1).size();
+            offset += fieldToVector.get(fieldToVector.size() - 1).size();
+            numEntries += fieldToVector.get(fieldToVector.size() - 1).size();
         }
     }
 
@@ -77,7 +77,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         if (sparse) {
             int length = 0;
             List<EsSparseNumericVector> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : features) {
+            for (FieldToVector fieldEntry : fieldToVector) {
                 EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec);
                 length += vec.values.v1().length;
@@ -102,7 +102,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         } else {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : features) {
+            for (FieldToVector fieldEntry : fieldToVector) {
                 EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec.values);
                 length += vec.values.length;

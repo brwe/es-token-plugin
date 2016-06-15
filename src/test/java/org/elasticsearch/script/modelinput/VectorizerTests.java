@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.elasticsearch.action.preparespec.FieldSpec;
 import org.elasticsearch.action.preparespec.StringFieldSpec;
@@ -62,10 +62,10 @@ public class VectorizerTests extends ESTestCase {
 
     public void assertParameters(FieldsToVector entries) {
         assertThat(entries.sparse, equalTo(false));
-        assertThat(entries.features.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        assertThat(entries.features.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.features.get(0);
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.features.get(1);
+        assertThat(entries.fieldToVector.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        assertThat(entries.fieldToVector.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldToVector.get(0);
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldToVector.get(1);
         assertThat(entry1, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
         assertThat(entry2, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
         assertThat(entry1.size(), equalTo(3));

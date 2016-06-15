@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.script;
+package org.elasticsearch.script.modelinput;
 
 import org.dmg.pmml.NormContinuous;
 
