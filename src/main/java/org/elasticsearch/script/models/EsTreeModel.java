@@ -19,11 +19,34 @@
 
 package org.elasticsearch.script.models;
 
+import org.dmg.pmml.Node;
+import org.dmg.pmml.Predicate;
+import org.dmg.pmml.TreeModel;
+
 import java.util.Map;
 
 public class EsTreeModel extends EsModelEvaluator {
+
+    private TreeModel treeModel;
+
+    EsTreeModel(TreeModel treeModel) {
+
+        this.treeModel = treeModel;
+    }
+
     @Override
     public Map<String, Object> evaluate(Map<String, Object> vector) {
+        Node startNode = treeModel.getNode();
+        assert checkPredicate(startNode.getPredicate(), vector) == true;
+        return evaluate(startNode, vector);
+    }
+
+    private Map<String, Object> evaluate(Node node, Map<String, Object> vector) {
         return null;
     }
+
+    private boolean checkPredicate(Predicate predicate, Map<String, Object> vector) {
+        return false;
+    }
+
 }
