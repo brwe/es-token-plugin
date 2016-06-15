@@ -33,6 +33,7 @@ import org.dmg.pmml.TreeModel;
 import org.elasticsearch.script.modelinput.FieldToVector;
 import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
 import org.elasticsearch.script.modelinput.PMMLFieldToVector;
+import org.elasticsearch.script.models.EsTreeModel;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,7 +50,8 @@ public class TreeModelHelper {
 
             java.util.List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
             FieldsToVectorPMML.FieldsToVectorPMMLTreeModel fieldsToVector = new FieldsToVectorPMML.FieldsToVectorPMMLTreeModel(fields);
-            return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, null);
+            EsTreeModel esTreeModel = getEsTreeModel(treeModel);
+            return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);
         } else {
             throw new UnsupportedOperationException("TreeModel does not support the following parameters yet: "
                     + " splitCharacteristic:" + treeModel.getSplitCharacteristic().value().equals("binarySplit")
@@ -98,5 +100,9 @@ public class TreeModelHelper {
                 fieldNames.add(((SimpleSetPredicate) predicate).getField().getValue());
             }
         }
+    }
+
+    protected static EsTreeModel getEsTreeModel(TreeModel treeModel) {
+        return null;
     }
 }

@@ -25,7 +25,7 @@ import org.elasticsearch.common.collect.Tuple;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsNaiveBayesModel implements EsModelEvaluator {
+public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
 
     private double[][] thetas;
     private double[] pis;

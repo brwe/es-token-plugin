@@ -55,9 +55,10 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
         return result;
     }
 
-    @Override
     public Map<String, Object> evaluate(double[] featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
         return prepareResult(val);
     }
+
+
 }

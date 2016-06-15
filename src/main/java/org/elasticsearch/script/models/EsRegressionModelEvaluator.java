@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class EsRegressionModelEvaluator implements EsModelEvaluator {
+public abstract class EsRegressionModelEvaluator extends EsNumericInputModelEvaluator {
     double[] coefficients;
     double intercept;
     String[] classes;

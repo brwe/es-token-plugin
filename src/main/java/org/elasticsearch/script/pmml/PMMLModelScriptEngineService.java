@@ -275,17 +275,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         public Object run() {
             Object vector = features.vector(lookup.doc(), lookup.fields(), lookup.indexLookup(), lookup.source());
             assert vector instanceof Map;
-            if (features.isSparse() == false) {
-                Map<String, Object> denseVector = (Map<String, Object>) vector;
-                assert (denseVector.get("values") instanceof double[]);
-                return model.evaluate((double[]) denseVector.get("values"));
-            } else {
-                Map<String, Object> sparseVector = (Map<String, Object>) vector;
-                assert (sparseVector.get("indices") instanceof int[]);
-                assert (sparseVector.get("values") instanceof double[]);
-                Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get("values"));
-                return model.evaluate(indicesAndValues);
-            }
+            return model.evaluate((Map<String, Object>) vector);
         }
 
         @Override

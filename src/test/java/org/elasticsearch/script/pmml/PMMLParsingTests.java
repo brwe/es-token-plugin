@@ -169,8 +169,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(new Tuple<>((int[]) result.get("indices"), (double[]) result.get
-                    ("values")));
+            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
@@ -210,9 +209,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(new Tuple<>((int[]) result.get("indices"), (double[])
-                    result.get
-                    ("values")));
+            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
             double prob0 = (Double)((Map<String,Object>)resultValues.get("probs")).get("<=50K");
             double prob1 = (Double)((Map<String,Object>)resultValues.get("probs")).get(">50K");
