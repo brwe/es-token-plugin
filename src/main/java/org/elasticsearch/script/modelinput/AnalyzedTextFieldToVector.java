@@ -33,9 +33,12 @@ import java.util.Map;
 
 public abstract class AnalyzedTextFieldToVector extends FieldToVector {
     int offset;
-    String field;
+
     public static final EsSparseNumericVector EMPTY_SPARSE = new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
 
+    public AnalyzedTextFieldToVector(String field, String type) {
+        super(field, field, type);
+    }
     public enum FeatureType {
         OCCURRENCE,
         TF,
@@ -75,7 +78,8 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
         private String number;
         Map<String, Integer> wordMap;
 
-        public SparseTermFieldToVector(String field, String[] terms, String number, int offset) {
+        public SparseTermFieldToVector(String field, String type, String[] terms, String number, int offset) {
+            super(field, type);
             this.number = number;
             this.field = field;
             wordMap = new HashMap<>();
@@ -138,7 +142,8 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
         String[] terms;
         String number;
 
-        public DenseTermFieldToVector(String field, String[] terms, String number, int offset) {
+        public DenseTermFieldToVector(String field, String type, String[] terms, String number, int offset) {
+            super(field, type);
             this.terms = terms;
             this.number = number;
             this.offset = offset;

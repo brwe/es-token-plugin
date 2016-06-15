@@ -33,6 +33,15 @@ import java.util.Map;
 public abstract class FieldToVector {
 
     protected String field;
+    private String type;
+    private String lastDerivedFieldName;
+
+    public FieldToVector(String field, String lastDerivedFieldName, String type) {
+
+        this.field = field;
+        this.lastDerivedFieldName = lastDerivedFieldName;
+        this.type = type;
+    }
 
     public abstract int size();
 
@@ -42,5 +51,13 @@ public abstract class FieldToVector {
 
     public String getField() {
         return field;
+    }
+
+    public String getLastDerivedFieldName() {
+        return lastDerivedFieldName;
+    }
+
+    public String getType() {
+        return type;
     }
 }

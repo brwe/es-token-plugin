@@ -53,6 +53,9 @@ public abstract class PMMLFieldToVector extends FieldToVector {
     }
 
     public PMMLFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
+        super(dataField.getName().getValue(),
+                derivedFields.length == 0 ? dataField.getName().getValue() : derivedFields[derivedFields.length - 1].getName().getValue(),
+                derivedFields.length == 0 ? dataField.getDataType().value() : derivedFields[derivedFields.length - 1].getDataType().value());
         this.field = dataField.getName().getValue();
         if (miningField.getMissingValueReplacement() != null) {
             preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
@@ -62,9 +65,8 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         }
         fillPreProcessingSteps(derivedFields);
     }
-
-    public PMMLFieldToVector() {
-
+    public PMMLFieldToVector(String field, String lastDerivedFieldName, String type) {
+        super(field, lastDerivedFieldName, type);
     }
 
     public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
@@ -201,8 +203,8 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         int index;
         private String interceptName;
 
-        public Intercept(String interceptName) {
-            super();
+        public Intercept(String interceptName, String type) {
+            super(null, null, type);
             this.interceptName = interceptName;
         }
 

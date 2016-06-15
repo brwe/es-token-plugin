@@ -36,11 +36,15 @@ import org.elasticsearch.script.modelinput.PMMLFieldToVector;
 import org.elasticsearch.script.models.EsTreeModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TreeModelHelper {
+
+
     public static PMMLModelScriptEngineService.FieldsToVectorAndModel getTreeModelFeaturesAndModel(PMML pmml, int modelNum) {
         TreeModel treeModel = (TreeModel) pmml.getModels().get(modelNum);
         if (treeModel.getFunctionName().value().equals("classification")
@@ -48,9 +52,10 @@ public class TreeModelHelper {
                 && treeModel.getMissingValueStrategy().value().equals("defaultChild")
                 && treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction")) {
 
-            java.util.List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
+            List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
             FieldsToVectorPMML.FieldsToVectorPMMLTreeModel fieldsToVector = new FieldsToVectorPMML.FieldsToVectorPMMLTreeModel(fields);
-            EsTreeModel esTreeModel = getEsTreeModel(treeModel);
+            Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
+            EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);
             return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);
         } else {
             throw new UnsupportedOperationException("TreeModel does not support the following parameters yet: "
@@ -102,7 +107,15 @@ public class TreeModelHelper {
         }
     }
 
-    protected static EsTreeModel getEsTreeModel(TreeModel treeModel) {
-        return null;
+    protected static EsTreeModel getEsTreeModel(TreeModel treeModel, Map<String, String> fieldToTypeMap) {
+        return new EsTreeModel(treeModel, fieldToTypeMap);
+    }
+
+    public static Map<String,String> getFieldToTypeMap(java.util.List<FieldToVector> fieldToVectorList) {
+        Map<String, String> fieldToTypeMap = new HashMap<>();
+        for (FieldToVector fieldToVector : fieldToVectorList) {
+            fieldToTypeMap.put(fieldToVector.getLastDerivedFieldName(), fieldToVector.getType());
+        }
+        return fieldToTypeMap;
     }
 }
