@@ -44,15 +44,100 @@ import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 import org.elasticsearch.test.ESSingleNodeTestCase;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.closeTo;
 
 public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
+    IndexFieldDataService ifdService;
+    IndexService indexService;
 
-    public void testOnActualLookup() throws Exception {
+    private LeafDocLookup indexDoc(String work, String education, Integer age) throws IOException {
+        IndexWriter writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
+        Document doc = new Document();
+        if (work != null) {
+            doc.add(new StringField("work", work, Store.YES));
+        }
+        if (education != null) {
+            doc.add(new StringField("education", education, Store.YES));
+        }
+        if (age!=null) {
+            FieldType fieldType = new FieldType();
+            fieldType.setNumericType(FieldType.NumericType.INT);
+            fieldType.setDocValuesType(DocValuesType.NUMERIC);
+            doc.add(new IntField("age", age, fieldType));
+        }
+        writer.addDocument(doc);
+        IndexReader reader = DirectoryReader.open(writer, true);
+        LeafReaderContext leafReaderContext = reader.leaves().get(0);
+        LeafDocLookup docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
+        reader.close();
+        docLookup.setDocument(0);
+        return docLookup;
+    }
+    public void testGLMOnActualLookup() throws Exception {
+        setupServices();
+
+        LeafDocLookup docLookup = indexDoc("Self-emp-inc", null, 60);
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
+        PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML vectorEntries = (FieldsToVectorPMML
+                ) fieldsToVectorAndModel.getFieldsToVector();
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
+
+        // test missing values
+        docLookup = indexDoc("Self-emp-inc", null, null);
+        docLookup.setDocument(0);
+        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
+
+        // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
+        docLookup = indexDoc(null, null, 60);
+        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(((double[]) vector.get("values")).length, equalTo(3));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
+        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
+    }
+
+    public void testTreeModelOnActualLookup() throws Exception {
+        setupServices();
+
+        LeafDocLookup docLookup = indexDoc("Self-emp-inc", "Prof-school", 60);
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
+        PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        FieldsToVectorPMML vectorEntries = (FieldsToVectorPMML
+                ) fieldsToVectorAndModel.getFieldsToVector();
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(vector.size(), equalTo(3));
+        assertThat(((Double) vector.get("age_z")).doubleValue(), closeTo(1.5702107070685085, 0.0));
+        assertThat((String)vector.get("education"), equalTo("Prof-school"));
+        assertThat((String)vector.get("work"), equalTo("Self-emp-inc"));
+
+        // test missing values
+        docLookup = indexDoc(null, null, null);
+        docLookup.setDocument(0);
+        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(vector.size(), equalTo(3));
+        assertThat(((Double) vector.get("age_z")).doubleValue(), closeTo(-76.13993490863606, 0.0));
+        assertThat((String)vector.get("education"), equalTo("too-lazy-to-study"));
+        assertThat((String)vector.get("work"), equalTo("other"));
+    }
+
+    protected void setupServices() throws IOException {
         XContentBuilder mappings = jsonBuilder();
         mappings.startObject()
                 .startObject("test")
@@ -65,76 +150,15 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
                 .field("type", "string")
                 .field("analyzer", "keyword")
                 .endObject()
+                .startObject("education")
+                .field("type", "string")
+                .field("analyzer", "keyword")
+                .endObject()
                 .endObject()
                 .endObject()
                 .endObject();
-        final IndexService indexService = createIndex("test", Settings.EMPTY, "test", mappings);
-        final IndexFieldDataService ifdService = indexService.fieldData();
-        IndexWriter writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
-        Document doc = new Document();
-        doc.add(new StringField("work", "Self-emp-inc", Store.YES));
-        FieldType fieldType = new FieldType();
-        fieldType.setNumericType(FieldType.NumericType.INT);
-        fieldType.setDocValuesType(DocValuesType.NUMERIC);
-        doc.add(new IntField("age", 60, fieldType));
-        writer.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(writer, true);
-        LeafReaderContext leafReaderContext = reader.leaves().get(0);
-        LeafDocLookup docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
-        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
-        PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        docLookup.setDocument(0);
-        PMMLModelScriptEngineService.FeaturesAndModel featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        FieldsToVectorPMML vectorEntries = (FieldsToVectorPMML
-                ) featuresAndModel.getFeatures();
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
-        reader.close();
-
-        // test missing values
-        writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
-        doc = new Document();
-        doc.add(new StringField("work", "Self-emp-inc", Store.YES));
-
-        writer.addDocument(doc);
-        reader = DirectoryReader.open(writer, true);
-        leafReaderContext = reader.leaves().get(0);
-        docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
-        docLookup.setDocument(0);
-        featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        vectorEntries = (FieldsToVectorPMML
-                ) featuresAndModel.getFeatures();
-        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
-        reader.close();
-
-        // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
-        writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
-        doc = new Document();
-        fieldType = new FieldType();
-        fieldType.setNumericType(FieldType.NumericType.INT);
-        fieldType.setDocValuesType(DocValuesType.NUMERIC);
-        doc.add(new IntField("age", 60, fieldType));
-        writer.addDocument(doc);
-        reader = DirectoryReader.open(writer, true);
-        leafReaderContext = reader.leaves().get(0);
-        docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
-        docLookup.setDocument(0);
-        featuresAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        vectorEntries = (FieldsToVectorPMML
-                ) featuresAndModel.getFeatures();
-        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
-        reader.close();
+        indexService = createIndex("test", Settings.EMPTY, "test", mappings);
+        ifdService = indexService.fieldData();
     }
 
 

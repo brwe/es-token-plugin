@@ -62,10 +62,10 @@ public class VectorizerTests extends ESTestCase {
 
     public void assertParameters(FieldsToVector entries) {
         assertThat(entries.sparse, equalTo(false));
-        assertThat(entries.fieldToVector.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        assertThat(entries.fieldToVector.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldToVector.get(0);
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldToVector.get(1);
+        assertThat(entries.fieldsToVector.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        assertThat(entries.fieldsToVector.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldsToVector.get(0);
+        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldsToVector.get(1);
         assertThat(entry1, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
         assertThat(entry2, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
         assertThat(entry1.size(), equalTo(3));

@@ -25,6 +25,7 @@ import org.dmg.pmml.GeneralRegressionModel;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
+import org.dmg.pmml.TreeModel;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
@@ -99,17 +100,17 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         throw new UnsupportedOperationException("model script not supported in this context!");
     }
 
-    public static class FeaturesAndModel {
-        public FeaturesAndModel(FieldsToVector features, EsModelEvaluator model) {
-            this.features = features;
+    public static class FieldsToVectorAndModel {
+        public FieldsToVectorAndModel(FieldsToVector fieldsToVector, EsModelEvaluator model) {
+            this.fieldsToVector = fieldsToVector;
             this.model = model;
         }
 
-        public FieldsToVector getFeatures() {
-            return features;
+        public FieldsToVector getFieldsToVector() {
+            return fieldsToVector;
         }
 
-        final FieldsToVector features;
+        final FieldsToVector fieldsToVector;
 
         public EsModelEvaluator getModel() {
             return model;
@@ -167,13 +168,13 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                     }
                 }
             } else {
-                FeaturesAndModel featuresAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
-                features = featuresAndModel.features;
-                model = featuresAndModel.model;
+                FieldsToVectorAndModel fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
+                features = fieldsToVectorAndModel.fieldsToVector;
+                model = fieldsToVectorAndModel.model;
             }
         }
 
-        static private FeaturesAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
+        static private FieldsToVectorAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
 
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {
@@ -211,12 +212,14 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         }
     }
 
-    public static FeaturesAndModel getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
+    public static FieldsToVectorAndModel getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
 
         Model model = pmml.getModels().get(modelNum);
         if (model instanceof GeneralRegressionModel) {
             return GeneralizedLinearRegressionHelper.getGeneralRegressionFeaturesAndModel(pmml, modelNum);
 
+        } else if (model instanceof TreeModel) {
+            return TreeModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
         } else {
             throw new UnsupportedOperationException("Only implemented general regression model so far.");
         }

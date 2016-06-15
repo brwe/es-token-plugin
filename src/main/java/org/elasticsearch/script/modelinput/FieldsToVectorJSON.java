@@ -48,15 +48,15 @@ public class FieldsToVectorJSON extends FieldsToVector {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                fieldToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
+                fieldsToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                fieldToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
+                fieldsToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
             }
-            offset += fieldToVector.get(fieldToVector.size() - 1).size();
-            numEntries += fieldToVector.get(fieldToVector.size() - 1).size();
+            offset += fieldsToVector.get(fieldsToVector.size() - 1).size();
+            numEntries += fieldsToVector.get(fieldsToVector.size() - 1).size();
         }
     }
 
@@ -77,7 +77,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         if (sparse) {
             int length = 0;
             List<EsSparseNumericVector> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : fieldToVector) {
+            for (FieldToVector fieldEntry : fieldsToVector) {
                 EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec);
                 length += vec.values.v1().length;
@@ -102,7 +102,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         } else {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : fieldToVector) {
+            for (FieldToVector fieldEntry : fieldsToVector) {
                 EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec.values);
                 length += vec.values.length;

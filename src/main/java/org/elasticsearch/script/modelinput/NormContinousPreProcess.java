@@ -21,12 +21,13 @@ package org.elasticsearch.script.modelinput;
 
 import org.dmg.pmml.NormContinuous;
 
-public class NormContinousPreProcess implements PreProcessingStep {
+public class NormContinousPreProcess extends PreProcessingStep {
     double factor;
     double b1;
     double a1;
 
-    public NormContinousPreProcess(NormContinuous expression) {
+    public NormContinousPreProcess(NormContinuous expression, String derivedFieldName) {
+        super(derivedFieldName);
         if (expression.getLinearNorms().size() != 2) {
             throw new UnsupportedOperationException("Linear norms with more or less than two components not implemented yet!");
 

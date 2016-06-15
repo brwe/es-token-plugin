@@ -22,7 +22,7 @@ package org.elasticsearch.script.modelinput;
 public class EsDenseNumericVector implements EsVector {
     public double[] values;
 
-    public EsDenseNumericVector(double[] tfs) {
-        this.values = tfs;
+    public EsDenseNumericVector(double[] values) {
+        this.values = values;
     }
 }

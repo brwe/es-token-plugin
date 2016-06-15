@@ -38,10 +38,10 @@ public abstract class FieldsToVector {
     }
 
     boolean sparse;
-    List<FieldToVector> fieldToVector = new ArrayList<>();
+    List<FieldToVector> fieldsToVector = new ArrayList<>();
 
     public List<FieldToVector> getEntries() {
-        return fieldToVector;
+        return fieldsToVector;
     }
 
     public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup

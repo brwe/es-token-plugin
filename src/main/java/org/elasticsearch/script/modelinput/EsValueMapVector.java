@@ -19,17 +19,16 @@
 
 package org.elasticsearch.script.modelinput;
 
+import java.util.Map;
 
-public abstract class PreProcessingStep {
-    final String derivedFieldName;
+public class EsValueMapVector implements EsVector {
+    private Map<String, Object> values;
 
-    public PreProcessingStep(String derivedFieldName) {
-        this.derivedFieldName = derivedFieldName;
+    public EsValueMapVector(Map<String, Object> values) {
+        this.values = values;
     }
 
-    abstract Object apply(Object o);
-
-    String name() {
-        return derivedFieldName;
+    public Map<String, Object> getValues() {
+        return values;
     }
 }

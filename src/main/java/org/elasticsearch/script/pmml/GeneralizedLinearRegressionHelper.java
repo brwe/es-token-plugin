@@ -32,10 +32,10 @@ import org.dmg.pmml.Parameter;
 import org.dmg.pmml.Predictor;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
-import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.modelinput.FieldToVector;
 import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
 import org.elasticsearch.script.modelinput.PMMLFieldToVector;
+import org.elasticsearch.script.models.EsLogisticRegressionModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,36 +82,16 @@ public class GeneralizedLinearRegressionHelper {
         if (model.getModels().get(modelIndex) instanceof GeneralRegressionModel == false) {
             throw new UnsupportedOperationException("Can only do GeneralRegressionModel so far");
         }
-        List<DerivedField> derivedFields = new ArrayList<>();
-        List<DerivedField> allDerivedFields = new ArrayList<>();
-        if (model.getTransformationDictionary() != null) {
-            allDerivedFields.addAll(model.getTransformationDictionary().getDerivedFields());
-        }
-        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
-            allDerivedFields.addAll(model.getModels().get(modelIndex).getLocalTransformations().getDerivedFields());
-        }
 
+        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, modelIndex);
+        List<DerivedField> derivedFields = new ArrayList<>();
         String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
         DataField rawField = ProcessPMMLHelper.getRawDataField(model, rawFieldName);
+        MiningField miningField = ProcessPMMLHelper.getMiningField(model, modelIndex, rawFieldName);
 
-        PMMLFieldToVector featureEntries;
-        if (rawField == null) {
-            throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
-                    "yet or the PMML file is faulty.");
-        } else {
-            MiningField miningField = null;
-            // also pass in the mining schema for additional parameters
-            for(MiningField aMiningField : model.getModels().get(modelIndex).getMiningSchema().getMiningFields()) {
-                if (aMiningField.getKey().getValue().equals(rawFieldName)) {
-                    miningField = aMiningField;
-                }
-            }
-            featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
-        }
+        PMMLFieldToVector featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
         return featureEntries;
-
     }
-
 
     static List<FieldToVector> convertToFeatureEntries(PMML pmml, int modelNum, TreeMap<String, List<PPCell>> fieldToPPCellMap,
                                                        List<String> orderedParameterList) {
@@ -155,7 +135,7 @@ public class GeneralizedLinearRegressionHelper {
         }
 
         // get all the entries and sort them by field.
-        // then create one feature entry per field and add them to features.
+        // then create one feature entry per field and add them to fieldsToVector.
         // also we must keep a list of parameter names here to make sure the model uses the same order!
 
         for (PPCell ppcell : grModel.getPPMatrix().getPPCells()) {
@@ -188,9 +168,9 @@ public class GeneralizedLinearRegressionHelper {
         }
     }
 
-    static PMMLModelScriptEngineService.FeaturesAndModel getGeneralRegressionFeaturesAndModel(PMML pmml, int modelNum) {
+    static PMMLModelScriptEngineService.FieldsToVectorAndModel getGeneralRegressionFeaturesAndModel(PMML pmml, int modelNum) {
         GeneralRegressionModel grModel = (GeneralRegressionModel) pmml.getModels().get(modelNum);
-        if (grModel.getFunctionName().value().equals("classification") &&(grModel.getModelType().value().equals
+        if (grModel.getFunctionName().value().equals("classification") && (grModel.getModelType().value().equals
                 ("multinomialLogistic") || (grModel.getModelType().value().equals
                 ("generalizedLinear") && grModel.getDistribution().value().equals("binomial") && grModel.getLinkFunction().value().equals
                 ("logit")))) {
@@ -211,7 +191,7 @@ public class GeneralizedLinearRegressionHelper {
             // first: sort all by target class
             Map<String, List<PCell>> targetClassPCellMap = mapParametersToTargetCategory(grModel);
 
-            if (targetClassPCellMap.size()!= 1) {
+            if (targetClassPCellMap.size() != 1) {
                 throw new UnsupportedOperationException("We do not support more than two classes for GeneralizedRegression for " +
                         "classification");
             }
@@ -221,10 +201,10 @@ public class GeneralizedLinearRegressionHelper {
             //get the target class values. one we can get from the Pmatrix but the other one we have to find in the data dictionary
             String targetVariable = findTargetVariableName(grModel);
 
-             // this need to be more if we implement more than two class
+            // this need to be more if we implement more than two class
             String[] targetCategories = findTargetCategories(pmml, targetClassPCellMap, targetVariable);
             EsLogisticRegressionModel logisticRegressionModel = new EsLogisticRegressionModel(coefficients, 0.0, targetCategories);
-            return new PMMLModelScriptEngineService.FeaturesAndModel(vectorEntries, logisticRegressionModel);
+            return new PMMLModelScriptEngineService.FieldsToVectorAndModel(vectorEntries, logisticRegressionModel);
 
         } else {
             throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");
@@ -233,7 +213,7 @@ public class GeneralizedLinearRegressionHelper {
 
     private static Map<String, List<PCell>> mapParametersToTargetCategory(GeneralRegressionModel grModel) {
         Map<String, List<PCell>> targetClassPCellMap = new HashMap<>();
-        for (PCell pCell : grModel.getParamMatrix().getPCells()){
+        for (PCell pCell : grModel.getParamMatrix().getPCells()) {
             String targetClassName = pCell.getTargetCategory();
             if (targetClassPCellMap.containsKey(targetClassName) == false) {
                 targetClassPCellMap.put(targetClassName, new ArrayList<PCell>());
@@ -246,9 +226,9 @@ public class GeneralizedLinearRegressionHelper {
     private static String[] findTargetCategories(PMML pmml, Map<String, List<PCell>> targetClassPCellMap, String targetVariable) {
         String[] targetCategories = new String[2];
         String class1 = targetClassPCellMap.keySet().iterator().next();
-        targetCategories[0] =class1;
+        targetCategories[0] = class1;
         // find it in the datafields
-        for (DataField dataField :pmml.getDataDictionary().getDataFields()) {
+        for (DataField dataField : pmml.getDataDictionary().getDataFields()) {
             if (dataField.getName().toString().equals(targetVariable)) {
                 for (Value value : dataField.getValues()) {
                     String valueString = value.getValue();
@@ -269,7 +249,7 @@ public class GeneralizedLinearRegressionHelper {
         String targetVariable = null;
         for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
             FieldUsageType fieldUsageType = miningField.getUsageType();
-            if ( fieldUsageType != null &&fieldUsageType.value().equals("target")) {
+            if (fieldUsageType != null && fieldUsageType.value().equals("target")) {
                 targetVariable = miningField.getName().getValue();
                 break;
             }
@@ -278,7 +258,7 @@ public class GeneralizedLinearRegressionHelper {
             // fall back to find the "predicted" field
             for (MiningField miningField : grModel.getMiningSchema().getMiningFields()) {
                 FieldUsageType fieldUsageType = miningField.getUsageType();
-                if ( fieldUsageType != null &&fieldUsageType.value().equals("predicted")) {
+                if (fieldUsageType != null && fieldUsageType.value().equals("predicted")) {
                     targetVariable = miningField.getName().getValue();
                     break;
                 }
@@ -298,7 +278,7 @@ public class GeneralizedLinearRegressionHelper {
         }
         double[] coefficients = new double[orderedParameterList.size()];
         Arrays.fill(coefficients, 0.0);
-        for (int i = 0; i< coefficients.length; i++) {
+        for (int i = 0; i < coefficients.length; i++) {
             String parameter = orderedParameterList.get(i);
             for (PCell pCell : coefficientCells) {
                 if (pCell.getParameterName().equals(parameter)) {
@@ -311,7 +291,7 @@ public class GeneralizedLinearRegressionHelper {
     }
 
     private static FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(List<FieldToVector>
-                                                                                           fieldToVectorList, String[] orderedParameterList) {
+                                                                                                                                    fieldToVectorList, String[] orderedParameterList) {
         int numEntries = 0;
         for (FieldToVector entry : fieldToVectorList) {
 

@@ -26,7 +26,7 @@ mydataWrapped<-ZScoreXform(mydataWrapped,xformInfo="hours_per_week->hours_per_we
 
 # train model
 myTree <- rpart(class ~ age_z + workclass + education + education_num_z + marital_status + occupation + relationship + race + sex + hours_per_week_z + native_country , 
-               data = mydataWrapped$data)
+               data = mydataWrapped$data, na.action = na.rpart)
 
 # convert to pmmlgetwd
 pmmlModel <- pmml(myTree, transform=mydataWrapped)

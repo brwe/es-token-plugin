@@ -33,16 +33,16 @@ import java.util.TreeMap;
 
 public class FieldsToVectorPMML extends FieldsToVector {
 
-    public FieldsToVectorPMML(List<FieldToVector> features, int numEntries) {
+    public FieldsToVectorPMML(List<FieldToVector> fieldsToVectors, int numEntries) {
         this.sparse = true;
-        this.fieldToVector = features;
+        this.fieldsToVector = fieldsToVectors;
         this.numEntries = numEntries;
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
 
         HashMap<String, List> fieldValues = new HashMap<>();
-        for (FieldToVector fieldToVector : this.fieldToVector) {
+        for (FieldToVector fieldToVector : this.fieldsToVector) {
             String field = fieldToVector.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
@@ -54,7 +54,7 @@ public class FieldsToVectorPMML extends FieldsToVector {
 
     public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
-        for (FieldToVector fieldToVector : this.fieldToVector) {
+        for (FieldToVector fieldToVector : this.fieldsToVector) {
             EsVector entries = fieldToVector.getVector(fieldValues);
             assert entries instanceof EsSparseNumericVector;
             EsSparseNumericVector sparseVector = (EsSparseNumericVector) entries;
@@ -89,6 +89,23 @@ public class FieldsToVectorPMML extends FieldsToVector {
         public FieldsToVectorPMMLGeneralizedRegression(List<FieldToVector> features, int numEntries, String[] orderedParameterList) {
             super(features, numEntries);
             this.orderedParameterList = orderedParameterList;
+        }
+    }
+
+    public static class FieldsToVectorPMMLTreeModel extends FieldsToVectorPMML {
+
+        public FieldsToVectorPMMLTreeModel(List<FieldToVector> fieldsToVectors) {
+            super(fieldsToVectors, fieldsToVectors.size());
+        }
+
+        @Override
+        public Object vector(Map<String, List> fieldValues) {
+            HashMap<String, Object> values = new HashMap<>();
+            for (FieldToVector fieldToVector : fieldsToVector) {
+                assert fieldToVector instanceof PMMLFieldToVector.FieldToValue;
+                values.putAll(((EsValueMapVector) fieldToVector.getVector(fieldValues)).getValues());
+            }
+            return values;
         }
     }
 }

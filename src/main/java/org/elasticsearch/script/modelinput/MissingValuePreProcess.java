@@ -19,12 +19,40 @@
 
 package org.elasticsearch.script.modelinput;
 
-public class MissingValuePreProcess implements PreProcessingStep {
+import org.dmg.pmml.Constant;
+import org.dmg.pmml.DataField;
+import org.dmg.pmml.DataType;
+import org.dmg.pmml.DerivedField;
+
+public class MissingValuePreProcess extends PreProcessingStep {
 
     private Object missingValue;
 
-    public MissingValuePreProcess(Object missingValue) {
-        this.missingValue = missingValue;
+    public MissingValuePreProcess(DerivedField derivedField, String missingValue) {
+        super(derivedField.getName().getValue());
+        this.missingValue = parseMissingValue(derivedField.getDataType(), missingValue);
+    }
+
+    private Object parseMissingValue(DataType dataType, String missingValue) {
+        Object parsedMissingValue;
+        if (dataType.equals(DataType.DOUBLE)) {
+            parsedMissingValue = Double.parseDouble(missingValue);
+        } else if (dataType.equals(DataType.FLOAT)) {
+            parsedMissingValue = Float.parseFloat(missingValue);
+        } else if (dataType.equals(DataType.INTEGER)) {
+            parsedMissingValue = Integer.parseInt(missingValue);
+        } else if (dataType.equals(DataType.STRING)) {
+            parsedMissingValue = missingValue;
+        } else {
+            throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
+                    "far.");
+        }
+        return parsedMissingValue;
+    }
+
+    public MissingValuePreProcess(DataField dataField, String missingValue) {
+        super(dataField.getName().getValue());
+        this.missingValue = parseMissingValue(dataField.getDataType(), missingValue);
     }
 
     @Override

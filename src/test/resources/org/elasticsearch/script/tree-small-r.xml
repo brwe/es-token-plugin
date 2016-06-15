@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4.2" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+  <Header copyright="Copyright (c) 2016 britta" description="RPart Decision Tree Model">
+    <Extension name="user" value="britta" extender="Rattle/PMML"/>
+    <Application name="Rattle/PMML" version="1.4"/>
+    <Timestamp>2016-06-15 16:21:43</Timestamp>
+  </Header>
+  <DataDictionary numberOfFields="4">
+    <DataField name="class" optype="categorical" dataType="string">
+      <Value value="&lt;=50K"/>
+      <Value value="&gt;50K"/>
+    </DataField>
+    <DataField name="age" optype="continuous" dataType="double"/>
+    <DataField name="work" optype="categorical" dataType="string">
+      <Value value="Federal-gov"/>
+      <Value value="Local-gov"/>
+      <Value value="Never-worked"/>
+      <Value value="other"/>
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Self-emp-not-inc"/>
+      <Value value="State-gov"/>
+      <Value value="Without-pay"/>
+    </DataField>
+    <DataField name="education" optype="categorical" dataType="string">
+      <Value value="10th"/>
+      <Value value="11th"/>
+      <Value value="12th"/>
+      <Value value="1st-4th"/>
+      <Value value="5th-6th"/>
+      <Value value="7th-8th"/>
+      <Value value="9th"/>
+      <Value value="Assoc-acdm"/>
+      <Value value="Assoc-voc"/>
+      <Value value="Bachelors"/>
+      <Value value="Doctorate"/>
+      <Value value="HS-grad"/>
+      <Value value="Masters"/>
+      <Value value="Preschool"/>
+      <Value value="Prof-school"/>
+      <Value value="Some-college"/>
+    </DataField>
+  </DataDictionary>
+  <TreeModel modelName="RPart_Model" functionName="classification" algorithmName="rpart" splitCharacteristic="binarySplit" missingValueStrategy="defaultChild" noTrueChildStrategy="returnLastPrediction">
+    <MiningSchema>
+      <MiningField name="class" usageType="predicted"/>
+      <MiningField name="age" usageType="active" missingValueReplacement="-1000"/>
+      <MiningField name="work" usageType="active" missingValueReplacement="other"/>
+      <MiningField name="education" usageType="active" missingValueReplacement="too-lazy-to-study"/>
+    </MiningSchema>
+    <Output>
+      <OutputField name="Predicted_class" optype="categorical" dataType="string" feature="predictedValue"/>
+      <OutputField name="Probability_&lt;=50K" optype="continuous" dataType="double" feature="probability" value="&lt;=50K"/>
+      <OutputField name="Probability_&gt;50K" optype="continuous" dataType="double" feature="probability" value="&gt;50K"/>
+    </Output>
+    <LocalTransformations>
+      <DerivedField name="age_z" dataType="double" optype="continuous">
+        <NormContinuous field="age">
+          <LinearNorm orig="38.5816467553208" norm="0"/>
+          <LinearNorm orig="52.2220793089021" norm="1"/>
+        </NormContinuous>
+      </DerivedField>
+    </LocalTransformations>
+    <Node id="1" score="&lt;=50K" recordCount="32561" defaultChild="2">
+      <True/>
+      <ScoreDistribution value="&lt;=50K" recordCount="24720" confidence="0.759190442553976"/>
+      <ScoreDistribution value="&gt;50K" recordCount="7841" confidence="0.240809557446024"/>
+      <Node id="2" score="&lt;=50K" recordCount="24494">
+        <SimpleSetPredicate field="education" booleanOperator="isIn">
+          <Array n="12" type="string">"10th" "11th" "12th" "1st-4th" "5th-6th" "7th-8th" "9th" "Assoc-acdm" "Assoc-voc" "HS-grad" "Preschool" "Some-college"</Array>
+        </SimpleSetPredicate>
+        <ScoreDistribution value="&lt;=50K" recordCount="20562" confidence="0.839470890830407"/>
+        <ScoreDistribution value="&gt;50K" recordCount="3932" confidence="0.160529109169593"/>
+      </Node>
+      <Node id="3" score="&lt;=50K" recordCount="8067" defaultChild="6">
+        <SimpleSetPredicate field="education" booleanOperator="isIn">
+          <Array n="4" type="string">"Bachelors" "Doctorate" "Masters" "Prof-school"</Array>
+        </SimpleSetPredicate>
+        <ScoreDistribution value="&lt;=50K" recordCount="4158" confidence="0.515433246560059"/>
+        <ScoreDistribution value="&gt;50K" recordCount="3909" confidence="0.484566753439941"/>
+        <Node id="6" score="&lt;=50K" recordCount="1617">
+          <SimplePredicate field="age_z" operator="lessThan" value="-0.6657888"/>
+          <ScoreDistribution value="&lt;=50K" recordCount="1385" confidence="0.856524427952999"/>
+          <ScoreDistribution value="&gt;50K" recordCount="232" confidence="0.143475572047001"/>
+        </Node>
+        <Node id="7" score="&gt;50K" recordCount="6450" defaultChild="14">
+          <SimplePredicate field="age_z" operator="greaterOrEqual" value="-0.6657888"/>
+          <ScoreDistribution value="&lt;=50K" recordCount="2773" confidence="0.429922480620155"/>
+          <ScoreDistribution value="&gt;50K" recordCount="3677" confidence="0.570077519379845"/>
+          <Node id="14" score="&gt;50K" recordCount="5523" defaultChild="28">
+            <SimpleSetPredicate field="education" booleanOperator="isIn">
+              <Array n="2" type="string">"Bachelors" "Masters"</Array>
+            </SimpleSetPredicate>
+            <ScoreDistribution value="&lt;=50K" recordCount="2559" confidence="0.463335143943509"/>
+            <ScoreDistribution value="&gt;50K" recordCount="2964" confidence="0.536664856056491"/>
+            <Node id="28" score="&lt;=50K" recordCount="1680">
+              <SimpleSetPredicate field="work" booleanOperator="isIn">
+                <Array n="4" type="string">"Local-gov" "other" "Self-emp-not-inc" "State-gov"</Array>
+              </SimpleSetPredicate>
+              <ScoreDistribution value="&lt;=50K" recordCount="932" confidence="0.554761904761905"/>
+              <ScoreDistribution value="&gt;50K" recordCount="748" confidence="0.445238095238095"/>
+            </Node>
+            <Node id="29" score="&gt;50K" recordCount="3843">
+              <SimpleSetPredicate field="work" booleanOperator="isIn">
+                <Array n="3" type="string">"Federal-gov" "Private" "Self-emp-inc"</Array>
+              </SimpleSetPredicate>
+              <ScoreDistribution value="&lt;=50K" recordCount="1627" confidence="0.423367161072079"/>
+              <ScoreDistribution value="&gt;50K" recordCount="2216" confidence="0.576632838927921"/>
+            </Node>
+          </Node>
+          <Node id="15" score="&gt;50K" recordCount="927">
+            <SimpleSetPredicate field="education" booleanOperator="isIn">
+              <Array n="2" type="string">"Doctorate" "Prof-school"</Array>
+            </SimpleSetPredicate>
+            <ScoreDistribution value="&lt;=50K" recordCount="214" confidence="0.230852211434736"/>
+            <ScoreDistribution value="&gt;50K" recordCount="713" confidence="0.769147788565264"/>
+          </Node>
+        </Node>
+      </Node>
+    </Node>
+  </TreeModel>
+</PMML>
+ 

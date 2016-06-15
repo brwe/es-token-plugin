@@ -25,6 +25,7 @@ import org.dmg.pmml.DataField;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Expression;
 import org.dmg.pmml.FieldRef;
+import org.dmg.pmml.MiningField;
 import org.dmg.pmml.NormContinuous;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TransformationDictionary;
@@ -42,6 +43,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessPMMLHelper {
@@ -55,6 +57,10 @@ public class ProcessPMMLHelper {
                 rawField = dataField;
                 break;
             }
+        }
+        if (rawField == null) {
+            throw new UnsupportedOperationException("Could not trace back {} to a raw input field. Maybe saomething is not implemented " +
+                    "yet or the PMML file is faulty.");
         }
         return rawField;
     }
@@ -125,5 +131,27 @@ public class ProcessPMMLHelper {
                 }
             }
         });
+    }
+
+    protected static List<DerivedField> getAllDerivedFields(PMML model, int modelIndex) {
+        List<DerivedField> allDerivedFields = new ArrayList<>();
+        if (model.getTransformationDictionary() != null) {
+            allDerivedFields.addAll(model.getTransformationDictionary().getDerivedFields());
+        }
+        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
+            allDerivedFields.addAll(model.getModels().get(modelIndex).getLocalTransformations().getDerivedFields());
+        }
+        return allDerivedFields;
+    }
+
+    protected static MiningField getMiningField(PMML model, int modelIndex, String rawFieldName) {
+        MiningField miningField = null;
+        // also pass in the mining schema for additional parameters
+        for (MiningField aMiningField : model.getModels().get(modelIndex).getMiningSchema().getMiningFields()) {
+            if (aMiningField.getKey().getValue().equals(rawFieldName)) {
+                miningField = aMiningField;
+            }
+        }
+        return miningField;
     }
 }

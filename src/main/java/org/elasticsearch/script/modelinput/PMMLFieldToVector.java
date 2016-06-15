@@ -52,6 +52,20 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         return value;
     }
 
+    public PMMLFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
+        this.field = dataField.getName().getValue();
+        if (miningField.getMissingValueReplacement() != null) {
+            preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
+            preProcessingSteps[0] = new MissingValuePreProcess(dataField, miningField.getMissingValueReplacement());
+        } else {
+            preProcessingSteps = new PreProcessingStep[derivedFields.length];
+        }
+        fillPreProcessingSteps(derivedFields);
+    }
+
+    public PMMLFieldToVector() {
+
+    }
 
     public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
 
@@ -63,14 +77,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
         public SparseCategorical1OfKFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
-            this.field = dataField.getName().getValue();
-            if (miningField.getMissingValueReplacement() != null) {
-                preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
-                preProcessingSteps[0] = new MissingValuePreProcess(miningField.getMissingValueReplacement());
-            } else {
-                preProcessingSteps = new PreProcessingStep[derivedFields.length];
-            }
-            fillPreProcessingSteps(derivedFields);
+            super(dataField, miningField, derivedFields);
         }
 
         @Override
@@ -116,14 +123,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
          * The derived fields must be given in backwards order of the processing chain.
          */
         public ContinousSingleEntryFieldToVector(DataField dataField, MiningField miningField, DerivedField... derivedFields) {
-            this.field = dataField.getName().getValue();
-            if (miningField.getMissingValueReplacement() != null) {
-                preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
-                preProcessingSteps[0] = new MissingValuePreProcess(miningField.getMissingValueReplacement());
-            } else {
-                preProcessingSteps = new PreProcessingStep[derivedFields.length];
-            }
-            fillPreProcessingSteps(derivedFields);
+            super(dataField, miningField, derivedFields);
 
         }
 
@@ -180,20 +180,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
                         for (Expression expression2 : ((Apply) derivedField.getExpression()).getExpressions()) {
                             if (expression2 instanceof Constant) {
                                 String missingValue = ((Constant) expression2).getValue();
-                                Object parsedMissingValue;
-                                if (derivedField.getDataType().equals(DataType.DOUBLE)) {
-                                    parsedMissingValue = Double.parseDouble(missingValue);
-                                } else if (derivedField.getDataType().equals(DataType.FLOAT)) {
-                                    parsedMissingValue = Float.parseFloat(missingValue);
-                                } else if (derivedField.getDataType().equals(DataType.INTEGER)) {
-                                    parsedMissingValue = Integer.parseInt(missingValue);
-                                } else if (derivedField.getDataType().equals(DataType.STRING)) {
-                                    parsedMissingValue = missingValue;
-                                } else {
-                                    throw new UnsupportedOperationException("Only implemented data type double, float and int so " +
-                                            "far.");
-                                }
-                                preProcessingSteps[preProcessingStepIndex] = new MissingValuePreProcess(parsedMissingValue);
+                                preProcessingSteps[preProcessingStepIndex] = new MissingValuePreProcess(derivedField, missingValue);
                                 break;
                             }
                         }
@@ -204,7 +191,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
             }
         } else if (derivedField.getExpression() instanceof NormContinuous) {
             preProcessingSteps[preProcessingStepIndex] = new NormContinousPreProcess((NormContinuous) derivedField
-                    .getExpression());
+                    .getExpression(), derivedField.getName().getValue());
         } else {
             throw new UnsupportedOperationException("So far only Apply expression implemented.");
         }
@@ -237,6 +224,39 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
             return new EsSparseNumericVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
+        }
+    }
+
+    public static class FieldToValue extends PMMLFieldToVector {
+        String finalFieldName;
+
+        public FieldToValue(DataField dataField, MiningField miningField, DerivedField... derivedFields) {
+            super(dataField, miningField, derivedFields);
+            finalFieldName = preProcessingSteps.length > 0 ? preProcessingSteps[preProcessingSteps.length - 1].name() : field;
+        }
+
+        @Override
+        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+            throw new UnsupportedOperationException("Not implemented for FieldToValue");
+        }
+
+        @Override
+        public int size() {
+            return 1;
+        }
+
+        @Override
+        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+            throw new UnsupportedOperationException("Not implemented for FieldToValue");
+        }
+
+        @Override
+        public EsVector getVector(Map<String, List> fieldValues) {
+            List value = fieldValues.get(field);
+            Object finalValue = applyPreProcessing(value.size() == 0 ? null : value.get(0));
+            Map<String, Object> values = new HashMap<>();
+            values.put(finalFieldName, finalValue);
+            return new EsValueMapVector(values);
         }
     }
 }
