@@ -37,7 +37,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.fielddata.IndexFieldDataService;
-import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
+import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.ProcessPMMLHelper;
 import org.elasticsearch.search.lookup.LeafDocLookup;
@@ -86,8 +86,8 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        FieldsToVectorPMML vectorEntries = (FieldsToVectorPMML
-                ) fieldsToVectorAndModel.getFieldsToVector();
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
+                ) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
@@ -119,8 +119,8 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        FieldsToVectorPMML vectorEntries = (FieldsToVectorPMML
-                ) fieldsToVectorAndModel.getFieldsToVector();
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
+                ) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(vector.size(), equalTo(3));
         assertThat(((Double) vector.get("age_z")).doubleValue(), closeTo(1.5702107070685085, 0.0));

@@ -30,8 +30,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.*;
-import org.elasticsearch.script.modelinput.FieldsToVector;
-import org.elasticsearch.script.modelinput.FieldsToVectorJSON;
+import org.elasticsearch.script.modelinput.VectorRangesToVector;
+import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 
@@ -87,7 +87,7 @@ public class VectorScriptEngineService extends AbstractComponent implements Scri
     }
 
     public static class Factory {
-        FieldsToVector features = null;
+        VectorRangesToVector features = null;
 
         public Factory(String spec) {
             Map<String, Object> parsedSource = null;
@@ -97,7 +97,7 @@ public class VectorScriptEngineService extends AbstractComponent implements Scri
             } catch (IOException e) {
                 throw new ScriptException("vector script failed", e);
             }
-            features = new FieldsToVectorJSON(parsedSource);
+            features = new VectorRangesToVectorJSON(parsedSource);
         }
 
         public VectorizerScript newScript(LeafSearchLookup lookup) {
@@ -127,7 +127,7 @@ public class VectorScriptEngineService extends AbstractComponent implements Scri
 
     public static class VectorizerScript implements LeafSearchScript {
 
-        private final FieldsToVector features;
+        private final VectorRangesToVector features;
         private LeafSearchLookup lookup;
 
         /**
@@ -139,7 +139,7 @@ public class VectorScriptEngineService extends AbstractComponent implements Scri
         /**
          * @throws ScriptException
          */
-        private VectorizerScript(FieldsToVector features, LeafSearchLookup lookup) throws ScriptException {
+        private VectorizerScript(VectorRangesToVector features, LeafSearchLookup lookup) throws ScriptException {
             this.lookup = lookup;
             this.features = features;
 

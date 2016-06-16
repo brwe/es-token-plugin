@@ -22,7 +22,6 @@ package org.elasticsearch.script.modelinput;
 import org.dmg.pmml.Apply;
 import org.dmg.pmml.Constant;
 import org.dmg.pmml.DataField;
-import org.dmg.pmml.DataType;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Expression;
 import org.dmg.pmml.MiningField;
@@ -40,7 +39,7 @@ import java.util.Map;
 /*
 * Maps a single field to vector entries. Includes pre processing.
 * */
-public abstract class PMMLFieldToVector extends FieldToVector {
+public abstract class PMMLVectorRange extends VectorRange {
 
     protected PreProcessingStep[] preProcessingSteps;
 
@@ -54,7 +53,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         return value;
     }
 
-    public PMMLFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
+    public PMMLVectorRange(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
         super(dataField.getName().getValue(),
                 derivedFields.length == 0 ? dataField.getName().getValue() : derivedFields[derivedFields.length - 1].getName().getValue(),
                 derivedFields.length == 0 ? dataField.getDataType().value() : derivedFields[derivedFields.length - 1].getDataType().value());
@@ -67,7 +66,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         }
         fillPreProcessingSteps(derivedFields);
     }
-    public PMMLFieldToVector(String field, String lastDerivedFieldName, String type) {
+    public PMMLVectorRange(String field, String lastDerivedFieldName, String type) {
         super(field, lastDerivedFieldName, type);
     }
 
@@ -77,10 +76,10 @@ public abstract class PMMLFieldToVector extends FieldToVector {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      */
-    public static class SparseCategorical1OfKFieldToVector extends PMMLFieldToVector {
+    public static class SparseCategorical1OfKVectorRange extends PMMLVectorRange {
         Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
-        public SparseCategorical1OfKFieldToVector(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
+        public SparseCategorical1OfKVectorRange(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
             super(dataField, miningField, derivedFields);
         }
 
@@ -119,13 +118,13 @@ public abstract class PMMLFieldToVector extends FieldToVector {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      */
-    public static class ContinousSingleEntryFieldToVector extends PMMLFieldToVector {
+    public static class ContinousSingleEntryVectorRange extends PMMLVectorRange {
         int index = -1;
 
         /**
          * The derived fields must be given in backwards order of the processing chain.
          */
-        public ContinousSingleEntryFieldToVector(DataField dataField, MiningField miningField, DerivedField... derivedFields) {
+        public ContinousSingleEntryVectorRange(DataField dataField, MiningField miningField, DerivedField... derivedFields) {
             super(dataField, miningField, derivedFields);
 
         }
@@ -199,7 +198,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         }
     }
 
-    public static class Intercept extends PMMLFieldToVector {
+    public static class Intercept extends PMMLVectorRange {
         int index;
         private String interceptName;
 
@@ -229,7 +228,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         }
     }
 
-    public static class FieldToValue extends PMMLFieldToVector {
+    public static class FieldToValue extends PMMLVectorRange {
         String finalFieldName;
 
         public FieldToValue(DataField dataField, MiningField miningField, DerivedField... derivedFields) {

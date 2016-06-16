@@ -31,19 +31,20 @@ import java.util.Map;
 import java.util.TreeMap;
 
 
-public class FieldsToVectorPMML extends FieldsToVector {
+public class VectorRangesToVectorPMML extends VectorRangesToVector {
 
-    public FieldsToVectorPMML(List<FieldToVector> fieldsToVectors, int numEntries) {
+    public VectorRangesToVectorPMML(List<VectorRange> fieldsToVectors, int numEntries) {
         this.sparse = true;
-        this.fieldsToVector = fieldsToVectors;
+        this.vectorRangeList = fieldsToVectors;
         this.numEntries = numEntries;
     }
 
     public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
 
         HashMap<String, List> fieldValues = new HashMap<>();
-        for (FieldToVector fieldToVector : this.fieldsToVector) {
-            String field = fieldToVector.getField();
+        for (VectorRange vectorRange : this.vectorRangeList) {
+            // TODO: vector range can depend on several fields
+            String field = vectorRange.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
                 fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
@@ -54,8 +55,8 @@ public class FieldsToVectorPMML extends FieldsToVector {
 
     public Object vector(Map<String, List> fieldValues) {
         Map<Integer, Double> indicesAndValues = new TreeMap<>();
-        for (FieldToVector fieldToVector : this.fieldsToVector) {
-            EsVector entries = fieldToVector.getVector(fieldValues);
+        for (VectorRange vectorRange : this.vectorRangeList) {
+            EsVector entries = vectorRange.getVector(fieldValues);
             assert entries instanceof EsSparseNumericVector;
             EsSparseNumericVector sparseVector = (EsSparseNumericVector) entries;
             for (int i = 0; i < sparseVector.values.v1().length; i++) {
@@ -78,7 +79,7 @@ public class FieldsToVectorPMML extends FieldsToVector {
         return finalVector;
     }
 
-    public static class FieldsToVectorPMMLGeneralizedRegression extends FieldsToVectorPMML {
+    public static class VectorRangesToVectorPMMLGeneralizedRegression extends VectorRangesToVectorPMML {
 
         public String[] getOrderedParameterList() {
             return orderedParameterList;
@@ -86,24 +87,24 @@ public class FieldsToVectorPMML extends FieldsToVector {
 
         private final String[] orderedParameterList;
 
-        public FieldsToVectorPMMLGeneralizedRegression(List<FieldToVector> features, int numEntries, String[] orderedParameterList) {
+        public VectorRangesToVectorPMMLGeneralizedRegression(List<VectorRange> features, int numEntries, String[] orderedParameterList) {
             super(features, numEntries);
             this.orderedParameterList = orderedParameterList;
         }
     }
 
-    public static class FieldsToVectorPMMLTreeModel extends FieldsToVectorPMML {
+    public static class VectorRangesToVectorPMMLTreeModel extends VectorRangesToVectorPMML {
 
-        public FieldsToVectorPMMLTreeModel(List<FieldToVector> fieldsToVectors) {
+        public VectorRangesToVectorPMMLTreeModel(List<VectorRange> fieldsToVectors) {
             super(fieldsToVectors, fieldsToVectors.size());
         }
 
         @Override
         public Object vector(Map<String, List> fieldValues) {
             HashMap<String, Object> values = new HashMap<>();
-            for (FieldToVector fieldToVector : fieldsToVector) {
-                assert fieldToVector instanceof PMMLFieldToVector.FieldToValue;
-                values.putAll(((EsValueMapVector) fieldToVector.getVector(fieldValues)).getValues());
+            for (VectorRange vectorRange : vectorRangeList) {
+                assert vectorRange instanceof PMMLVectorRange.FieldToValue;
+                values.putAll(((EsValueMapVector) vectorRange.getVector(fieldValues)).getValues());
             }
             return values;
         }

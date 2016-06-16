@@ -41,12 +41,12 @@ import static org.hamcrest.Matchers.instanceOf;
 public class VectorizerTests extends ESTestCase {
 
     public void testVectorizerParsing() throws IOException {
-        FieldsToVector entries = new FieldsToVectorJSON(createSpecSource());
+        VectorRangesToVector entries = new VectorRangesToVectorJSON(createSpecSource());
         assertParameters(entries);
     }
 
     public void testVectorizerParsingFromActualSource() throws IOException {
-        FieldsToVector entries = new FieldsToVectorJSON(createSpecSourceFromSpec());
+        VectorRangesToVector entries = new VectorRangesToVectorJSON(createSpecSourceFromSpec());
         assertParameters(entries);
     }
 
@@ -60,14 +60,14 @@ public class VectorizerTests extends ESTestCase {
         return parser.mapOrdered();
     }
 
-    public void assertParameters(FieldsToVector entries) {
+    public void assertParameters(VectorRangesToVector entries) {
         assertThat(entries.sparse, equalTo(false));
-        assertThat(entries.fieldsToVector.get(0), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        assertThat(entries.fieldsToVector.get(1), instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry1 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldsToVector.get(0);
-        AnalyzedTextFieldToVector.DenseTermFieldToVector entry2 = (AnalyzedTextFieldToVector.DenseTermFieldToVector) entries.fieldsToVector.get(1);
-        assertThat(entry1, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
-        assertThat(entry2, instanceOf(AnalyzedTextFieldToVector.DenseTermFieldToVector.class));
+        assertThat(entries.vectorRangeList.get(0), instanceOf(AnalyzedTextVectorRange.DenseTermVectorRange.class));
+        assertThat(entries.vectorRangeList.get(1), instanceOf(AnalyzedTextVectorRange.DenseTermVectorRange.class));
+        AnalyzedTextVectorRange.DenseTermVectorRange entry1 = (AnalyzedTextVectorRange.DenseTermVectorRange) entries.vectorRangeList.get(0);
+        AnalyzedTextVectorRange.DenseTermVectorRange entry2 = (AnalyzedTextVectorRange.DenseTermVectorRange) entries.vectorRangeList.get(1);
+        assertThat(entry1, instanceOf(AnalyzedTextVectorRange.DenseTermVectorRange.class));
+        assertThat(entry2, instanceOf(AnalyzedTextVectorRange.DenseTermVectorRange.class));
         assertThat(entry1.size(), equalTo(3));
         assertThat(entry2.size(), equalTo(3));
         assertThat(entry1.offset, equalTo(0));

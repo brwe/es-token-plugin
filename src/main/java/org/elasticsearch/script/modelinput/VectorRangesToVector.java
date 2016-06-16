@@ -22,42 +22,31 @@ package org.elasticsearch.script.modelinput;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
+import org.elasticsearch.search.lookup.SourceLookup;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /*
-* Maps one field to a (partial) vector.
+* Maps a list of fields to a vector.
 * */
 
-public abstract class FieldToVector {
+public abstract class VectorRangesToVector {
 
-    protected String field;
-    private String type;
-    private String lastDerivedFieldName;
-
-    public FieldToVector(String field, String lastDerivedFieldName, String type) {
-
-        this.field = field;
-        this.lastDerivedFieldName = lastDerivedFieldName;
-        this.type = type;
+    public boolean isSparse() {
+        return sparse;
     }
 
-    public abstract int size();
+    boolean sparse;
+    List<VectorRange> vectorRangeList = new ArrayList<>();
 
-    public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
-
-    public abstract EsVector getVector(Map<String, List> fieldValues);
-
-    public String getField() {
-        return field;
+    public List<VectorRange> getEntries() {
+        return vectorRangeList;
     }
 
-    public String getLastDerivedFieldName() {
-        return lastDerivedFieldName;
-    }
+    public abstract Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup
+            sourceLookup);
 
-    public String getType() {
-        return type;
-    }
+    protected int numEntries;
 }
+

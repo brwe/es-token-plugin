@@ -32,9 +32,9 @@ import org.dmg.pmml.Parameter;
 import org.dmg.pmml.Predictor;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
-import org.elasticsearch.script.modelinput.FieldToVector;
-import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
-import org.elasticsearch.script.modelinput.PMMLFieldToVector;
+import org.elasticsearch.script.modelinput.PMMLVectorRange;
+import org.elasticsearch.script.modelinput.VectorRange;
+import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
 
 import java.util.ArrayList;
@@ -49,9 +49,9 @@ import java.util.TreeMap;
 
 public class GeneralizedLinearRegressionHelper {
 
-    static PMMLFieldToVector getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField,
-                                            MiningField miningField) {
-        PMMLFieldToVector featureEntries;
+    static PMMLVectorRange getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField,
+                                          MiningField miningField) {
+        PMMLVectorRange featureEntries;
         OpType opType;
         if (derivedFields.size() == 0) {
             opType = rawField.getOpType();
@@ -60,11 +60,11 @@ public class GeneralizedLinearRegressionHelper {
         }
 
         if (opType.value().equals("continuous")) {
-            featureEntries = new PMMLFieldToVector.ContinousSingleEntryFieldToVector(rawField, miningField, derivedFields.toArray(new
+            featureEntries = new PMMLVectorRange.ContinousSingleEntryVectorRange(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLFieldToVector.SparseCategorical1OfKFieldToVector(rawField, miningField, derivedFields.toArray(new
+            featureEntries = new PMMLVectorRange.SparseCategorical1OfKVectorRange(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else {
@@ -78,7 +78,7 @@ public class GeneralizedLinearRegressionHelper {
         return featureEntries;
     }
 
-    static PMMLFieldToVector getFeatureEntryFromGeneralRegressionModel(PMML model, int modelIndex, String fieldName, List<PPCell> cells, int indexCounter) {
+    static PMMLVectorRange getFeatureEntryFromGeneralRegressionModel(PMML model, int modelIndex, String fieldName, List<PPCell> cells, int indexCounter) {
         if (model.getModels().get(modelIndex) instanceof GeneralRegressionModel == false) {
             throw new UnsupportedOperationException("Can only do GeneralRegressionModel so far");
         }
@@ -89,27 +89,27 @@ public class GeneralizedLinearRegressionHelper {
         DataField rawField = ProcessPMMLHelper.getRawDataField(model, rawFieldName);
         MiningField miningField = ProcessPMMLHelper.getMiningField(model, modelIndex, rawFieldName);
 
-        PMMLFieldToVector featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
+        PMMLVectorRange featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
         return featureEntries;
     }
 
-    static List<FieldToVector> convertToFeatureEntries(PMML pmml, int modelNum, TreeMap<String, List<PPCell>> fieldToPPCellMap,
-                                                       List<String> orderedParameterList) {
+    static List<VectorRange> convertToFeatureEntries(PMML pmml, int modelNum, TreeMap<String, List<PPCell>> fieldToPPCellMap,
+                                                     List<String> orderedParameterList) {
         // for each predictor: get vector entries?
-        List<FieldToVector> fieldToVectorList = new ArrayList<>();
+        List<VectorRange> vectorRangeList = new ArrayList<>();
         int indexCounter = 0;
         // for each of the fields create the feature entries
         for (String fieldname : fieldToPPCellMap.keySet()) {
-            PMMLFieldToVector featureEntries = getFeatureEntryFromGeneralRegressionModel(pmml, modelNum, fieldname,
+            PMMLVectorRange featureEntries = getFeatureEntryFromGeneralRegressionModel(pmml, modelNum, fieldname,
                     fieldToPPCellMap.get(fieldname), indexCounter);
             for (PPCell cell : fieldToPPCellMap.get(fieldname)) {
                 orderedParameterList.add(cell.getParameterName());
             }
             indexCounter += featureEntries.size();
-            fieldToVectorList.add(featureEntries);
+            vectorRangeList.add(featureEntries);
 
         }
-        return fieldToVectorList;
+        return vectorRangeList;
     }
 
     static TreeMap<String, List<PPCell>> mapCellsToFields(GeneralRegressionModel grModel) {
@@ -135,7 +135,7 @@ public class GeneralizedLinearRegressionHelper {
         }
 
         // get all the entries and sort them by field.
-        // then create one feature entry per field and add them to fieldsToVector.
+        // then create one feature entry per field and add them to vectorRangesToVector.
         // also we must keep a list of parameter names here to make sure the model uses the same order!
 
         for (PPCell ppcell : grModel.getPPMatrix().getPPCells()) {
@@ -144,7 +144,7 @@ public class GeneralizedLinearRegressionHelper {
         return fieldToPPCellMap;
     }
 
-    static void addIntercept(GeneralRegressionModel grModel, List<FieldToVector> fieldToVectorMap, Map<String, List<PPCell>>
+    static void addIntercept(GeneralRegressionModel grModel, List<VectorRange> vectorRangeMap, Map<String, List<PPCell>>
             fieldToPPCellMap, List<String> orderedParameterList) {
         // now, find the order of vector entries to model parameters. This is extremely annoying but we have to do it at some
         // point...
@@ -159,10 +159,10 @@ public class GeneralizedLinearRegressionHelper {
         // now find the parameters which do not come form a field
         for (Parameter parameter : grModel.getParameterList().getParameters()) {
             if (allFieldParameters.contains(parameter.getName()) == false) {
-                PMMLFieldToVector.Intercept intercept = new PMMLFieldToVector.Intercept(parameter.getName(), "double");
+                PMMLVectorRange.Intercept intercept = new PMMLVectorRange.Intercept(parameter.getName(), "double");
                 intercept.addVectorEntry(numFeatures, null);
                 numFeatures++;
-                fieldToVectorMap.add(intercept);
+                vectorRangeMap.add(intercept);
                 orderedParameterList.add(parameter.getName());
             }
         }
@@ -178,12 +178,12 @@ public class GeneralizedLinearRegressionHelper {
             // this list stores the order of the parameters as the vectors will return them. So, if p5 is a parameter that has index 11
             // in the vetor then this parameter will be at position 11 in the ordered parameter list.
             List<String> orderedParameterList = new ArrayList<>();
-            List<FieldToVector> fieldToVectorList = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap, orderedParameterList);
+            List<VectorRange> vectorRangeList = convertToFeatureEntries(pmml, modelNum, fieldToPPCellMap, orderedParameterList);
             //add intercept if any
-            addIntercept(grModel, fieldToVectorList, fieldToPPCellMap, orderedParameterList);
+            addIntercept(grModel, vectorRangeList, fieldToPPCellMap, orderedParameterList);
 
             assert orderedParameterList.size() == grModel.getParameterList().getParameters().size();
-            FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = createGeneralizedRegressionModelVectorEntries(fieldToVectorList, orderedParameterList
+            VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = createGeneralizedRegressionModelVectorEntries(vectorRangeList, orderedParameterList
                     .toArray(new String[orderedParameterList.size()]));
 
             // now finally create the model!
@@ -290,13 +290,13 @@ public class GeneralizedLinearRegressionHelper {
         return coefficients;
     }
 
-    private static FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(List<FieldToVector>
-                                                                                                                                    fieldToVectorList, String[] orderedParameterList) {
+    private static VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(List<VectorRange>
+                                                                                                                                    vectorRangeList, String[] orderedParameterList) {
         int numEntries = 0;
-        for (FieldToVector entry : fieldToVectorList) {
+        for (VectorRange entry : vectorRangeList) {
 
             numEntries += entry.size();
         }
-        return new FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression(fieldToVectorList, numEntries, orderedParameterList);
+        return new VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression(vectorRangeList, numEntries, orderedParameterList);
     }
 }

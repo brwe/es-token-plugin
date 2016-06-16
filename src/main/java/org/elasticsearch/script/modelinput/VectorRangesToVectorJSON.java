@@ -31,11 +31,11 @@ import java.util.List;
 import java.util.Map;
 
 
-public class FieldsToVectorJSON extends FieldsToVector {
+public class VectorRangesToVectorJSON extends VectorRangesToVector {
 
 
     // number of entries
-    public FieldsToVectorJSON(Map<String, Object> source) {
+    public VectorRangesToVectorJSON(Map<String, Object> source) {
         assert source.get("sparse") == null || source.get("sparse") instanceof Boolean;
         sparse = TransportPrepareSpecAction.getSparse(source.get("sparse"));
         assert (source.containsKey("features"));
@@ -48,16 +48,16 @@ public class FieldsToVectorJSON extends FieldsToVector {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                fieldsToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"), "int",
+                vectorRangeList.add(new AnalyzedTextVectorRange.SparseTermVectorRange((String) feature.get("field"), "int",
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                fieldsToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), "int", getTerms
+                vectorRangeList.add(new AnalyzedTextVectorRange.DenseTermVectorRange((String) feature.get("field"), "int", getTerms
                         (feature.get("terms")), (String) feature.get("number"), offset));
             }
-            offset += fieldsToVector.get(fieldsToVector.size() - 1).size();
-            numEntries += fieldsToVector.get(fieldsToVector.size() - 1).size();
+            offset += vectorRangeList.get(vectorRangeList.size() - 1).size();
+            numEntries += vectorRangeList.get(vectorRangeList.size() - 1).size();
         }
     }
 
@@ -78,7 +78,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         if (sparse) {
             int length = 0;
             List<EsSparseNumericVector> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : fieldsToVector) {
+            for (VectorRange fieldEntry : vectorRangeList) {
                 EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec);
                 length += vec.values.v1().length;
@@ -103,7 +103,7 @@ public class FieldsToVectorJSON extends FieldsToVector {
         } else {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
-            for (FieldToVector fieldEntry : fieldsToVector) {
+            for (VectorRange fieldEntry : vectorRangeList) {
                 EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
                 entries.add(vec.values);
                 length += vec.values.length;

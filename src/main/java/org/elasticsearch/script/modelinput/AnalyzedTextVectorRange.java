@@ -31,12 +31,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class AnalyzedTextFieldToVector extends FieldToVector {
+public abstract class AnalyzedTextVectorRange extends VectorRange {
     int offset;
 
     public static final EsSparseNumericVector EMPTY_SPARSE = new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
 
-    public AnalyzedTextFieldToVector(String field, String type) {
+    public AnalyzedTextVectorRange(String field, String type) {
         super(field, field, type);
     }
     public enum FeatureType {
@@ -74,11 +74,11 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
         }
     }
 
-    public static class SparseTermFieldToVector extends AnalyzedTextFieldToVector {
+    public static class SparseTermVectorRange extends AnalyzedTextVectorRange {
         private String number;
         Map<String, Integer> wordMap;
 
-        public SparseTermFieldToVector(String field, String type, String[] terms, String number, int offset) {
+        public SparseTermVectorRange(String field, String type, String[] terms, String number, int offset) {
             super(field, type);
             this.number = number;
             this.field = field;
@@ -93,7 +93,7 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
             try {
                 /** here be the vectorizer **/
                 Tuple<int[], double[]> indicesAndValues;
-                if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF)) {
+                if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
@@ -103,10 +103,10 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
                     }
 
-                } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.OCCURRENCE)) {
+                } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
                     ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                     indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
-                } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF_IDF)) {
+                } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
@@ -138,11 +138,11 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
     }
 
 
-    public static class DenseTermFieldToVector extends AnalyzedTextFieldToVector {
+    public static class DenseTermVectorRange extends AnalyzedTextVectorRange {
         String[] terms;
         String number;
 
-        public DenseTermFieldToVector(String field, String type, String[] terms, String number, int offset) {
+        public DenseTermVectorRange(String field, String type, String[] terms, String number, int offset) {
             super(field, type);
             this.terms = terms;
             this.number = number;
@@ -157,11 +157,11 @@ public abstract class AnalyzedTextFieldToVector extends FieldToVector {
                 IndexField indexField = leafIndexLookup.get(field);
                 for (int i = 0; i < terms.length; i++) {
                     IndexFieldTerm indexTermField = indexField.get(terms[i]);
-                    if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF)) {
+                    if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
                         values[i] = indexTermField.tf();
-                    } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.OCCURRENCE)) {
+                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
                         values[i] = indexTermField.tf() > 0 ? 1 : 0;
-                    } else if (AnalyzedTextFieldToVector.FeatureType.fromString(number).equals(AnalyzedTextFieldToVector.FeatureType.TF_IDF)) {
+                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
                         double tf = indexTermField.tf();
                         double df = indexTermField.df();
                         double numDocs = indexField.docCount();

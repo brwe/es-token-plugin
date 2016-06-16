@@ -27,7 +27,6 @@ import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.dmg.pmml.TreeModel;
 import org.elasticsearch.common.Nullable;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
@@ -36,6 +35,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.CompiledScript;
+import org.elasticsearch.script.modelinput.VectorRangesToVector;
+import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.script.models.EsLinearSVMModel;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.models.EsModelEvaluator;
@@ -45,8 +46,6 @@ import org.elasticsearch.script.ScriptEngineService;
 import org.elasticsearch.script.ScriptException;
 import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.SearchScript;
-import org.elasticsearch.script.modelinput.FieldsToVector;
-import org.elasticsearch.script.modelinput.FieldsToVectorJSON;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 import org.xml.sax.SAXException;
@@ -101,16 +100,16 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     }
 
     public static class FieldsToVectorAndModel {
-        public FieldsToVectorAndModel(FieldsToVector fieldsToVector, EsModelEvaluator model) {
-            this.fieldsToVector = fieldsToVector;
+        public FieldsToVectorAndModel(VectorRangesToVector vectorRangesToVector, EsModelEvaluator model) {
+            this.vectorRangesToVector = vectorRangesToVector;
             this.model = model;
         }
 
-        public FieldsToVector getFieldsToVector() {
-            return fieldsToVector;
+        public VectorRangesToVector getVectorRangesToVector() {
+            return vectorRangesToVector;
         }
 
-        final FieldsToVector fieldsToVector;
+        final VectorRangesToVector vectorRangesToVector;
 
         public EsModelEvaluator getModel() {
             return model;
@@ -122,7 +121,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     public static class Factory {
         public static final String VECTOR_MODEL_DELIMITER = "dont know what to put here";
 
-        public FieldsToVector getFeatures() {
+        public VectorRangesToVector getFeatures() {
             return features;
         }
 
@@ -130,7 +129,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             return model;
         }
 
-        FieldsToVector features = null;
+        VectorRangesToVector features = null;
 
         private EsModelEvaluator model;
 
@@ -152,7 +151,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 } catch (IOException e) {
                     throw new ScriptException("pmml prediction failed", e);
                 }
-                features = new FieldsToVectorJSON(parsedSource);
+                features = new VectorRangesToVectorJSON(parsedSource);
 
                 if (model == null) {
                     try {
@@ -169,7 +168,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 }
             } else {
                 FieldsToVectorAndModel fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
-                features = fieldsToVectorAndModel.fieldsToVector;
+                features = fieldsToVectorAndModel.vectorRangesToVector;
                 model = fieldsToVectorAndModel.model;
             }
         }
@@ -248,7 +247,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     public static class PMMLModel implements LeafSearchScript {
         EsModelEvaluator model = null;
-        private final FieldsToVector features;
+        private final VectorRangesToVector features;
         private LeafSearchLookup lookup;
 
         /**
@@ -260,7 +259,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         /**
          * @throws ScriptException
          */
-        private PMMLModel(FieldsToVector features, EsModelEvaluator model, LeafSearchLookup lookup) throws ScriptException {
+        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup) throws ScriptException {
 
             this.lookup = lookup;
             this.features = features;

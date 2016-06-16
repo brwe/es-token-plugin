@@ -30,9 +30,9 @@ import org.dmg.pmml.Predicate;
 import org.dmg.pmml.SimplePredicate;
 import org.dmg.pmml.SimpleSetPredicate;
 import org.dmg.pmml.TreeModel;
-import org.elasticsearch.script.modelinput.FieldToVector;
-import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
-import org.elasticsearch.script.modelinput.PMMLFieldToVector;
+import org.elasticsearch.script.modelinput.VectorRange;
+import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
+import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.models.EsTreeModel;
 
 import java.util.ArrayList;
@@ -52,8 +52,8 @@ public class TreeModelHelper {
                 && treeModel.getMissingValueStrategy().value().equals("defaultChild")
                 && treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction")) {
 
-            List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
-            FieldsToVectorPMML.FieldsToVectorPMMLTreeModel fieldsToVector = new FieldsToVectorPMML.FieldsToVectorPMMLTreeModel(fields);
+            List<VectorRange> fields = getFieldValuesList(treeModel, pmml, modelNum);
+            VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel fieldsToVector = new VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel(fields);
             Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
             EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);
             return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);
@@ -65,20 +65,20 @@ public class TreeModelHelper {
         }
     }
 
-    protected static List<FieldToVector> getFieldValuesList(TreeModel treeModel, PMML pmml, int modelNum) {
+    protected static List<VectorRange> getFieldValuesList(TreeModel treeModel, PMML pmml, int modelNum) {
         // walk the tree model and gather all the field name
         Set<String> fieldNames = new HashSet<>();
         Node startNode = treeModel.getNode();
         getFieldNamesFromNode(fieldNames, startNode);
-        // create the actual FieldToVector objects, copy paste much from GLMHelper
-        List<FieldToVector> fieldsToValues = new ArrayList<>();
+        // create the actual VectorRange objects, copy paste much from GLMHelper
+        List<VectorRange> fieldsToValues = new ArrayList<>();
         List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(pmml, modelNum);
         for(String fieldName : fieldNames) {
             List<DerivedField> derivedFields = new ArrayList<>();
             String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
             DataField rawField = ProcessPMMLHelper.getRawDataField(pmml, rawFieldName);
             MiningField miningField = ProcessPMMLHelper.getMiningField(pmml, 0, rawFieldName);
-            fieldsToValues.add(new PMMLFieldToVector.FieldToValue(rawField, miningField, derivedFields.toArray(new
+            fieldsToValues.add(new PMMLVectorRange.FieldToValue(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields.size()])));
         }
         return fieldsToValues;
@@ -111,10 +111,10 @@ public class TreeModelHelper {
         return new EsTreeModel(treeModel, fieldToTypeMap);
     }
 
-    public static Map<String,String> getFieldToTypeMap(java.util.List<FieldToVector> fieldToVectorList) {
+    public static Map<String,String> getFieldToTypeMap(java.util.List<VectorRange> vectorRangeList) {
         Map<String, String> fieldToTypeMap = new HashMap<>();
-        for (FieldToVector fieldToVector : fieldToVectorList) {
-            fieldToTypeMap.put(fieldToVector.getLastDerivedFieldName(), fieldToVector.getType());
+        for (VectorRange vectorRange : vectorRangeList) {
+            fieldToTypeMap.put(vectorRange.getLastDerivedFieldName(), vectorRange.getType());
         }
         return fieldToTypeMap;
     }
