@@ -25,10 +25,10 @@ import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.SourceLookup;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 
 public class VectorRangesToVectorPMML extends VectorRangesToVector {
@@ -54,24 +54,24 @@ public class VectorRangesToVectorPMML extends VectorRangesToVector {
     }
 
     public Object vector(Map<String, List> fieldValues) {
-        Map<Integer, Double> indicesAndValues = new TreeMap<>();
+        int length = 0;
+        List<EsSparseNumericVector> sparseNumericVectors = new ArrayList<>();
         for (VectorRange vectorRange : this.vectorRangeList) {
             EsVector entries = vectorRange.getVector(fieldValues);
             assert entries instanceof EsSparseNumericVector;
-            EsSparseNumericVector sparseVector = (EsSparseNumericVector) entries;
-            for (int i = 0; i < sparseVector.values.v1().length; i++) {
-                assert indicesAndValues.containsKey(sparseVector.values.v1()[i]) == false;
-                indicesAndValues.put(sparseVector.values.v1()[i], sparseVector.values.v2()[i]);
-            }
+            sparseNumericVectors.add((EsSparseNumericVector) entries);
+            length += ((EsSparseNumericVector) entries).values.v1().length;
         }
         Map<String, Object> finalVector = new HashMap<>();
-        double[] values = new double[indicesAndValues.size()];
-        int[] indices = new int[indicesAndValues.size()];
+        double[] values = new double[length];
+        int[] indices = new int[length];
         int i = 0;
-        for (Map.Entry<Integer, Double> entry : indicesAndValues.entrySet()) {
-            indices[i] = entry.getKey();
-            values[i] = entry.getValue();
-            i++;
+        for (EsSparseNumericVector esSparseNumericVector : sparseNumericVectors) {
+            for (int j = 0; j < esSparseNumericVector.values.v1().length; j++) {
+                indices[i] = esSparseNumericVector.values.v1()[j];
+                values[i] = esSparseNumericVector.values.v2()[j];
+                i++;
+            }
         }
         finalVector.put("values", values);
         finalVector.put("indices", indices);
