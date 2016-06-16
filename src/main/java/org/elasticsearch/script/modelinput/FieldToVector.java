@@ -39,6 +39,7 @@ public abstract class FieldToVector {
     public FieldToVector(String field, String lastDerivedFieldName, String type) {
 
         this.field = field;
+        this.lastDerivedFieldName = lastDerivedFieldName;
         this.type = type;
     }
 

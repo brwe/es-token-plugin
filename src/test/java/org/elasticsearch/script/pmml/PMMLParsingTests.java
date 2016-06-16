@@ -21,7 +21,7 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TreeModel;
-import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.modelinput.FieldToVector;
 import org.elasticsearch.script.modelinput.FieldsToVectorPMML;
 import org.elasticsearch.test.ESTestCase;
 import org.hamcrest.Matchers;
@@ -38,6 +38,7 @@ import java.util.Set;
 import static org.elasticsearch.script.pmml.ProcessPMMLHelper.parsePmml;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 
 public class PMMLParsingTests extends ESTestCase {
 
@@ -169,7 +170,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
@@ -209,35 +210,34 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String,Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
-            double prob0 = (Double)((Map<String,Object>)resultValues.get("probs")).get("<=50K");
-            double prob1 = (Double)((Map<String,Object>)resultValues.get("probs")).get(">50K");
+            double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
+            double prob1 = (Double) ((Map<String, Object>) resultValues.get("probs")).get(">50K");
             assertThat(prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
             assertThat(prob1, Matchers.closeTo(Double.parseDouble(expectedResult[1]), 1.e-7));
         }
     }
 
     /*tests for tree model*/
-    @AwaitsFix(bugUrl = "wip")
     public void testBigModelAndFeatureParsingFromRExportTreeModel() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.fieldsToVector;
-        assertThat(vectorEntries.getEntries().size(), equalTo(12));
+        FieldsToVectorPMML.FieldsToVectorPMMLTreeModel vectorEntries = (FieldsToVectorPMML.FieldsToVectorPMMLTreeModel) fieldsToVectorAndModel.fieldsToVector;
+        assertThat(vectorEntries.getEntries().size(), equalTo(11));
         assertTreeModelModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/adult.data",
                 "/org/elasticsearch/script/r_tree_adult_result.csv");
     }
 
     private void assertTreeModelModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel, String input, String output) {
-
+        assertThat(fieldsToVectorAndModel.getModel() , notNullValue());
     }
 
     public void testExtractFieldNames() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        TreeModel treeModel = (TreeModel)pmml.getModels().get(0);
+        TreeModel treeModel = (TreeModel) pmml.getModels().get(0);
         Set<String> expectedFieldNames = new HashSet<>();
         expectedFieldNames.addAll(Arrays.asList(new String[]{"age_z", "relationship", "marital_status", "hours_per_week_z", "sex",
                 "occupation", "education", "education_num_z", "native_country", "race", "workclass"}));
@@ -247,6 +247,20 @@ public class PMMLParsingTests extends ESTestCase {
         for (String fieldName : expectedFieldNames) {
             assertTrue(fieldNames.contains(fieldName));
         }
+    }
+
+    public void testFieldTypeMapExtract() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
+        PMML pmml = parsePmml(pmmlString);
+        TreeModel treeModel = (TreeModel) pmml.getModels().get(0);
+        List<FieldToVector> fields = TreeModelHelper.getFieldValuesList(treeModel, pmml, 0);
+        Map<String, String> fieldToTypeMap = TreeModelHelper.getFieldToTypeMap(fields);
+        assertTrue(fieldToTypeMap.containsKey("age_z"));
+        assertThat(fieldToTypeMap.get("age_z"), equalTo("double"));
+        assertTrue(fieldToTypeMap.containsKey("work"));
+        assertThat(fieldToTypeMap.get("work"), equalTo("string"));
+        assertTrue(fieldToTypeMap.containsKey("education"));
+        assertThat(fieldToTypeMap.get("education"), equalTo("string"));
     }
 
 }

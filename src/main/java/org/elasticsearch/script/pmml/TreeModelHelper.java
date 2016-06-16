@@ -52,7 +52,7 @@ public class TreeModelHelper {
                 && treeModel.getMissingValueStrategy().value().equals("defaultChild")
                 && treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction")) {
 
-            java.util.List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
+            List<FieldToVector> fields = getFieldValuesList(treeModel, pmml, modelNum);
             FieldsToVectorPMML.FieldsToVectorPMMLTreeModel fieldsToVector = new FieldsToVectorPMML.FieldsToVectorPMMLTreeModel(fields);
             Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
             EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);

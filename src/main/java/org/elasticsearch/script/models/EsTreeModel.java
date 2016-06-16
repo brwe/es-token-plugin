@@ -19,26 +19,29 @@
 
 package org.elasticsearch.script.models;
 
+import org.dmg.pmml.Array;
+import org.dmg.pmml.CompoundPredicate;
 import org.dmg.pmml.False;
 import org.dmg.pmml.Node;
 import org.dmg.pmml.Predicate;
 import org.dmg.pmml.SimplePredicate;
+import org.dmg.pmml.SimpleSetPredicate;
 import org.dmg.pmml.TreeModel;
 import org.dmg.pmml.True;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 public class EsTreeModel extends EsModelEvaluator {
 
-    private TreeModel treeModel;
     EsTreeNode startNode;
 
     public EsTreeModel(TreeModel treeModel, Map<String, String> fieldTypeMap) {
 
         startNode = new EsTreeNode(treeModel.getNode(), fieldTypeMap);
-        this.treeModel = treeModel;
     }
 
     @Override
@@ -47,22 +50,21 @@ public class EsTreeModel extends EsModelEvaluator {
         return startNode.evaluate(vector);
     }
 
-    class EsTreeNode {
+    static class EsTreeNode {
         EsPredicate predicate;
         java.util.List<EsTreeNode> childNodes = new ArrayList<>();
         String score;
 
         public EsTreeNode(Node node, Map<String, String> fieldTypeMap) {
-            Node startNode = treeModel.getNode();
-            predicate = createPredicate(startNode.getPredicate(), fieldTypeMap);
-            for (Node childNode : startNode.getNodes()) {
+            predicate = createPredicate(node.getPredicate(), fieldTypeMap);
+            for (Node childNode : node.getNodes()) {
                 childNodes.add(new EsTreeNode(childNode, fieldTypeMap));
             }
             score = node.getScore();
         }
 
         public Map<String, Object> evaluate(Map<String, Object> vector) {
-            for(EsTreeNode childNode : childNodes) {
+            for (EsTreeNode childNode : childNodes) {
                 if (childNode.predicate.match(vector)) {
                     return childNode.evaluate(vector);
                 }
@@ -73,7 +75,7 @@ public class EsTreeModel extends EsModelEvaluator {
         }
     }
 
-    private EsPredicate createPredicate(Predicate predicate, Map<String, String> fieldTypeMap) {
+    protected static EsPredicate createPredicate(final Predicate predicate, Map<String, String> fieldTypeMap) {
         if (predicate instanceof SimplePredicate) {
             SimplePredicate simplePredicate = (SimplePredicate) predicate;
             String field = simplePredicate.getField().getValue();
@@ -112,10 +114,116 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
             };
         }
+        if (predicate instanceof CompoundPredicate) {
+            CompoundPredicate compoundPredicate = (CompoundPredicate) predicate;
+            List<EsPredicate> predicates = new ArrayList<>();
+            for (Predicate childPredicate : ((CompoundPredicate) predicate).getPredicates()) {
+                predicates.add(createPredicate(childPredicate, fieldTypeMap));
+            }
+            if (compoundPredicate.getBooleanOperator().value().equals("and")) {
+                return new EsCompoundPredicate(predicates) {
+
+                    @Override
+                    protected boolean matchList(Map vector) {
+                        boolean result = true;
+                        for (Object childPredicate : predicates) {
+                            result = result && ((EsPredicate) childPredicate).match(vector);
+                        }
+                        return result;
+                    }
+                };
+            }
+            if (compoundPredicate.getBooleanOperator().value().equals("or")) {
+                return new EsCompoundPredicate(predicates) {
+
+                    @Override
+                    protected boolean matchList(Map vector) {
+                        boolean result = false;
+                        for (Object childPredicate : predicates) {
+                            result = result || ((EsPredicate) childPredicate).match(vector);
+                        }
+                        return result;
+                    }
+                };
+            }
+            if (compoundPredicate.getBooleanOperator().value().equals("xor")) {
+                return new EsCompoundPredicate(predicates) {
+
+                    @Override
+                    protected boolean matchList(Map vector) {
+                        boolean result = false;
+                        for (Object childPredicate : predicates) {
+                            if (result == false) {
+                                result = result || ((EsPredicate) childPredicate).match(vector);
+                            } else {
+                                if (((EsPredicate) childPredicate).match(vector)) {
+                                    // we had true already, xor must return false
+                                    return false;
+                                }
+                            }
+                        }
+                        return result;
+                    }
+                };
+            }
+            if (compoundPredicate.getBooleanOperator().value().equals("surrogate")) {
+                return new EsCompoundPredicate(predicates) {
+
+                    @Override
+                    protected boolean matchList(Map vector) {
+                        for (Object childPredicate : predicates) {
+                            if (((EsPredicate) childPredicate).match(vector) == true) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                };
+            }
+        }
+        if (predicate instanceof SimpleSetPredicate) {
+            SimpleSetPredicate simpleSetPredicate = (SimpleSetPredicate) predicate;
+            Array setArray = simpleSetPredicate.getArray();
+            String field = simpleSetPredicate.getField().getValue();
+            if (setArray.getType().equals(Array.Type.STRING)) {
+                HashSet<String> valuesSet = new HashSet<>();
+                String[] values = setArray.getValue().split("\" \"");
+                if (values.length != setArray.getN()) {
+                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
+                }
+                for (String value : values) {
+                    valuesSet.add(value);
+                }
+                return new EsSimpleSetPredicate(valuesSet, field);
+            }
+
+            if (setArray.getType().equals(Array.Type.STRING)) {
+                HashSet<Double> valuesSet = new HashSet<>();
+                String[] values = setArray.getValue().split(" ");
+                if (values.length != setArray.getN()) {
+                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
+                }
+                for (String value : values) {
+                    valuesSet.add(Double.parseDouble(value));
+                }
+                return new EsSimpleSetPredicate(valuesSet, field);
+            }
+            if (setArray.getType().equals(Array.Type.INT)) {
+                HashSet<Integer> valuesSet = new HashSet<>();
+                String[] values = setArray.getValue().split(" ");
+                if (values.length != setArray.getN()) {
+                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
+                }
+                for (String value : values) {
+                    valuesSet.add(Integer.parseInt(value));
+                }
+                return new EsSimpleSetPredicate(valuesSet, field);
+            }
+        }
         throw new UnsupportedOperationException("Predicate Type " + predicate.getClass().getName() + " for TreeModel not implemented yet.");
     }
 
-    private  <T extends Comparable> EsSimplePredicate<T> getSimplePredicate(T value, String field, String operator) {
+    protected static <T extends Comparable> EsSimplePredicate<T> getSimplePredicate(T value, String field, String operator) {
         if (operator.equals("equal")) {
             return new EsSimplePredicate<T>(value, field) {
                 @Override
@@ -198,21 +306,18 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
             };
         }
+        throw new UnsupportedOperationException("OOperator " + operator + "  not supported for Predicate in TreeModel.");
     }
 
-    abstract class EsPredicate {
-
+    abstract static class EsPredicate {
         public EsPredicate() {
-        }
-
-        public EsPredicate(Predicate predicate, Map<String, String> fieldTypeMap) {
 
         }
 
         public abstract boolean match(Map<String, Object> vector);
     }
 
-    abstract class EsSimplePredicate<T extends Comparable> extends EsPredicate {
+    abstract static class EsSimplePredicate<T extends Comparable> extends EsPredicate {
 
         protected final T value;
         protected String field;
@@ -231,6 +336,39 @@ public class EsTreeModel extends EsModelEvaluator {
                 return false;
             }
             return match((T) fieldValue);
+        }
+    }
+
+    abstract static class EsCompoundPredicate extends EsPredicate {
+
+        protected List<EsPredicate> predicates;
+
+        public EsCompoundPredicate(List<EsPredicate> predicates) {
+            this.predicates = predicates;
+        }
+
+        public boolean match(Map<String, Object> vector) {
+            return matchList(vector);
+        }
+
+        protected abstract boolean matchList(Map<String, Object> vector);
+    }
+
+    static class EsSimpleSetPredicate extends EsPredicate {
+
+        protected HashSet values;
+        private String field;
+
+        public EsSimpleSetPredicate(HashSet values, String field) {
+            this.values = values;
+            this.field = field;
+        }
+
+
+        @Override
+        public boolean match(Map<String, Object> vector) {
+            // we do not check for null because HashSet allows null values.
+            return values.contains(vector.get(field));
         }
     }
 }
