@@ -104,12 +104,23 @@ public class EsTreeModel extends EsModelEvaluator {
                 public boolean match(Map<String, Object> vector) {
                     return true;
                 }
+
+                @Override
+                public boolean allNeededValuesMissing(Map vector) {
+                    return false;
+                }
             };
+
         }
         if (predicate instanceof False) {
             return new EsPredicate() {
                 @Override
                 public boolean match(Map<String, Object> vector) {
+                    return false;
+                }
+
+                @Override
+                public boolean allNeededValuesMissing(Map vector) {
                     return false;
                 }
             };
@@ -126,8 +137,8 @@ public class EsTreeModel extends EsModelEvaluator {
                     @Override
                     protected boolean matchList(Map vector) {
                         boolean result = true;
-                        for (Object childPredicate : predicates) {
-                            result = result && ((EsPredicate) childPredicate).match(vector);
+                        for (EsPredicate childPredicate : predicates) {
+                            result = result && childPredicate.match(vector);
                         }
                         return result;
                     }
@@ -139,8 +150,8 @@ public class EsTreeModel extends EsModelEvaluator {
                     @Override
                     protected boolean matchList(Map vector) {
                         boolean result = false;
-                        for (Object childPredicate : predicates) {
-                            result = result || ((EsPredicate) childPredicate).match(vector);
+                        for (EsPredicate childPredicate : predicates) {
+                            result = result || childPredicate.match(vector);
                         }
                         return result;
                     }
@@ -152,11 +163,11 @@ public class EsTreeModel extends EsModelEvaluator {
                     @Override
                     protected boolean matchList(Map vector) {
                         boolean result = false;
-                        for (Object childPredicate : predicates) {
+                        for (EsPredicate childPredicate : predicates) {
                             if (result == false) {
-                                result = result || ((EsPredicate) childPredicate).match(vector);
+                                result = result || childPredicate.match(vector);
                             } else {
-                                if (((EsPredicate) childPredicate).match(vector)) {
+                                if (childPredicate.match(vector)) {
                                     // we had true already, xor must return false
                                     return false;
                                 }
@@ -171,14 +182,25 @@ public class EsTreeModel extends EsModelEvaluator {
 
                     @Override
                     protected boolean matchList(Map vector) {
-                        for (Object childPredicate : predicates) {
-                            if (((EsPredicate) childPredicate).match(vector) == true) {
-                                return true;
+                        for (EsPredicate childPredicate : predicates) {
+                            if (childPredicate.allNeededValuesMissing(vector) == false) {
+                                return childPredicate.match(vector);
+
                             }
                         }
                         return false;
                     }
+
+                    @Override
+                    public boolean allNeededValuesMissing(Map vector) {
+                        boolean valuesMissing = false;
+                        for (EsPredicate predicate : predicates) {
+                            valuesMissing = predicate.allNeededValuesMissing(vector) && valuesMissing;
+                        }
+                        return valuesMissing;
+                    }
                 };
+
             }
         }
         if (predicate instanceof SimpleSetPredicate) {
@@ -188,6 +210,9 @@ public class EsTreeModel extends EsModelEvaluator {
             if (setArray.getType().equals(Array.Type.STRING)) {
                 HashSet<String> valuesSet = new HashSet<>();
                 String[] values = setArray.getValue().split("\" \"");
+                // trimm beginning and end quotes
+                values[0] = values[0].substring(1, values[0].length());
+                values[values.length - 1] = values[values.length - 1].substring(0, values[values.length - 1].length() - 1);
                 if (values.length != setArray.getN()) {
                     throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
                 }
@@ -315,6 +340,8 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         public abstract boolean match(Map<String, Object> vector);
+
+        public abstract boolean allNeededValuesMissing(Map vector);
     }
 
     abstract static class EsSimplePredicate<T extends Comparable> extends EsPredicate {
@@ -337,6 +364,11 @@ public class EsTreeModel extends EsModelEvaluator {
             }
             return match((T) fieldValue);
         }
+
+        @Override
+        public boolean allNeededValuesMissing(Map vector) {
+            return vector.containsKey(field) == false;
+        }
     }
 
     abstract static class EsCompoundPredicate extends EsPredicate {
@@ -352,6 +384,15 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         protected abstract boolean matchList(Map<String, Object> vector);
+
+        @Override
+        public boolean allNeededValuesMissing(Map vector) {
+            boolean valuesMissing = false;
+            for (EsPredicate predicate : predicates) {
+                valuesMissing = predicate.allNeededValuesMissing(vector) || valuesMissing;
+            }
+            return valuesMissing;
+        }
     }
 
     static class EsSimpleSetPredicate extends EsPredicate {
@@ -369,6 +410,11 @@ public class EsTreeModel extends EsModelEvaluator {
         public boolean match(Map<String, Object> vector) {
             // we do not check for null because HashSet allows null values.
             return values.contains(vector.get(field));
+        }
+
+        @Override
+        public boolean allNeededValuesMissing(Map vector) {
+            return vector.containsKey(field) == false;
         }
     }
 }

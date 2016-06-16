@@ -230,8 +230,46 @@ public class PMMLParsingTests extends ESTestCase {
                 "/org/elasticsearch/script/r_tree_adult_result.csv");
     }
 
-    private void assertTreeModelModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel, String input, String output) {
+    private void assertTreeModelModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel, String inputData,
+                                             String resultData) throws IOException {
         assertThat(fieldsToVectorAndModel.getModel() , notNullValue());
+
+        final String testData = copyToStringFromClasspath(inputData);
+        final String expectedResults = copyToStringFromClasspath(resultData);
+        String testDataLines[] = testData.split("\\r?\\n");
+        String expectedResultsLines[] = expectedResults.split("\\r?\\n");
+        String[] fields = testDataLines[0].split(",");
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = fields[i].trim();
+            fields[i] = fields[i].substring(1, fields[i].length() - 1);
+        }
+        for (int i = 1; i < testDataLines.length; i++) {
+            String[] testDataValues = testDataLines[i].split(",");
+            // trimm spaces and add value
+            Map<String, List> input = new HashMap<>();
+            for (int j = 0; j < testDataValues.length; j++) {
+                testDataValues[j] = testDataValues[j].trim();
+                if (testDataValues[j].equals("") == false) {
+                    List fieldInput = new ArrayList<>();
+                    if (j == 0 || j == 2 || j == 4 || j == 10 || j == 11 || j == 12) {
+                        fieldInput.add(Double.parseDouble(testDataValues[j]));
+                    } else {
+                        fieldInput.add(testDataValues[j]);
+                    }
+                    input.put(fields[j], fieldInput);
+                } else {
+                    if (randomBoolean()) {
+                        input.put(fields[j], new ArrayList<>());
+                    }
+                }
+            }
+            Map<String, Object> result = (Map<String, Object>) ((FieldsToVectorPMML) fieldsToVectorAndModel.fieldsToVector).vector(input);
+            String[] expectedResult = expectedResultsLines[i].split(",");
+            String expectedClass = expectedResult[expectedResult.length - 1];
+            expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            assertThat("result " + i + " has wrong prediction" ,expectedClass, equalTo(resultValues.get("class")));
+        }
     }
 
     public void testExtractFieldNames() throws IOException {

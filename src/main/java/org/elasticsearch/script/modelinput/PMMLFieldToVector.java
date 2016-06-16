@@ -45,7 +45,9 @@ public abstract class PMMLFieldToVector extends FieldToVector {
     protected PreProcessingStep[] preProcessingSteps;
 
 
-    protected Object applyPreProcessing(Object value) {
+    protected Object applyPreProcessing(Map<String, List> fieldValues) {
+        List valueList = fieldValues.get(field);
+        Object value = valueList == null || valueList.size() == 0 ? null : valueList.get(0);
         for (int i = 0; i < preProcessingSteps.length; i++) {
             value = preProcessingSteps[i].apply(value);
         }
@@ -90,8 +92,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            List category = fieldValues.get(field);
-            Object processedCategory = applyPreProcessing(category == null || category.size() == 0 ? null : category.get(0));
+            Object processedCategory = applyPreProcessing(fieldValues);
             Integer index = categoryToIndexHashMap.get(processedCategory);
             if (index == null) {
                 // TODO: Should we throw an exception here? Can this actually happen?
@@ -137,8 +138,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            List value = fieldValues.get(field);
-            Object finalValue = applyPreProcessing(value.size() == 0 ? null : value.get(0));
+            Object finalValue = applyPreProcessing(fieldValues);
             indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) finalValue).doubleValue()});
             return new EsSparseNumericVector(indicesAndValues);
         }
@@ -254,8 +254,7 @@ public abstract class PMMLFieldToVector extends FieldToVector {
 
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
-            List value = fieldValues.get(field);
-            Object finalValue = applyPreProcessing(value.size() == 0 ? null : value.get(0));
+            Object finalValue = applyPreProcessing(fieldValues);
             Map<String, Object> values = new HashMap<>();
             values.put(finalFieldName, finalValue);
             return new EsValueMapVector(values);
