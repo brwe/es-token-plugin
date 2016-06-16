@@ -48,12 +48,13 @@ public class FieldsToVectorJSON extends FieldsToVector {
             assert feature.get("terms") != null;
             assert feature.get("number") != null;
             if (sparse) {
-                fieldsToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"),
+                fieldsToVector.add(new AnalyzedTextFieldToVector.SparseTermFieldToVector((String) feature.get("field"), "int",
                         getTerms(feature.get("terms")),
                         (String) feature.get("number"),
                         offset));
             } else {
-                fieldsToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), getTerms(feature.get("terms")), (String) feature.get("number"), offset));
+                fieldsToVector.add(new AnalyzedTextFieldToVector.DenseTermFieldToVector((String) feature.get("field"), "int", getTerms
+                        (feature.get("terms")), (String) feature.get("number"), offset));
             }
             offset += fieldsToVector.get(fieldsToVector.size() - 1).size();
             numEntries += fieldsToVector.get(fieldsToVector.size() - 1).size();

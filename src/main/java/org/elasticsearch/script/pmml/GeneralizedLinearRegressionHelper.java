@@ -159,7 +159,7 @@ public class GeneralizedLinearRegressionHelper {
         // now find the parameters which do not come form a field
         for (Parameter parameter : grModel.getParameterList().getParameters()) {
             if (allFieldParameters.contains(parameter.getName()) == false) {
-                PMMLFieldToVector.Intercept intercept = new PMMLFieldToVector.Intercept(parameter.getName());
+                PMMLFieldToVector.Intercept intercept = new PMMLFieldToVector.Intercept(parameter.getName(), "double");
                 intercept.addVectorEntry(numFeatures, null);
                 numFeatures++;
                 fieldToVectorMap.add(intercept);

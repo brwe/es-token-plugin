@@ -19,19 +19,25 @@
 
 package org.elasticsearch.script.models;
 
+import org.dmg.pmml.False;
 import org.dmg.pmml.Node;
 import org.dmg.pmml.Predicate;
+import org.dmg.pmml.SimplePredicate;
 import org.dmg.pmml.TreeModel;
+import org.dmg.pmml.True;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class EsTreeModel extends EsModelEvaluator {
 
     private TreeModel treeModel;
+    private Map<String, String> fieldTypeMap;
 
-    EsTreeModel(TreeModel treeModel) {
+    public EsTreeModel(TreeModel treeModel, Map<String, String> fieldTypeMap) {
 
         this.treeModel = treeModel;
+        this.fieldTypeMap = fieldTypeMap;
     }
 
     @Override
@@ -42,10 +48,27 @@ public class EsTreeModel extends EsModelEvaluator {
     }
 
     private Map<String, Object> evaluate(Node node, Map<String, Object> vector) {
-        return null;
+        for (Node childNode : node.getNodes()) {
+            if (checkPredicate(childNode.getPredicate(), vector)) {
+                return evaluate(childNode, vector);
+            }
+        }
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("class", node.getScore());
+        return result;
     }
 
     private boolean checkPredicate(Predicate predicate, Map<String, Object> vector) {
+        if(predicate instanceof True) {
+            return true;
+        }
+        if(predicate instanceof False) {
+            return false;
+        }
+        if (predicate instanceof SimplePredicate) {
+            SimplePredicate simplePredicate = (SimplePredicate)predicate;
+            //simplePredicate.getField().
+        }
         return false;
     }
 
