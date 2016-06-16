@@ -33,7 +33,7 @@ import org.elasticsearch.rest.action.support.RestBuilderListener;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
-import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.script.pmml.VectorScriptEngineService;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -81,7 +81,7 @@ public class RestStoreModelAction extends BaseRestHandler {
         final String model = (String) sourceAsMap.get("model");
 
         if (sourceAsMap.get("spec") == null) {
-            client.prepareGet(ScriptService.SCRIPT_INDEX, PMMLVectorScriptEngineService.NAME, spec_id).execute(new ActionListener<GetResponse>() {
+            client.prepareGet(ScriptService.SCRIPT_INDEX, VectorScriptEngineService.NAME, spec_id).execute(new ActionListener<GetResponse>() {
                 @Override
                 public void onResponse(GetResponse getFields) {
                     if (getFields.isExists() == false) {

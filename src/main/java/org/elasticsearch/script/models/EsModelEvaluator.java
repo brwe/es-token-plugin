@@ -25,10 +25,6 @@ import java.util.Map;
 public abstract class EsModelEvaluator {
 
     abstract public Map<String, Object> evaluate(Map<String, Object> vector);
-
-    //Map<String, Object> evaluate(Tuple<int[], double[]> featureValues);
-
-    //Map<String, Object> evaluate(double[] featureValues);
 }
 
 

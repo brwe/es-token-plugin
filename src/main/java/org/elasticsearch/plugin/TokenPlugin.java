@@ -35,7 +35,7 @@ import org.elasticsearch.rest.action.storemodel.RestStoreModelAction;
 import org.elasticsearch.script.NaiveBayesUpdateScript;
 import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
-import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.script.pmml.VectorScriptEngineService;
 import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchSubPhase;
 import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
@@ -59,7 +59,7 @@ public class TokenPlugin extends Plugin {
     public void onModule(ScriptModule module) {
         // Register each script that we defined in this plugin
         module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
-        module.addScriptEngine(PMMLVectorScriptEngineService.class);
+        module.addScriptEngine(VectorScriptEngineService.class);
         module.addScriptEngine(PMMLModelScriptEngineService.class);
     }
 

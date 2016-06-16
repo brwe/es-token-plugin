@@ -106,7 +106,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
 
                 @Override
-                public boolean allNeededValuesMissing(Map vector) {
+                public boolean notEnoughValues(Map vector) {
                     return false;
                 }
             };
@@ -120,7 +120,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
 
                 @Override
-                public boolean allNeededValuesMissing(Map vector) {
+                public boolean notEnoughValues(Map vector) {
                     return false;
                 }
             };
@@ -183,7 +183,7 @@ public class EsTreeModel extends EsModelEvaluator {
                     @Override
                     protected boolean matchList(Map vector) {
                         for (EsPredicate childPredicate : predicates) {
-                            if (childPredicate.allNeededValuesMissing(vector) == false) {
+                            if (childPredicate.notEnoughValues(vector) == false) {
                                 return childPredicate.match(vector);
 
                             }
@@ -192,12 +192,13 @@ public class EsTreeModel extends EsModelEvaluator {
                     }
 
                     @Override
-                    public boolean allNeededValuesMissing(Map vector) {
-                        boolean valuesMissing = false;
+                    public boolean notEnoughValues(Map vector) {
+                        boolean notEnoughValues = true;
                         for (EsPredicate predicate : predicates) {
-                            valuesMissing = predicate.allNeededValuesMissing(vector) && valuesMissing;
+                            // only one needs to have enough values and then the predicate is defined
+                            notEnoughValues = predicate.notEnoughValues(vector) && notEnoughValues;
                         }
-                        return valuesMissing;
+                        return notEnoughValues;
                     }
                 };
 
@@ -341,7 +342,7 @@ public class EsTreeModel extends EsModelEvaluator {
 
         public abstract boolean match(Map<String, Object> vector);
 
-        public abstract boolean allNeededValuesMissing(Map vector);
+        public abstract boolean notEnoughValues(Map vector);
     }
 
     abstract static class EsSimplePredicate<T extends Comparable> extends EsPredicate {
@@ -366,7 +367,7 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         @Override
-        public boolean allNeededValuesMissing(Map vector) {
+        public boolean notEnoughValues(Map vector) {
             return vector.containsKey(field) == false;
         }
     }
@@ -386,10 +387,10 @@ public class EsTreeModel extends EsModelEvaluator {
         protected abstract boolean matchList(Map<String, Object> vector);
 
         @Override
-        public boolean allNeededValuesMissing(Map vector) {
+        public boolean notEnoughValues(Map vector) {
             boolean valuesMissing = false;
             for (EsPredicate predicate : predicates) {
-                valuesMissing = predicate.allNeededValuesMissing(vector) || valuesMissing;
+                valuesMissing = predicate.notEnoughValues(vector) || valuesMissing;
             }
             return valuesMissing;
         }
@@ -413,7 +414,7 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         @Override
-        public boolean allNeededValuesMissing(Map vector) {
+        public boolean notEnoughValues(Map vector) {
             return vector.containsKey(field) == false;
         }
     }

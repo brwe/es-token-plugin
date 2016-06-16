@@ -24,7 +24,7 @@ import org.elasticsearch.common.collect.Tuple;
 import java.util.Map;
 
 
-public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator{
+public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator {
 
     abstract Map<String, Object> evaluate(Tuple<int[], double[]> featureValues);
 
@@ -33,11 +33,11 @@ public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator{
     @Override
     public Map<String, Object> evaluate(Map<String, Object> vector) {
         if (vector.containsKey("indices") == false) {
-            Map<String, Object> denseVector = (Map<String, Object>) vector;
+            Map<String, Object> denseVector = vector;
             assert (denseVector.get("values") instanceof double[]);
             return evaluate((double[]) denseVector.get("values"));
         } else {
-            Map<String, Object> sparseVector = (Map<String, Object>) vector;
+            Map<String, Object> sparseVector = vector;
             assert (sparseVector.get("indices") instanceof int[]);
             assert (sparseVector.get("values") instanceof double[]);
             Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get("values"));

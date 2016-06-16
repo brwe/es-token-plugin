@@ -50,7 +50,7 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
         result.put("class", classValue);
         Map<String, Object> probs = new HashMap<>();
         probs.put(classes[0], prob);
-        probs.put(classes[1], 1.0-prob);
+        probs.put(classes[1], 1.0 - prob);
         result.put("probs", probs);
         return result;
     }

@@ -24,14 +24,12 @@ import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.PrepareSpecRequest;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
-import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.script.pmml.VectorScriptEngineService;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
@@ -87,7 +85,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -122,7 +120,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -163,7 +161,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -199,7 +197,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -240,7 +238,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
@@ -283,7 +281,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
@@ -365,7 +363,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
@@ -417,7 +415,7 @@ public class VectorIT extends ESIntegTestCase {
         parameters.put("spec_index", specResponse.getIndex());
         parameters.put("spec_type", specResponse.getType());
         parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, PMMLVectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));

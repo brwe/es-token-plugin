@@ -39,14 +39,14 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Provides the infrastructure for Groovy as a scripting language for Elasticsearch
+ * Can read json def and return sparse vectors with tfs.
  */
-public class PMMLVectorScriptEngineService extends AbstractComponent implements ScriptEngineService {
+public class VectorScriptEngineService extends AbstractComponent implements ScriptEngineService {
 
     public static final String NAME = "doc_to_vector";
 
     @Inject
-    public PMMLVectorScriptEngineService(Settings settings) {
+    public VectorScriptEngineService(Settings settings) {
         super(settings);
 
     }

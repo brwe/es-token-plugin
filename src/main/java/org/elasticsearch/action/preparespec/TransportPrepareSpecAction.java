@@ -33,7 +33,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.script.pmml.PMMLVectorScriptEngineService;
+import org.elasticsearch.script.pmml.VectorScriptEngineService;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -141,7 +141,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                         length += fS.getLength();
                     }
                     final int finalLength = length;
-                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLVectorScriptEngineService.NAME).setSource(createSpecSource(fieldSpecs, sparse, length));
+                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex(ScriptService.SCRIPT_INDEX, VectorScriptEngineService.NAME).setSource(createSpecSource(fieldSpecs, sparse, length));
                     if (id != null) {
                         indexRequestBuilder.setId(id);
                     }
