@@ -1,6 +1,9 @@
 
 loadData<-function() {
-  data <- read.csv("/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/adult.data", header = TRUE, stringsAsFactors=FALSE, na.strings = c(""))
+  script.dir <- getSrcDirectory(function(x) {x})
+  rmlist=(ls())
+  adult <- paste(script.dir, "/../org/elasticsearch/script/adult.data", sep="")
+  data <- read.csv(adult, header = TRUE, stringsAsFactors=FALSE, na.strings = c(""))
   return(data)
 }
 

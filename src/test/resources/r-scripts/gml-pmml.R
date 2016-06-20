@@ -1,9 +1,11 @@
 library(pmml)
 library(pmmlTransformations)
 
-
+script.dir <- getSrcDirectory(function(x) {x})
 rmlist=(ls())
-source("/home/britta/es-token-plugin/src/test/resources/r-scripts/dataHelperFunctions.R")
+script <- paste(script.dir, "/dataHelperFunctions.R", sep="")
+result.dir<-paste(script.dir, "/../org/elasticsearch/script/", sep="")
+source(script)
 
 mydata<-prepareData()
 # pre processing
@@ -24,11 +26,11 @@ attributes <- data.frame(c("too-cool-to-work"),c("hedonist"),c("Fiji"))
 rownames(attributes) <- c("missingValueReplacement")
 colnames(attributes) <- c("workclass", "occupation","native_country")
 pmmlModel <- addMSAttributes(pmmlModel, attributes=attributes)
-write(toString.XMLNode(pmmlModel), file = "/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/glm-adult-full-r.xml")
+write(toString.XMLNode(pmmlModel), file = paste(result.dir, "glm-adult-full-r.xml", sep=""))
 
 prob <-predict(mylogit, newdata = mydataWrapped$data, type = "response")
 result<-sapply(prob, function(x)if(x>0.5){">50K"}else{"<=50K"})
 compresult = data.frame(sapply(prob,function(x){1.0-x}),prob,  result)
 colnames(compresult)<-c("probClass0", "probClass1" ,"predictedClass")
 
-write.table(compresult, file="/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/r_glm_adult_result.csv",row.names = F, sep=",")
+write.table(compresult, file = paste(result.dir, "r_glm_adult_result.csv", sep=""),row.names = F, sep=",")

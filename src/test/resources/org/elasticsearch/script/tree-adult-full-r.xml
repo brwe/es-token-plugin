@@ -3,7 +3,7 @@
   <Header copyright="Copyright (c) 2016 britta" description="RPart Decision Tree Model">
     <Extension name="user" value="britta" extender="Rattle/PMML"/>
     <Application name="Rattle/PMML" version="1.4"/>
-    <Timestamp>2016-06-20 12:46:23</Timestamp>
+    <Timestamp>2016-06-20 22:51:49</Timestamp>
   </Header>
   <DataDictionary numberOfFields="12">
     <DataField name="class" optype="categorical" dataType="string">

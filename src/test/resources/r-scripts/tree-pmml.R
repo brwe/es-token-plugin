@@ -4,7 +4,11 @@ library(rpart)
 
 
 rmlist=(ls())
-source("/home/britta/es-token-plugin/src/test/resources/r-scripts/dataHelperFunctions.R")
+script.dir <- getSrcDirectory(function(x) {x})
+rmlist=(ls())
+script <- paste(script.dir, "/dataHelperFunctions.R", sep="")
+result.dir<-paste(script.dir, "/../org/elasticsearch/script/", sep="")
+source(script)
 
 mydata<-prepareData()
 # pre processing
@@ -24,10 +28,10 @@ attributes <- data.frame(c("too-cool-to-work"),c("hedonist"),c("Fiji"))
 rownames(attributes) <- c("missingValueReplacement")
 colnames(attributes) <- c("workclass", "occupation","native_country")
 pmmlModel <- addMSAttributes(pmmlModel, attributes=attributes)
-write(toString.XMLNode(pmmlModel), file = "/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/tree-adult-full-r.xml")
+write(toString.XMLNode(pmmlModel), file = paste(result.dir, "tree-adult-full-r.xml", sep=""))
 
 prob <-predict(myTree, newdata = mydataWrapped$data, type = "class")
 compresult = data.frame(prob)
 colnames(compresult)<-c("predictedClass")
 
-write.table(compresult, file="/home/britta/es-token-plugin/src/test/resources/org/elasticsearch/script/r_tree_adult_result.csv",row.names = F)
+write.table(compresult, file=paste(result.dir, "r_tree_adult_result.csv", sep=""),row.names = F)
