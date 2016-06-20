@@ -3,7 +3,7 @@
   <Header copyright="Copyright (c) 2016 britta" description="Generalized Linear Regression Model">
     <Extension name="user" value="britta" extender="Rattle/PMML"/>
     <Application name="Rattle/PMML" version="1.4"/>
-    <Timestamp>2016-06-13 16:25:26</Timestamp>
+    <Timestamp>2016-06-20 13:00:09</Timestamp>
   </Header>
   <DataDictionary numberOfFields="12">
     <DataField name="class" optype="categorical" dataType="string">
@@ -103,7 +103,6 @@
       <Value value="Greece"/>
       <Value value="Guatemala"/>
       <Value value="Haiti"/>
-      <Value value="Holand-Netherlands"/>
       <Value value="Honduras"/>
       <Value value="Hong"/>
       <Value value="Hungary"/>
@@ -154,20 +153,20 @@
     <LocalTransformations>
       <DerivedField name="age_z" dataType="double" optype="continuous">
         <NormContinuous field="age">
-          <LinearNorm orig="38.5816467553208" norm="0"/>
-          <LinearNorm orig="52.2220793089021" norm="1"/>
+          <LinearNorm orig="38.5818488943489" norm="0"/>
+          <LinearNorm orig="52.2224421494599" norm="1"/>
         </NormContinuous>
       </DerivedField>
       <DerivedField name="education_num_z" dataType="double" optype="continuous">
         <NormContinuous field="education_num">
-          <LinearNorm orig="10.0806793403151" norm="0"/>
-          <LinearNorm orig="12.6533996723825" norm="1"/>
+          <LinearNorm orig="10.0806818181818" norm="0"/>
+          <LinearNorm orig="12.6534416196812" norm="1"/>
         </NormContinuous>
       </DerivedField>
       <DerivedField name="hours_per_week_z" dataType="double" optype="continuous">
         <NormContinuous field="hours_per_week">
-          <LinearNorm orig="40.437455852093" norm="0"/>
-          <LinearNorm orig="52.7848845338248" norm="1"/>
+          <LinearNorm orig="40.4374692874693" norm="0"/>
+          <LinearNorm orig="52.7850873459488" norm="1"/>
         </NormContinuous>
       </DerivedField>
     </LocalTransformations>
@@ -243,33 +242,32 @@
       <Parameter name="p68" label="native_countryGreece"/>
       <Parameter name="p69" label="native_countryGuatemala"/>
       <Parameter name="p70" label="native_countryHaiti"/>
-      <Parameter name="p71" label="native_countryHoland-Netherlands"/>
-      <Parameter name="p72" label="native_countryHonduras"/>
-      <Parameter name="p73" label="native_countryHong"/>
-      <Parameter name="p74" label="native_countryHungary"/>
-      <Parameter name="p75" label="native_countryIndia"/>
-      <Parameter name="p76" label="native_countryIran"/>
-      <Parameter name="p77" label="native_countryIreland"/>
-      <Parameter name="p78" label="native_countryItaly"/>
-      <Parameter name="p79" label="native_countryJamaica"/>
-      <Parameter name="p80" label="native_countryJapan"/>
-      <Parameter name="p81" label="native_countryLaos"/>
-      <Parameter name="p82" label="native_countryMexico"/>
-      <Parameter name="p83" label="native_countryNicaragua"/>
-      <Parameter name="p84" label="native_countryOutlying-US(Guam-USVI-etc)"/>
-      <Parameter name="p85" label="native_countryPeru"/>
-      <Parameter name="p86" label="native_countryPhilippines"/>
-      <Parameter name="p87" label="native_countryPoland"/>
-      <Parameter name="p88" label="native_countryPortugal"/>
-      <Parameter name="p89" label="native_countryPuerto-Rico"/>
-      <Parameter name="p90" label="native_countryScotland"/>
-      <Parameter name="p91" label="native_countrySouth"/>
-      <Parameter name="p92" label="native_countryTaiwan"/>
-      <Parameter name="p93" label="native_countryThailand"/>
-      <Parameter name="p94" label="native_countryTrinadad&amp;Tobago"/>
-      <Parameter name="p95" label="native_countryUnited-States"/>
-      <Parameter name="p96" label="native_countryVietnam"/>
-      <Parameter name="p97" label="native_countryYugoslavia"/>
+      <Parameter name="p71" label="native_countryHonduras"/>
+      <Parameter name="p72" label="native_countryHong"/>
+      <Parameter name="p73" label="native_countryHungary"/>
+      <Parameter name="p74" label="native_countryIndia"/>
+      <Parameter name="p75" label="native_countryIran"/>
+      <Parameter name="p76" label="native_countryIreland"/>
+      <Parameter name="p77" label="native_countryItaly"/>
+      <Parameter name="p78" label="native_countryJamaica"/>
+      <Parameter name="p79" label="native_countryJapan"/>
+      <Parameter name="p80" label="native_countryLaos"/>
+      <Parameter name="p81" label="native_countryMexico"/>
+      <Parameter name="p82" label="native_countryNicaragua"/>
+      <Parameter name="p83" label="native_countryOutlying-US(Guam-USVI-etc)"/>
+      <Parameter name="p84" label="native_countryPeru"/>
+      <Parameter name="p85" label="native_countryPhilippines"/>
+      <Parameter name="p86" label="native_countryPoland"/>
+      <Parameter name="p87" label="native_countryPortugal"/>
+      <Parameter name="p88" label="native_countryPuerto-Rico"/>
+      <Parameter name="p89" label="native_countryScotland"/>
+      <Parameter name="p90" label="native_countrySouth"/>
+      <Parameter name="p91" label="native_countryTaiwan"/>
+      <Parameter name="p92" label="native_countryThailand"/>
+      <Parameter name="p93" label="native_countryTrinadad&amp;Tobago"/>
+      <Parameter name="p94" label="native_countryUnited-States"/>
+      <Parameter name="p95" label="native_countryVietnam"/>
+      <Parameter name="p96" label="native_countryYugoslavia"/>
     </ParameterList>
     <FactorList>
       <Predictor name="workclass"/>
@@ -357,131 +355,129 @@
       <PPCell value="Greece" predictorName="native_country" parameterName="p68"/>
       <PPCell value="Guatemala" predictorName="native_country" parameterName="p69"/>
       <PPCell value="Haiti" predictorName="native_country" parameterName="p70"/>
-      <PPCell value="Holand-Netherlands" predictorName="native_country" parameterName="p71"/>
-      <PPCell value="Honduras" predictorName="native_country" parameterName="p72"/>
-      <PPCell value="Hong" predictorName="native_country" parameterName="p73"/>
-      <PPCell value="Hungary" predictorName="native_country" parameterName="p74"/>
-      <PPCell value="India" predictorName="native_country" parameterName="p75"/>
-      <PPCell value="Iran" predictorName="native_country" parameterName="p76"/>
-      <PPCell value="Ireland" predictorName="native_country" parameterName="p77"/>
-      <PPCell value="Italy" predictorName="native_country" parameterName="p78"/>
-      <PPCell value="Jamaica" predictorName="native_country" parameterName="p79"/>
-      <PPCell value="Japan" predictorName="native_country" parameterName="p80"/>
-      <PPCell value="Laos" predictorName="native_country" parameterName="p81"/>
-      <PPCell value="Mexico" predictorName="native_country" parameterName="p82"/>
-      <PPCell value="Nicaragua" predictorName="native_country" parameterName="p83"/>
-      <PPCell value="Outlying-US(Guam-USVI-etc)" predictorName="native_country" parameterName="p84"/>
-      <PPCell value="Peru" predictorName="native_country" parameterName="p85"/>
-      <PPCell value="Philippines" predictorName="native_country" parameterName="p86"/>
-      <PPCell value="Poland" predictorName="native_country" parameterName="p87"/>
-      <PPCell value="Portugal" predictorName="native_country" parameterName="p88"/>
-      <PPCell value="Puerto-Rico" predictorName="native_country" parameterName="p89"/>
-      <PPCell value="Scotland" predictorName="native_country" parameterName="p90"/>
-      <PPCell value="South" predictorName="native_country" parameterName="p91"/>
-      <PPCell value="Taiwan" predictorName="native_country" parameterName="p92"/>
-      <PPCell value="Thailand" predictorName="native_country" parameterName="p93"/>
-      <PPCell value="Trinadad&amp;Tobago" predictorName="native_country" parameterName="p94"/>
-      <PPCell value="United-States" predictorName="native_country" parameterName="p95"/>
-      <PPCell value="Vietnam" predictorName="native_country" parameterName="p96"/>
-      <PPCell value="Yugoslavia" predictorName="native_country" parameterName="p97"/>
+      <PPCell value="Honduras" predictorName="native_country" parameterName="p71"/>
+      <PPCell value="Hong" predictorName="native_country" parameterName="p72"/>
+      <PPCell value="Hungary" predictorName="native_country" parameterName="p73"/>
+      <PPCell value="India" predictorName="native_country" parameterName="p74"/>
+      <PPCell value="Iran" predictorName="native_country" parameterName="p75"/>
+      <PPCell value="Ireland" predictorName="native_country" parameterName="p76"/>
+      <PPCell value="Italy" predictorName="native_country" parameterName="p77"/>
+      <PPCell value="Jamaica" predictorName="native_country" parameterName="p78"/>
+      <PPCell value="Japan" predictorName="native_country" parameterName="p79"/>
+      <PPCell value="Laos" predictorName="native_country" parameterName="p80"/>
+      <PPCell value="Mexico" predictorName="native_country" parameterName="p81"/>
+      <PPCell value="Nicaragua" predictorName="native_country" parameterName="p82"/>
+      <PPCell value="Outlying-US(Guam-USVI-etc)" predictorName="native_country" parameterName="p83"/>
+      <PPCell value="Peru" predictorName="native_country" parameterName="p84"/>
+      <PPCell value="Philippines" predictorName="native_country" parameterName="p85"/>
+      <PPCell value="Poland" predictorName="native_country" parameterName="p86"/>
+      <PPCell value="Portugal" predictorName="native_country" parameterName="p87"/>
+      <PPCell value="Puerto-Rico" predictorName="native_country" parameterName="p88"/>
+      <PPCell value="Scotland" predictorName="native_country" parameterName="p89"/>
+      <PPCell value="South" predictorName="native_country" parameterName="p90"/>
+      <PPCell value="Taiwan" predictorName="native_country" parameterName="p91"/>
+      <PPCell value="Thailand" predictorName="native_country" parameterName="p92"/>
+      <PPCell value="Trinadad&amp;Tobago" predictorName="native_country" parameterName="p93"/>
+      <PPCell value="United-States" predictorName="native_country" parameterName="p94"/>
+      <PPCell value="Vietnam" predictorName="native_country" parameterName="p95"/>
+      <PPCell value="Yugoslavia" predictorName="native_country" parameterName="p96"/>
     </PPMatrix>
     <ParamMatrix>
-      <PCell targetCategory="&gt;50K" parameterName="p0" df="1" beta="-3.73196065390104"/>
-      <PCell targetCategory="&gt;50K" parameterName="p1" df="1" beta="0.386833981845665"/>
-      <PCell targetCategory="&gt;50K" parameterName="p2" df="1" beta="-0.635157417959361"/>
-      <PCell targetCategory="&gt;50K" parameterName="p3" df="1" beta="-11.8910987698109"/>
-      <PCell targetCategory="&gt;50K" parameterName="p4" df="1" beta="-0.441433560792987"/>
-      <PCell targetCategory="&gt;50K" parameterName="p5" df="1" beta="-0.19721415324753"/>
-      <PCell targetCategory="&gt;50K" parameterName="p6" df="1" beta="-0.903845204609063"/>
-      <PCell targetCategory="&gt;50K" parameterName="p7" df="1" beta="-0.825138028688292"/>
+      <PCell targetCategory="&gt;50K" parameterName="p0" df="1" beta="-3.73195451407436"/>
+      <PCell targetCategory="&gt;50K" parameterName="p1" df="1" beta="0.386838539238721"/>
+      <PCell targetCategory="&gt;50K" parameterName="p2" df="1" beta="-0.635157417959354"/>
+      <PCell targetCategory="&gt;50K" parameterName="p3" df="1" beta="-11.8910987698072"/>
+      <PCell targetCategory="&gt;50K" parameterName="p4" df="1" beta="-0.441433560792977"/>
+      <PCell targetCategory="&gt;50K" parameterName="p5" df="1" beta="-0.197214153247522"/>
+      <PCell targetCategory="&gt;50K" parameterName="p6" df="1" beta="-0.903845204609058"/>
+      <PCell targetCategory="&gt;50K" parameterName="p7" df="1" beta="-0.825138028688277"/>
       <PCell targetCategory="&gt;50K" parameterName="p8" df="1" beta="-1.10851012152831"/>
-      <PCell targetCategory="&gt;50K" parameterName="p9" df="1" beta="-13.4141462136606"/>
-      <PCell targetCategory="&gt;50K" parameterName="p10" df="1" beta="0.109594517856056"/>
-      <PCell targetCategory="&gt;50K" parameterName="p11" df="1" beta="0.523338025264636"/>
-      <PCell targetCategory="&gt;50K" parameterName="p12" df="1" beta="-0.554848488240053"/>
-      <PCell targetCategory="&gt;50K" parameterName="p13" df="1" beta="-0.214393488414052"/>
-      <PCell targetCategory="&gt;50K" parameterName="p14" df="1" beta="-0.501665810698509"/>
-      <PCell targetCategory="&gt;50K" parameterName="p15" df="1" beta="-0.287218278867423"/>
-      <PCell targetCategory="&gt;50K" parameterName="p16" df="1" beta="1.36525794736891"/>
-      <PCell targetCategory="&gt;50K" parameterName="p17" df="1" beta="1.39110352721524"/>
-      <PCell targetCategory="&gt;50K" parameterName="p18" df="1" beta="1.99943923214666"/>
-      <PCell targetCategory="&gt;50K" parameterName="p19" df="1" beta="3.11599010470323"/>
-      <PCell targetCategory="&gt;50K" parameterName="p20" df="1" beta="0.824455373379934"/>
-      <PCell targetCategory="&gt;50K" parameterName="p21" df="1" beta="2.40243253048317"/>
-      <PCell targetCategory="&gt;50K" parameterName="p22" df="1" beta="-11.1591359569472"/>
+      <PCell targetCategory="&gt;50K" parameterName="p9" df="1" beta="-13.4141462136628"/>
+      <PCell targetCategory="&gt;50K" parameterName="p10" df="1" beta="0.10959451785605"/>
+      <PCell targetCategory="&gt;50K" parameterName="p11" df="1" beta="0.523338025264628"/>
+      <PCell targetCategory="&gt;50K" parameterName="p12" df="1" beta="-0.554848488240033"/>
+      <PCell targetCategory="&gt;50K" parameterName="p13" df="1" beta="-0.214393488414041"/>
+      <PCell targetCategory="&gt;50K" parameterName="p14" df="1" beta="-0.501665810698496"/>
+      <PCell targetCategory="&gt;50K" parameterName="p15" df="1" beta="-0.287218278867421"/>
+      <PCell targetCategory="&gt;50K" parameterName="p16" df="1" beta="1.36525794736892"/>
+      <PCell targetCategory="&gt;50K" parameterName="p17" df="1" beta="1.39110352721523"/>
+      <PCell targetCategory="&gt;50K" parameterName="p18" df="1" beta="1.99943923214667"/>
+      <PCell targetCategory="&gt;50K" parameterName="p19" df="1" beta="3.11599010470322"/>
+      <PCell targetCategory="&gt;50K" parameterName="p20" df="1" beta="0.824455373379927"/>
+      <PCell targetCategory="&gt;50K" parameterName="p21" df="1" beta="2.40243253048318"/>
+      <PCell targetCategory="&gt;50K" parameterName="p22" df="1" beta="-11.1591359569479"/>
       <PCell targetCategory="&gt;50K" parameterName="p23" df="1" beta="3.02312622519436"/>
       <PCell targetCategory="&gt;50K" parameterName="p24" df="1" beta="1.1746957670725"/>
-      <PCell targetCategory="&gt;50K" parameterName="p26" df="1" beta="2.48515803764281"/>
-      <PCell targetCategory="&gt;50K" parameterName="p27" df="1" beta="2.11552857482141"/>
-      <PCell targetCategory="&gt;50K" parameterName="p28" df="1" beta="-0.0421346423755572"/>
-      <PCell targetCategory="&gt;50K" parameterName="p29" df="1" beta="-0.444666783307452"/>
-      <PCell targetCategory="&gt;50K" parameterName="p30" df="1" beta="-0.117490411559203"/>
-      <PCell targetCategory="&gt;50K" parameterName="p31" df="1" beta="0.135856593344923"/>
-      <PCell targetCategory="&gt;50K" parameterName="p32" df="1" beta="-0.884053541227189"/>
-      <PCell targetCategory="&gt;50K" parameterName="p33" df="1" beta="0.0744769927825867"/>
-      <PCell targetCategory="&gt;50K" parameterName="p34" df="1" beta="0.803935596911465"/>
-      <PCell targetCategory="&gt;50K" parameterName="p35" df="1" beta="-0.970427070246244"/>
-      <PCell targetCategory="&gt;50K" parameterName="p36" df="1" beta="-0.699166751085223"/>
-      <PCell targetCategory="&gt;50K" parameterName="p38" df="1" beta="-0.304205642391126"/>
-      <PCell targetCategory="&gt;50K" parameterName="p39" df="1" beta="-0.915825304156184"/>
-      <PCell targetCategory="&gt;50K" parameterName="p40" df="1" beta="-2.67416799395543"/>
-      <PCell targetCategory="&gt;50K" parameterName="p41" df="1" beta="0.523090728372554"/>
-      <PCell targetCategory="&gt;50K" parameterName="p42" df="1" beta="0.531650229145608"/>
-      <PCell targetCategory="&gt;50K" parameterName="p43" df="1" beta="0.295876780349086"/>
-      <PCell targetCategory="&gt;50K" parameterName="p44" df="1" beta="0.617928553444058"/>
-      <PCell targetCategory="&gt;50K" parameterName="p45" df="1" beta="-0.133261860298625"/>
-      <PCell targetCategory="&gt;50K" parameterName="p46" df="1" beta="0.595349320540382"/>
-      <PCell targetCategory="&gt;50K" parameterName="p47" df="1" beta="-0.341591384465124"/>
-      <PCell targetCategory="&gt;50K" parameterName="p48" df="1" beta="-0.656922368625904"/>
-      <PCell targetCategory="&gt;50K" parameterName="p49" df="1" beta="0.396252512113809"/>
-      <PCell targetCategory="&gt;50K" parameterName="p50" df="1" beta="1.38825985456274"/>
-      <PCell targetCategory="&gt;50K" parameterName="p51" df="1" beta="0.580224196948374"/>
-      <PCell targetCategory="&gt;50K" parameterName="p52" df="1" beta="0.419382362754218"/>
-      <PCell targetCategory="&gt;50K" parameterName="p53" df="1" beta="0.10799235548238"/>
-      <PCell targetCategory="&gt;50K" parameterName="p54" df="1" beta="0.511774470443822"/>
-      <PCell targetCategory="&gt;50K" parameterName="p55" df="1" beta="0.864985874083211"/>
-      <PCell targetCategory="&gt;50K" parameterName="p56" df="1" beta="0.374311445308937"/>
-      <PCell targetCategory="&gt;50K" parameterName="p57" df="1" beta="-1.01005064576045"/>
-      <PCell targetCategory="&gt;50K" parameterName="p58" df="1" beta="-2.01192949524267"/>
-      <PCell targetCategory="&gt;50K" parameterName="p59" df="1" beta="-3.64431905714519"/>
-      <PCell targetCategory="&gt;50K" parameterName="p60" df="1" beta="-1.02884073837428"/>
-      <PCell targetCategory="&gt;50K" parameterName="p61" df="1" beta="-2.66954496099957"/>
-      <PCell targetCategory="&gt;50K" parameterName="p62" df="1" beta="-1.65627170514429"/>
-      <PCell targetCategory="&gt;50K" parameterName="p63" df="1" beta="-1.66714333335434"/>
-      <PCell targetCategory="&gt;50K" parameterName="p64" df="1" beta="-1.01480308955887"/>
-      <PCell targetCategory="&gt;50K" parameterName="p65" df="1" beta="-1.48681693715568"/>
-      <PCell targetCategory="&gt;50K" parameterName="p66" df="1" beta="-0.793433031620435"/>
-      <PCell targetCategory="&gt;50K" parameterName="p67" df="1" beta="-0.908820151511084"/>
-      <PCell targetCategory="&gt;50K" parameterName="p68" df="1" beta="-2.01352495861049"/>
-      <PCell targetCategory="&gt;50K" parameterName="p69" df="1" beta="-1.44774497193485"/>
-      <PCell targetCategory="&gt;50K" parameterName="p70" df="1" beta="-1.5496792380132"/>
-      <PCell targetCategory="&gt;50K" parameterName="p71" df="1" beta="-10.7887672342855"/>
-      <PCell targetCategory="&gt;50K" parameterName="p72" df="1" beta="-2.43768943254182"/>
-      <PCell targetCategory="&gt;50K" parameterName="p73" df="1" beta="-1.59076716911845"/>
-      <PCell targetCategory="&gt;50K" parameterName="p74" df="1" beta="-1.4179114935498"/>
-      <PCell targetCategory="&gt;50K" parameterName="p75" df="1" beta="-1.74004179121242"/>
-      <PCell targetCategory="&gt;50K" parameterName="p76" df="1" beta="-1.240421353172"/>
-      <PCell targetCategory="&gt;50K" parameterName="p77" df="1" beta="-0.842716981925498"/>
-      <PCell targetCategory="&gt;50K" parameterName="p78" df="1" beta="-0.597255356157473"/>
-      <PCell targetCategory="&gt;50K" parameterName="p79" df="1" beta="-1.4656771952807"/>
-      <PCell targetCategory="&gt;50K" parameterName="p80" df="1" beta="-0.927407492574933"/>
-      <PCell targetCategory="&gt;50K" parameterName="p81" df="1" beta="-2.07124076038291"/>
-      <PCell targetCategory="&gt;50K" parameterName="p82" df="1" beta="-1.85969941968578"/>
-      <PCell targetCategory="&gt;50K" parameterName="p83" df="1" beta="-2.14213583817375"/>
-      <PCell targetCategory="&gt;50K" parameterName="p84" df="1" beta="-13.8504244575112"/>
-      <PCell targetCategory="&gt;50K" parameterName="p85" df="1" beta="-2.13944181198772"/>
-      <PCell targetCategory="&gt;50K" parameterName="p86" df="1" beta="-0.957166785282171"/>
-      <PCell targetCategory="&gt;50K" parameterName="p87" df="1" beta="-1.35827513475506"/>
-      <PCell targetCategory="&gt;50K" parameterName="p88" df="1" beta="-1.5104031929411"/>
-      <PCell targetCategory="&gt;50K" parameterName="p89" df="1" beta="-1.65931274275979"/>
-      <PCell targetCategory="&gt;50K" parameterName="p90" df="1" beta="-1.39805059500573"/>
-      <PCell targetCategory="&gt;50K" parameterName="p91" df="1" beta="-2.19003180718686"/>
-      <PCell targetCategory="&gt;50K" parameterName="p92" df="1" beta="-1.46594034203262"/>
-      <PCell targetCategory="&gt;50K" parameterName="p93" df="1" beta="-2.19175717507045"/>
-      <PCell targetCategory="&gt;50K" parameterName="p94" df="1" beta="-1.81864007038249"/>
-      <PCell targetCategory="&gt;50K" parameterName="p95" df="1" beta="-1.13360635415348"/>
-      <PCell targetCategory="&gt;50K" parameterName="p96" df="1" beta="-2.32713379433492"/>
-      <PCell targetCategory="&gt;50K" parameterName="p97" df="1" beta="-0.734474025264915"/>
+      <PCell targetCategory="&gt;50K" parameterName="p26" df="1" beta="2.4851580376428"/>
+      <PCell targetCategory="&gt;50K" parameterName="p27" df="1" beta="2.1155285748214"/>
+      <PCell targetCategory="&gt;50K" parameterName="p28" df="1" beta="-0.042134642375555"/>
+      <PCell targetCategory="&gt;50K" parameterName="p29" df="1" beta="-0.44466678330745"/>
+      <PCell targetCategory="&gt;50K" parameterName="p30" df="1" beta="-0.1174904115592"/>
+      <PCell targetCategory="&gt;50K" parameterName="p31" df="1" beta="0.135856593344921"/>
+      <PCell targetCategory="&gt;50K" parameterName="p32" df="1" beta="-0.884053541227208"/>
+      <PCell targetCategory="&gt;50K" parameterName="p33" df="1" beta="0.0744769927825795"/>
+      <PCell targetCategory="&gt;50K" parameterName="p34" df="1" beta="0.803935596911452"/>
+      <PCell targetCategory="&gt;50K" parameterName="p35" df="1" beta="-0.970427070246252"/>
+      <PCell targetCategory="&gt;50K" parameterName="p36" df="1" beta="-0.699166751085226"/>
+      <PCell targetCategory="&gt;50K" parameterName="p38" df="1" beta="-0.304205642391129"/>
+      <PCell targetCategory="&gt;50K" parameterName="p39" df="1" beta="-0.915825304156195"/>
+      <PCell targetCategory="&gt;50K" parameterName="p40" df="1" beta="-2.67416799395539"/>
+      <PCell targetCategory="&gt;50K" parameterName="p41" df="1" beta="0.52309072837255"/>
+      <PCell targetCategory="&gt;50K" parameterName="p42" df="1" beta="0.5316502291456"/>
+      <PCell targetCategory="&gt;50K" parameterName="p43" df="1" beta="0.295876780349082"/>
+      <PCell targetCategory="&gt;50K" parameterName="p44" df="1" beta="0.617928553444053"/>
+      <PCell targetCategory="&gt;50K" parameterName="p45" df="1" beta="-0.133261860298631"/>
+      <PCell targetCategory="&gt;50K" parameterName="p46" df="1" beta="0.595349320540371"/>
+      <PCell targetCategory="&gt;50K" parameterName="p47" df="1" beta="-0.34159138446512"/>
+      <PCell targetCategory="&gt;50K" parameterName="p48" df="1" beta="-0.656922368625902"/>
+      <PCell targetCategory="&gt;50K" parameterName="p49" df="1" beta="0.396252512113805"/>
+      <PCell targetCategory="&gt;50K" parameterName="p50" df="1" beta="1.38825985456273"/>
+      <PCell targetCategory="&gt;50K" parameterName="p51" df="1" beta="0.580224196948369"/>
+      <PCell targetCategory="&gt;50K" parameterName="p52" df="1" beta="0.419382362754221"/>
+      <PCell targetCategory="&gt;50K" parameterName="p53" df="1" beta="0.107992355482402"/>
+      <PCell targetCategory="&gt;50K" parameterName="p54" df="1" beta="0.511774470443829"/>
+      <PCell targetCategory="&gt;50K" parameterName="p55" df="1" beta="0.864985874083208"/>
+      <PCell targetCategory="&gt;50K" parameterName="p56" df="1" beta="0.374317186251926"/>
+      <PCell targetCategory="&gt;50K" parameterName="p57" df="1" beta="-1.0100506457605"/>
+      <PCell targetCategory="&gt;50K" parameterName="p58" df="1" beta="-2.01192949524272"/>
+      <PCell targetCategory="&gt;50K" parameterName="p59" df="1" beta="-3.64431905714525"/>
+      <PCell targetCategory="&gt;50K" parameterName="p60" df="1" beta="-1.02884073837434"/>
+      <PCell targetCategory="&gt;50K" parameterName="p61" df="1" beta="-2.66954496099963"/>
+      <PCell targetCategory="&gt;50K" parameterName="p62" df="1" beta="-1.65627170514433"/>
+      <PCell targetCategory="&gt;50K" parameterName="p63" df="1" beta="-1.6671433333544"/>
+      <PCell targetCategory="&gt;50K" parameterName="p64" df="1" beta="-1.01480308955893"/>
+      <PCell targetCategory="&gt;50K" parameterName="p65" df="1" beta="-1.48681693715574"/>
+      <PCell targetCategory="&gt;50K" parameterName="p66" df="1" beta="-0.793433031620484"/>
+      <PCell targetCategory="&gt;50K" parameterName="p67" df="1" beta="-0.908820151511142"/>
+      <PCell targetCategory="&gt;50K" parameterName="p68" df="1" beta="-2.01352495861055"/>
+      <PCell targetCategory="&gt;50K" parameterName="p69" df="1" beta="-1.4477449719349"/>
+      <PCell targetCategory="&gt;50K" parameterName="p70" df="1" beta="-1.54967923801325"/>
+      <PCell targetCategory="&gt;50K" parameterName="p71" df="1" beta="-2.43768943254184"/>
+      <PCell targetCategory="&gt;50K" parameterName="p72" df="1" beta="-1.59076716911849"/>
+      <PCell targetCategory="&gt;50K" parameterName="p73" df="1" beta="-1.41791149354984"/>
+      <PCell targetCategory="&gt;50K" parameterName="p74" df="1" beta="-1.74004179121246"/>
+      <PCell targetCategory="&gt;50K" parameterName="p75" df="1" beta="-1.24042135317204"/>
+      <PCell targetCategory="&gt;50K" parameterName="p76" df="1" beta="-0.842716981925556"/>
+      <PCell targetCategory="&gt;50K" parameterName="p77" df="1" beta="-0.59725535615752"/>
+      <PCell targetCategory="&gt;50K" parameterName="p78" df="1" beta="-1.46567719528075"/>
+      <PCell targetCategory="&gt;50K" parameterName="p79" df="1" beta="-0.927407492574978"/>
+      <PCell targetCategory="&gt;50K" parameterName="p80" df="1" beta="-2.07124076038296"/>
+      <PCell targetCategory="&gt;50K" parameterName="p81" df="1" beta="-1.85969941968584"/>
+      <PCell targetCategory="&gt;50K" parameterName="p82" df="1" beta="-2.14213583817382"/>
+      <PCell targetCategory="&gt;50K" parameterName="p83" df="1" beta="-13.8504244575126"/>
+      <PCell targetCategory="&gt;50K" parameterName="p84" df="1" beta="-2.13944181198777"/>
+      <PCell targetCategory="&gt;50K" parameterName="p85" df="1" beta="-0.957166785282216"/>
+      <PCell targetCategory="&gt;50K" parameterName="p86" df="1" beta="-1.35827513475511"/>
+      <PCell targetCategory="&gt;50K" parameterName="p87" df="1" beta="-1.51040319294114"/>
+      <PCell targetCategory="&gt;50K" parameterName="p88" df="1" beta="-1.65931274275983"/>
+      <PCell targetCategory="&gt;50K" parameterName="p89" df="1" beta="-1.39805059500578"/>
+      <PCell targetCategory="&gt;50K" parameterName="p90" df="1" beta="-2.19003180718691"/>
+      <PCell targetCategory="&gt;50K" parameterName="p91" df="1" beta="-1.46594034203266"/>
+      <PCell targetCategory="&gt;50K" parameterName="p92" df="1" beta="-2.19175717507052"/>
+      <PCell targetCategory="&gt;50K" parameterName="p93" df="1" beta="-1.81864007038253"/>
+      <PCell targetCategory="&gt;50K" parameterName="p94" df="1" beta="-1.13360635415353"/>
+      <PCell targetCategory="&gt;50K" parameterName="p95" df="1" beta="-2.32713379433495"/>
+      <PCell targetCategory="&gt;50K" parameterName="p96" df="1" beta="-0.734474025264974"/>
     </ParamMatrix>
   </GeneralRegressionModel>
 </PMML>

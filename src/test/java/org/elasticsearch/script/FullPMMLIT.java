@@ -63,7 +63,7 @@ public class FullPMMLIT extends ESIntegTestCase {
     public void testAdult() throws IOException, ExecutionException, InterruptedException {
 
         indexAdultData("/org/elasticsearch/script/adult.data");
-        assertHitCount(client().prepareSearch().get(), 32561);
+        assertHitCount(client().prepareSearch().get(), 32560);
         indexAdultModel("/org/elasticsearch/script/lr_model_adult_full.xml");
         checkClassificationCorrect("/org/elasticsearch/script/knime_glm_adult_result.csv");
     }

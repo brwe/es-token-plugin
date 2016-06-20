@@ -155,7 +155,6 @@ public class PMMLParsingTests extends ESTestCase {
         for (int i = 0; i < testDataLines.length; i++) {
             String[] testDataValues = testDataLines[i].split(",");
             List ageInput = new ArrayList<Double>();
-            ;
             if (testDataValues[0].equals("") == false) {
                 ageInput.add(Double.parseDouble(testDataValues[0]));
             }
@@ -208,14 +207,14 @@ public class PMMLParsingTests extends ESTestCase {
             }
             Map<String, Object> result = (Map<String, Object>) ((VectorRangesToVectorPMML) fieldsToVectorAndModel.vectorRangesToVector).vector(input);
             String[] expectedResult = expectedResultsLines[i].split(",");
-            String expectedClass = expectedResult[expectedResult.length - 1];
+            String expectedClass = expectedResult[2];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
             Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
-            assertThat(expectedClass, equalTo(resultValues.get("class")));
             double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
             double prob1 = (Double) ((Map<String, Object>) resultValues.get("probs")).get(">50K");
             assertThat(prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
             assertThat(prob1, Matchers.closeTo(Double.parseDouble(expectedResult[1]), 1.e-7));
+            assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
 
