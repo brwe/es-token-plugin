@@ -25,6 +25,8 @@ import org.elasticsearch.action.allterms.TransportAllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
 import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
+import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesAction;
+import org.elasticsearch.action.trainnaivebayes.TransportTrainNaiveBayesAction;
 import org.elasticsearch.index.mapper.token.AnalyzedTextFieldMapper;
 import org.elasticsearch.indices.IndicesModule;
 import org.elasticsearch.plugins.Plugin;
@@ -67,6 +69,7 @@ public class TokenPlugin extends Plugin {
         module.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
                 TransportAllTermsShardAction.class);
         module.registerAction(PrepareSpecAction.INSTANCE, TransportPrepareSpecAction.class);
+        module.registerAction(TrainNaiveBayesAction.INSTANCE, TransportTrainNaiveBayesAction.class);
     }
 
     public void onModule(RestModule module) {
