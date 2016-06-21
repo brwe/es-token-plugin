@@ -39,6 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class NaiveBayesModelHelper {
 
@@ -82,8 +84,6 @@ public class NaiveBayesModelHelper {
         String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
         DataField rawField = ProcessPMMLHelper.getRawDataField(model, rawFieldName);
         MiningField miningField = ProcessPMMLHelper.getMiningField(model, modelIndex, rawFieldName);
-
-
         PMMLVectorRange featureEntries = getFieldVector(indexCounter, derivedFields, rawField, miningField, bayesInput, types);
         return featureEntries;
     }
@@ -111,8 +111,13 @@ public class NaiveBayesModelHelper {
         }
 
         if (opType.equals(OpType.CATEGORICAL)) {
+            // sort values first
+            TreeSet<String> sortedValues = new TreeSet<>();
             for (PairCounts pairCount : bayesInput.getPairCounts()) {
-                featureEntries.addVectorEntry(indexCounter, pairCount.getValue());
+                sortedValues.add(pairCount.getValue());
+            }
+            for (String value : sortedValues) {
+                featureEntries.addVectorEntry(indexCounter, value);
                 indexCounter++;
             }
         } else if (opType.equals(OpType.CONTINUOUS)) {

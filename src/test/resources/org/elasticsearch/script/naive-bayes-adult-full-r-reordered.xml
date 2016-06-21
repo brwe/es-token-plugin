@@ -1,0 +1,699 @@
+<?xml version="1.0"?>
+<PMML xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="4.2" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+  <Header copyright="Copyright (c) 2016 britta" description="NaiveBayes Model">
+    <Extension name="user" value="britta" extender="Rattle/PMML"/>
+    <Application name="Rattle/PMML" version="1.4"/>
+    <Timestamp>2016-06-20 22:50:32</Timestamp>
+  </Header>
+  <DataDictionary numberOfFields="11">
+    <DataField name="class" optype="categorical" dataType="string">
+      <Value value="&lt;=50K"/>
+      <Value value="&gt;50K"/>
+    </DataField>
+    <DataField name="age" optype="continuous" dataType="double"/>
+    <DataField name="workclass" optype="categorical" dataType="string">
+      <Value value="Federal-gov"/>
+      <Value value="Local-gov"/>
+      <Value value="Never-worked"/>
+      <Value value="Private"/>
+      <Value value="Self-emp-inc"/>
+      <Value value="Self-emp-not-inc"/>
+      <Value value="State-gov"/>
+      <Value value="too-cool-to-work"/>
+      <Value value="Without-pay"/>
+    </DataField>
+    <DataField name="education_num" optype="continuous" dataType="double"/>
+    <DataField name="marital_status" optype="categorical" dataType="string">
+      <Value value="Divorced"/>
+      <Value value="Married-AF-spouse"/>
+      <Value value="Married-civ-spouse"/>
+      <Value value="Married-spouse-absent"/>
+      <Value value="Never-married"/>
+      <Value value="Separated"/>
+      <Value value="Widowed"/>
+    </DataField>
+    <DataField name="occupation" optype="categorical" dataType="string">
+      <Value value="Adm-clerical"/>
+      <Value value="Armed-Forces"/>
+      <Value value="Craft-repair"/>
+      <Value value="Exec-managerial"/>
+      <Value value="Farming-fishing"/>
+      <Value value="Handlers-cleaners"/>
+      <Value value="hedonist"/>
+      <Value value="Machine-op-inspct"/>
+      <Value value="Other-service"/>
+      <Value value="Priv-house-serv"/>
+      <Value value="Prof-specialty"/>
+      <Value value="Protective-serv"/>
+      <Value value="Sales"/>
+      <Value value="Tech-support"/>
+      <Value value="Transport-moving"/>
+    </DataField>
+    <DataField name="relationship" optype="categorical" dataType="string">
+      <Value value="Husband"/>
+      <Value value="Not-in-family"/>
+      <Value value="Other-relative"/>
+      <Value value="Own-child"/>
+      <Value value="Unmarried"/>
+      <Value value="Wife"/>
+    </DataField>
+    <DataField name="race" optype="categorical" dataType="string">
+      <Value value="Amer-Indian-Eskimo"/>
+      <Value value="Asian-Pac-Islander"/>
+      <Value value="Black"/>
+      <Value value="Other"/>
+      <Value value="White"/>
+    </DataField>
+    <DataField name="sex" optype="categorical" dataType="string">
+      <Value value="Female"/>
+      <Value value="Male"/>
+    </DataField>
+    <DataField name="hours_per_week" optype="continuous" dataType="double"/>
+    <DataField name="native_country" optype="categorical" dataType="string">
+      <Value value="Cambodia"/>
+      <Value value="Canada"/>
+      <Value value="China"/>
+      <Value value="Columbia"/>
+      <Value value="Cuba"/>
+      <Value value="Dominican-Republic"/>
+      <Value value="Ecuador"/>
+      <Value value="El-Salvador"/>
+      <Value value="England"/>
+      <Value value="Fiji"/>
+      <Value value="France"/>
+      <Value value="Germany"/>
+      <Value value="Greece"/>
+      <Value value="Guatemala"/>
+      <Value value="Haiti"/>
+      <Value value="Honduras"/>
+      <Value value="Hong"/>
+      <Value value="Hungary"/>
+      <Value value="India"/>
+      <Value value="Iran"/>
+      <Value value="Ireland"/>
+      <Value value="Italy"/>
+      <Value value="Jamaica"/>
+      <Value value="Japan"/>
+      <Value value="Laos"/>
+      <Value value="Mexico"/>
+      <Value value="Nicaragua"/>
+      <Value value="Outlying-US(Guam-USVI-etc)"/>
+      <Value value="Peru"/>
+      <Value value="Philippines"/>
+      <Value value="Poland"/>
+      <Value value="Portugal"/>
+      <Value value="Puerto-Rico"/>
+      <Value value="Scotland"/>
+      <Value value="South"/>
+      <Value value="Taiwan"/>
+      <Value value="Thailand"/>
+      <Value value="Trinadad&amp;Tobago"/>
+      <Value value="United-States"/>
+      <Value value="Vietnam"/>
+      <Value value="Yugoslavia"/>
+    </DataField>
+  </DataDictionary>
+  <NaiveBayesModel modelName="naiveBayes_Model" functionName="classification" threshold="0.001">
+    <MiningSchema>
+      <MiningField name="class" usageType="predicted"/>
+      <MiningField name="age" usageType="active"/>
+      <MiningField name="workclass" usageType="active" missingValueReplacement="too-cool-to-work"/>
+      <MiningField name="education_num" usageType="active"/>
+      <MiningField name="marital_status" usageType="active"/>
+      <MiningField name="occupation" usageType="active" missingValueReplacement="hedonist"/>
+      <MiningField name="relationship" usageType="active"/>
+      <MiningField name="race" usageType="active"/>
+      <MiningField name="sex" usageType="active"/>
+      <MiningField name="hours_per_week" usageType="active"/>
+      <MiningField name="native_country" usageType="active" missingValueReplacement="Fiji"/>
+    </MiningSchema>
+    <Output>
+      <OutputField name="Predicted_class" feature="predictedValue"/>
+      <OutputField name="Probability_&lt;=50K" optype="continuous" dataType="double" feature="probability" value="&lt;=50K"/>
+      <OutputField name="Probability_&gt;50K" optype="continuous" dataType="double" feature="probability" value="&gt;50K"/>
+    </Output>
+    <BayesInputs>
+      <BayesInput fieldName="age">
+        <TargetValueStats>
+          <TargetValueStat value="&lt;=50K">
+            <GaussianDistribution mean="36.7839313888102" variance="196.569907660314"/>
+          </TargetValueStat>
+          <TargetValueStat value="&gt;50K">
+            <GaussianDistribution mean="44.2498405815585" variance="110.649944171011"/>
+          </TargetValueStat>
+        </TargetValueStats>
+      </BayesInput>
+      <BayesInput fieldName="workclass">
+        <PairCounts value="Federal-gov">
+          <TargetValueCounts>
+            <TargetValueCount value="&gt;50K" count="371"/>
+            <TargetValueCount value="&lt;=50K" count="589"/>
+            </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Local-gov">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1476"/>
+            <TargetValueCount value="&gt;50K" count="617"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Never-worked">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="7"/>
+            <TargetValueCount value="&gt;50K" count="0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Private">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="17732"/>
+            <TargetValueCount value="&gt;50K" count="4963"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Self-emp-inc">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="494"/>
+            <TargetValueCount value="&gt;50K" count="622"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Self-emp-not-inc">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1817"/>
+            <TargetValueCount value="&gt;50K" count="724"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="State-gov">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="945"/>
+            <TargetValueCount value="&gt;50K" count="353"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="too-cool-to-work">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1645"/>
+            <TargetValueCount value="&gt;50K" count="191"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Without-pay">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="14"/>
+            <TargetValueCount value="&gt;50K" count="0"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="education_num">
+        <TargetValueStats>
+          <TargetValueStat value="&lt;=50K">
+            <GaussianDistribution mean="9.59504834337959" variance="5.93504466045917"/>
+          </TargetValueStat>
+          <TargetValueStat value="&gt;50K">
+            <GaussianDistribution mean="11.6116566764443" variance="5.6888385943588"/>
+          </TargetValueStat>
+        </TargetValueStats>
+      </BayesInput>
+      <BayesInput fieldName="marital_status">
+        <PairCounts value="Divorced">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3980"/>
+            <TargetValueCount value="&gt;50K" count="463"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Married-AF-spouse">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="13"/>
+            <TargetValueCount value="&gt;50K" count="10"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Married-civ-spouse">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="8284"/>
+            <TargetValueCount value="&gt;50K" count="6692"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Married-spouse-absent">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="384"/>
+            <TargetValueCount value="&gt;50K" count="34"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Never-married">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="10191"/>
+            <TargetValueCount value="&gt;50K" count="491"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Separated">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="959"/>
+            <TargetValueCount value="&gt;50K" count="66"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Widowed">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="908"/>
+            <TargetValueCount value="&gt;50K" count="85"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="occupation">
+        <PairCounts value="Adm-clerical">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3263"/>
+            <TargetValueCount value="&gt;50K" count="507"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Armed-Forces">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="8"/>
+            <TargetValueCount value="&gt;50K" count="1"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Craft-repair">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3170"/>
+            <TargetValueCount value="&gt;50K" count="929"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Exec-managerial">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="2098"/>
+            <TargetValueCount value="&gt;50K" count="1968"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Farming-fishing">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="879"/>
+            <TargetValueCount value="&gt;50K" count="115"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Handlers-cleaners">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1284"/>
+            <TargetValueCount value="&gt;50K" count="86"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="hedonist">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1652"/>
+            <TargetValueCount value="&gt;50K" count="191"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Machine-op-inspct">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1751"/>
+            <TargetValueCount value="&gt;50K" count="250"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Other-service">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3158"/>
+            <TargetValueCount value="&gt;50K" count="137"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Priv-house-serv">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="148"/>
+            <TargetValueCount value="&gt;50K" count="1"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Prof-specialty">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="2281"/>
+            <TargetValueCount value="&gt;50K" count="1859"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Protective-serv">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="438"/>
+            <TargetValueCount value="&gt;50K" count="211"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Sales">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="2667"/>
+            <TargetValueCount value="&gt;50K" count="983"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Tech-support">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="645"/>
+            <TargetValueCount value="&gt;50K" count="283"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Transport-moving">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="1277"/>
+            <TargetValueCount value="&gt;50K" count="320"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="relationship">
+        <PairCounts value="Husband">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="7275"/>
+            <TargetValueCount value="&gt;50K" count="5918"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Not-in-family">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="7449"/>
+            <TargetValueCount value="&gt;50K" count="856"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Other-relative">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="943"/>
+            <TargetValueCount value="&gt;50K" count="37"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Own-child">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="5001"/>
+            <TargetValueCount value="&gt;50K" count="67"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Unmarried">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="3228"/>
+            <TargetValueCount value="&gt;50K" count="218"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Wife">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="823"/>
+            <TargetValueCount value="&gt;50K" count="745"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="race">
+        <PairCounts value="Amer-Indian-Eskimo">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="275"/>
+            <TargetValueCount value="&gt;50K" count="36"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Asian-Pac-Islander">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="763"/>
+            <TargetValueCount value="&gt;50K" count="276"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Black">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="2737"/>
+            <TargetValueCount value="&gt;50K" count="387"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Other">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="246"/>
+            <TargetValueCount value="&gt;50K" count="25"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="White">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="20698"/>
+            <TargetValueCount value="&gt;50K" count="7117"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="sex">
+        <PairCounts value="Female">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="9591"/>
+            <TargetValueCount value="&gt;50K" count="1179"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Male">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="15128"/>
+            <TargetValueCount value="&gt;50K" count="6662"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+      <BayesInput fieldName="hours_per_week">
+        <TargetValueStats>
+          <TargetValueStat value="&lt;=50K">
+            <GaussianDistribution mean="38.8401634370322" variance="151.763714124918"/>
+          </TargetValueStat>
+          <TargetValueStat value="&gt;50K">
+            <GaussianDistribution mean="45.4730263996939" variance="121.285528709635"/>
+          </TargetValueStat>
+        </TargetValueStats>
+      </BayesInput>
+      <BayesInput fieldName="native_country">
+        <PairCounts value="Cambodia">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="12"/>
+            <TargetValueCount value="&gt;50K" count="7"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Canada">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="82"/>
+            <TargetValueCount value="&gt;50K" count="39"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="China">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="55"/>
+            <TargetValueCount value="&gt;50K" count="20"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Columbia">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="57"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Cuba">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="70"/>
+            <TargetValueCount value="&gt;50K" count="25"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Dominican-Republic">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="68"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Ecuador">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="24"/>
+            <TargetValueCount value="&gt;50K" count="4"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="El-Salvador">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="97"/>
+            <TargetValueCount value="&gt;50K" count="9"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="England">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="60"/>
+            <TargetValueCount value="&gt;50K" count="30"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Fiji">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="437"/>
+            <TargetValueCount value="&gt;50K" count="146"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="France">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="17"/>
+            <TargetValueCount value="&gt;50K" count="12"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Germany">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="93"/>
+            <TargetValueCount value="&gt;50K" count="44"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Greece">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="21"/>
+            <TargetValueCount value="&gt;50K" count="8"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Guatemala">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="61"/>
+            <TargetValueCount value="&gt;50K" count="3"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Haiti">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="40"/>
+            <TargetValueCount value="&gt;50K" count="4"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Honduras">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="12"/>
+            <TargetValueCount value="&gt;50K" count="1"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Hong">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="14"/>
+            <TargetValueCount value="&gt;50K" count="6"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Hungary">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="10"/>
+            <TargetValueCount value="&gt;50K" count="3"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="India">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="60"/>
+            <TargetValueCount value="&gt;50K" count="40"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Iran">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="25"/>
+            <TargetValueCount value="&gt;50K" count="18"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Ireland">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="19"/>
+            <TargetValueCount value="&gt;50K" count="5"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Italy">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="48"/>
+            <TargetValueCount value="&gt;50K" count="25"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Jamaica">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="71"/>
+            <TargetValueCount value="&gt;50K" count="10"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Japan">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="38"/>
+            <TargetValueCount value="&gt;50K" count="24"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Laos">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="16"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Mexico">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="610"/>
+            <TargetValueCount value="&gt;50K" count="33"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Nicaragua">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="32"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Outlying-US(Guam-USVI-etc)">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="14"/>
+            <TargetValueCount value="&gt;50K" count="0"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Peru">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="29"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Philippines">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="137"/>
+            <TargetValueCount value="&gt;50K" count="61"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Poland">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="48"/>
+            <TargetValueCount value="&gt;50K" count="12"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Portugal">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="33"/>
+            <TargetValueCount value="&gt;50K" count="4"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Puerto-Rico">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="102"/>
+            <TargetValueCount value="&gt;50K" count="12"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Scotland">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="9"/>
+            <TargetValueCount value="&gt;50K" count="3"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="South">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="64"/>
+            <TargetValueCount value="&gt;50K" count="16"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Taiwan">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="31"/>
+            <TargetValueCount value="&gt;50K" count="20"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Thailand">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="15"/>
+            <TargetValueCount value="&gt;50K" count="3"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Trinadad&amp;Tobago">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="17"/>
+            <TargetValueCount value="&gt;50K" count="2"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="United-States">
+          <TargetValueCounts>
+            <TargetValueCount value="&gt;50K" count="7171"/>
+            <TargetValueCount value="&lt;=50K" count="21999"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Vietnam">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="62"/>
+            <TargetValueCount value="&gt;50K" count="5"/>
+          </TargetValueCounts>
+        </PairCounts>
+        <PairCounts value="Yugoslavia">
+          <TargetValueCounts>
+            <TargetValueCount value="&lt;=50K" count="10"/>
+            <TargetValueCount value="&gt;50K" count="6"/>
+          </TargetValueCounts>
+        </PairCounts>
+      </BayesInput>
+    </BayesInputs>
+    <BayesOutput fieldName="class">
+      <TargetValueCounts>
+        <TargetValueCount value="&gt;50K" count="7841"/>
+        <TargetValueCount value="&lt;=50K" count="24719"/>
+      </TargetValueCounts>
+    </BayesOutput>
+  </NaiveBayesModel>
+</PMML>
+ 

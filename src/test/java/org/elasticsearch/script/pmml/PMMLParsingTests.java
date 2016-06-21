@@ -232,8 +232,8 @@ public class PMMLParsingTests extends ESTestCase {
             Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
             double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
             double prob1 = (Double) ((Map<String, Object>) resultValues.get("probs")).get(">50K");
-            assertThat(prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
-            assertThat(prob1, Matchers.closeTo(Double.parseDouble(expectedResult[1]), 1.e-7));
+            assertThat("result " + i + " had wrong probability for class " + "<=50K", prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
+            assertThat("result " + i + " had wrong probability for class " + ">50K", prob1, Matchers.closeTo(Double.parseDouble(expectedResult[1]), 1.e-7));
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
@@ -326,6 +326,18 @@ public class PMMLParsingTests extends ESTestCase {
     /*tests for naive bayes model*/
     public void testBigModelAndFeatureParsingFromRExportNaiveBayesModel() throws IOException {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r.xml");
+        PMML pmml = parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+                .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.vectorRangesToVector;
+        assertThat(vectorEntries.getEntries().size(), equalTo(10));
+        assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/naive_bayes_full_single_value.txt",
+                "/org/elasticsearch/script/naive_bayes_full_single_result.txt");
+    }
+
+    /*tests for naive bayes model*/
+    public void testBigModelAndFeatureParsingFromRExportNaiveBayesModelReorderdParams() throws IOException {
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r-reordered.xml");
         PMML pmml = parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
