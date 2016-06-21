@@ -65,6 +65,9 @@ public class ProcessPMMLHelper {
         return rawField;
     }
 
+    // allDerivedFields is a list of all derived fields that are to be considered
+    // derivedFields is the list of derived fields for fieldName
+    // returns the last derived field that was found
     public static String getDerivedFields(String fieldName, List<DerivedField> allDerivedFields, List<DerivedField>
             derivedFields) {
         // trace back all derived fields until we must arrive at an actual data field. This unfortunately means we have to

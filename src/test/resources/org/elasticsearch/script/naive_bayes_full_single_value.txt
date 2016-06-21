@@ -1,0 +1,2 @@
+"age","workclass","fnlwgt","education","education_num","marital_status","occupation","relationship","race","sex","capital_gain","capital_loss","hours_per_week","native_country","class"
+47,Private,111797,Some-college,10,Never-married,Other-service,Not-in-family,Black,Female,0,0,35,Outlying-US(Guam-USVI-etc),<=50K

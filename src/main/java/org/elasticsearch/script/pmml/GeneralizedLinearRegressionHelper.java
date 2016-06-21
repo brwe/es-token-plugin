@@ -72,7 +72,7 @@ public class GeneralizedLinearRegressionHelper {
         }
 
         for (PPCell cell : cells) {
-            featureEntries.addVectorEntry(indexCounter, cell);
+            featureEntries.addVectorEntry(indexCounter, cell.getValue());
             indexCounter++;
         }
         return featureEntries;

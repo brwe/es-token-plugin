@@ -59,9 +59,9 @@ public class TreeModelHelper {
             return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);
         } else {
             throw new UnsupportedOperationException("TreeModel does not support the following parameters yet: "
-                    + " splitCharacteristic:" + treeModel.getSplitCharacteristic().value().equals("binarySplit")
-                    + " missingValueStrategy:" + treeModel.getMissingValueStrategy().value().equals("defaultChild")
-                    + " noTrueChildStrategy:" + treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction"));
+                    + " splitCharacteristic:" + treeModel.getSplitCharacteristic().value()
+                    + " missingValueStrategy:" + treeModel.getMissingValueStrategy().value()
+                    + " noTrueChildStrategy:" + treeModel.getNoTrueChildStrategy().value());
         }
     }
 

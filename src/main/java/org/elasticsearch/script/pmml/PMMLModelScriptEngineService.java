@@ -23,6 +23,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.dmg.pmml.GeneralRegressionModel;
 import org.dmg.pmml.Model;
+import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
 import org.dmg.pmml.TreeModel;
@@ -219,6 +220,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         } else if (model instanceof TreeModel) {
             return TreeModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
+        } else if (model instanceof NaiveBayesModel) {
+            return NaiveBayesModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
         } else {
             throw new UnsupportedOperationException("Only implemented general regression model so far.");
         }

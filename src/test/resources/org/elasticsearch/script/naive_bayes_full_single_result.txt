@@ -1,0 +1,2 @@
+"probClass0","probClass1","predictedClass"
+0.999335915157143,0.000664084842857201,"<=50K"

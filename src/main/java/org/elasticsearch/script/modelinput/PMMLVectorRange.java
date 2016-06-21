@@ -70,7 +70,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         super(field, lastDerivedFieldName, type);
     }
 
-    public abstract void addVectorEntry(int indexCounter, PPCell ppcell);
+    public abstract void addVectorEntry(int indexCounter, String value);
 
     /**
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
@@ -103,8 +103,8 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public void addVectorEntry(int indexCounter, PPCell ppcell) {
-            categoryToIndexHashMap.put(ppcell.getValue(), indexCounter);
+        public void addVectorEntry(int indexCounter, String value) {
+            categoryToIndexHashMap.put(value, indexCounter);
         }
 
         @Override
@@ -143,7 +143,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+        public void addVectorEntry(int indexCounter, String value) {
             index = indexCounter;
         }
 
@@ -208,7 +208,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+        public void addVectorEntry(int indexCounter, String value) {
             this.index = indexCounter;
         }
 
@@ -237,7 +237,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public void addVectorEntry(int indexCounter, PPCell ppcell) {
+        public void addVectorEntry(int indexCounter, String value) {
             throw new UnsupportedOperationException("Not implemented for FieldToValue");
         }
 
