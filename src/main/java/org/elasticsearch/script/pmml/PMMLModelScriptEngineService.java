@@ -221,7 +221,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         } else if (model instanceof TreeModel) {
             return TreeModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
         } else if (model instanceof NaiveBayesModel) {
-            return NaiveBayesModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
+            return NaiveBayesModelHelper.getNaiveBayesFeaturesAndModel(pmml, modelNum);
         } else {
             throw new UnsupportedOperationException("Only implemented general regression model so far.");
         }

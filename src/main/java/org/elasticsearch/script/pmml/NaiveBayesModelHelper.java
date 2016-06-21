@@ -43,7 +43,7 @@ import java.util.Map;
 public class NaiveBayesModelHelper {
 
 
-    public static PMMLModelScriptEngineService.FieldsToVectorAndModel getTreeModelFeaturesAndModel(PMML pmml, int modelNum) {
+    public static PMMLModelScriptEngineService.FieldsToVectorAndModel getNaiveBayesFeaturesAndModel(PMML pmml, int modelNum) {
         NaiveBayesModel naiveBayesModel = (NaiveBayesModel) pmml.getModels().get(modelNum);
         if (naiveBayesModel.getFunctionName().value().equals("classification")) {
             // for each Bayes input

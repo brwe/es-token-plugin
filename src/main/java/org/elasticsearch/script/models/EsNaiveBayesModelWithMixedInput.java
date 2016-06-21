@@ -41,33 +41,21 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
     private String[] classLabels;
 
     public EsNaiveBayesModelWithMixedInput(NaiveBayesModel naiveBayesModel, Map<String, OpType> types) {
-        // get class priors
-        classPriors = new double[naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts().size()];
-        double[] classCounts = new double[naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts().size()];
-        classLabels = new String[naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts().size()];
-        int counter = 0;
-        double sumCounts = 0;
-        for (TargetValueCount targetValueCount : naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts()) {
-            classCounts[counter] = targetValueCount.getCount();
-            sumCounts += targetValueCount.getCount();
-            classLabels[counter] = targetValueCount.getValue();
-            counter++;
-        }
-        for (int i = 0; i < classPriors.length; i++) {
-            classPriors[i] = Math.log(classCounts[i] / sumCounts);
-        }
+        double[] classCounts = initClassPriorsAndLabels(naiveBayesModel);
+        initFunctions(naiveBayesModel, types, classCounts);
+    }
 
+    private void initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts) {
         List<List<Function>> functionLists = new ArrayList<>();
-        for (int i = 0; i < classCounts.length; i++) {
+        for (int i = 0; i < classLabels.length; i++) {
             functionLists.add(new ArrayList<Function>());
         }
-        counter = 0;
         double threshold = naiveBayesModel.getThreshold();
         for (BayesInput bayesInput : naiveBayesModel.getBayesInputs()) {
             String fieldName = bayesInput.getFieldName().getValue();
             if (types.containsKey(fieldName) == false) {
                 throw new UnsupportedOperationException("Cannot determine type of field " + bayesInput.getFieldName().getValue() +
-                        "probbaly meesed up parsing");
+                        "probably messed up parsing");
             }
             if (types.get(fieldName).equals(OpType.CONTINUOUS)) {
                 int classCounter = 0;
@@ -81,7 +69,6 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
                             .getMean()));
                     classCounter++;
                 }
-                counter++;
             } else if (types.get(fieldName).equals(OpType.CATEGORICAL)) {
                 for (PairCounts pairCount : bayesInput.getPairCounts()) {
                     int classCounter = 0;
@@ -90,7 +77,6 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
                         functionLists.get(classCounter).add(new ProbFunction(prob, threshold));
                         classCounter++;
                     }
-                    counter++;
                 }
             } else {
                 throw new UnsupportedOperationException("cannot deal with bayes input that is not categorical and also not continuous");
@@ -106,6 +92,26 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
             }
             classCounter++;
         }
+    }
+
+    private double[] initClassPriorsAndLabels(NaiveBayesModel naiveBayesModel) {
+        // get class priors
+        int numClasses = naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts().size();
+        classPriors = new double[numClasses];
+        double[] classCounts = new double[numClasses];
+        classLabels = new String[numClasses];
+        int counter = 0;
+        double sumCounts = 0;
+        for (TargetValueCount targetValueCount : naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts()) {
+            classCounts[counter] = targetValueCount.getCount();
+            sumCounts += targetValueCount.getCount();
+            classLabels[counter] = targetValueCount.getValue();
+            counter++;
+        }
+        for (int i = 0; i < classPriors.length; i++) {
+            classPriors[i] = Math.log(classCounts[i] / sumCounts);
+        }
+        return classCounts;
     }
 
     @Override
