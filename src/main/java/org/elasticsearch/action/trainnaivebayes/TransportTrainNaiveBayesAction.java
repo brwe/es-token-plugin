@@ -19,12 +19,18 @@
 
 package org.elasticsearch.action.trainnaivebayes;
 
+import org.dmg.pmml.BayesInputs;
 import org.dmg.pmml.BayesOutput;
+import org.dmg.pmml.DataDictionary;
+import org.dmg.pmml.DataField;
+import org.dmg.pmml.DataType;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.NaiveBayesModel;
+import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TargetValueCount;
 import org.dmg.pmml.TargetValueCounts;
+import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchResponse;
@@ -39,6 +45,7 @@ import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
@@ -56,6 +63,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -113,6 +121,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         topLevelClassAgg.size(Integer.MAX_VALUE);
         topLevelClassAgg.shardMinDocCount(1);
         topLevelClassAgg.minDocCount(1);
+        topLevelClassAgg.order(Terms.Order.term(true));
         Map fieldMappings = (Map) clusterService.state().getMetaData().getIndices().get(index).mapping(type).sourceAsMap().get
                 ("properties");
         for (String field : fields) {
@@ -150,6 +159,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             long[] classCounts = new long[numClasses];
             String[] classLabels = new String[numClasses];
             int classCounter = 0;
+
             for (Terms.Bucket bucket : classAgg.getBuckets()) {
                 classCounts[classCounter] = bucket.getDocCount();
                 classLabels[classCounter] = bucket.getKeyAsString();
@@ -192,8 +202,13 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     }
                 }
             }
+            setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats);
+
 
             final PMML pmml = new PMML();
+            setDataDictionary(pmml, allTermsPerField, numericFieldStats.keySet());
+
+
             pmml.addModels(naiveBayesModel);
             final StreamResult streamResult = new StreamResult();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -211,6 +226,38 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             });
             String pmmlString = new String(outputStream.toByteArray());
             int i = 0;
+        }
+
+        private void setBayesInputs(NaiveBayesModel naiveBayesModel, TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,
+                                    TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats) {
+            BayesInputs bayesInputs = new BayesInputs();
+            //for (Map.Entry <String, TreeMap<String, TreeMap<String, Long>> )
+        }
+
+        private static void setDataDictionary(PMML pmml, TreeMap<String, TreeSet<String>> allTermsPerField, Set<String> numericFieldsNames) {
+
+            DataDictionary dataDictionary = new DataDictionary();
+
+            for (Map.Entry<String, TreeSet<String>> fieldNameAndTerms : allTermsPerField.entrySet()) {
+                DataField dataField = new DataField();
+                dataField.setName(new FieldName(fieldNameAndTerms.getKey()));
+                dataField.setOpType(OpType.CATEGORICAL);
+                dataField.setDataType(DataType.STRING);
+                for (String term : fieldNameAndTerms.getValue()) {
+                    dataField.addValues(new Value(term));
+                }
+                dataDictionary.addDataFields(dataField);
+            }
+
+            for (String fieldname : numericFieldsNames) {
+                DataField dataField = new DataField();
+                dataField.setName(new FieldName(fieldname));
+                dataField.setOpType(OpType.CONTINUOUS);
+                // TODO: handle ints etc.
+                dataField.setDataType(DataType.DOUBLE);
+                dataDictionary.addDataFields(dataField);
+            }
+            pmml.setDataDictionary(dataDictionary);
         }
 
         @Override
