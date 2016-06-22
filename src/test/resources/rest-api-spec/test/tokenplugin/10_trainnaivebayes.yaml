@@ -1,0 +1,27 @@
+setup:
+  - do:
+      index:
+          index:  test
+          type:   test
+          id:     1
+          body:   { text: "always be careful", "label": "good_advice" }
+
+  - do:
+      index:
+          index:  test
+          type:   test
+          id:     2
+          body:   { text: "want to know what that button does? just press it!", "label": "bad_advice" }
+
+  - do:
+      indices.refresh: {}
+
+---
+"Basic trainnaivebayes request":
+  - do:
+      trainnaivebayes:
+          id : "abc"
+          "body" : {index:  "test", fields:  ["text"], target_field: "label", type: "test"}
+
+  - match:  { id:  "abc" }
+

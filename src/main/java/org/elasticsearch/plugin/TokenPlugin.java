@@ -34,6 +34,7 @@ import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.rest.action.preparespec.RestPrepareSpecAction;
 import org.elasticsearch.rest.action.storemodel.RestStoreModelAction;
+import org.elasticsearch.rest.action.trainnaivebayes.RestTrainNaiveBayesAction;
 import org.elasticsearch.script.NaiveBayesUpdateScript;
 import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
@@ -76,6 +77,7 @@ public class TokenPlugin extends Plugin {
         module.addRestAction(RestAllTermsAction.class);
         module.addRestAction(RestPrepareSpecAction.class);
         module.addRestAction(RestStoreModelAction.class);
+        module.addRestAction(RestTrainNaiveBayesAction.class);
     }
 
     public void onModule(IndicesModule indicesModule) {

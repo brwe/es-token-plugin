@@ -1,0 +1,26 @@
+{
+  "trainnaivebayes": {
+    "documentation": "no doc yet :(",
+    "methods": [
+      "POST"
+    ],
+    "url": {
+      "path": "/_trainnaivebayes",
+      "paths": [
+        "/_trainnaivebayes"
+      ],
+      "params": {
+        "id": {
+          "type": "string",
+          "description": "Id for the model script."
+        }
+      },
+      "parts" : {
+      }
+    },
+    "body": {
+      "required": true,
+      "description": "See non existing doc..."
+    }
+  }
+}
