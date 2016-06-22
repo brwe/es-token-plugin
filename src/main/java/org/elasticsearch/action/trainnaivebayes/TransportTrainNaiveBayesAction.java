@@ -19,17 +19,22 @@
 
 package org.elasticsearch.action.trainnaivebayes;
 
+import org.dmg.pmml.BayesInput;
 import org.dmg.pmml.BayesInputs;
 import org.dmg.pmml.BayesOutput;
 import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.FieldName;
+import org.dmg.pmml.GaussianDistribution;
 import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
+import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueCount;
 import org.dmg.pmml.TargetValueCounts;
+import org.dmg.pmml.TargetValueStat;
+import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
@@ -167,6 +172,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             }
             setTargetValueCounts(naiveBayesModel, classAgg, classCounts, classLabels);
 
+            // field, value, class -> count
             TreeMap<String, TreeMap<String,TreeMap<String, Long>>> stringFieldValueCounts = new TreeMap<>();
             TreeMap<String, TreeSet<String>> allTermsPerField = new TreeMap<>();
             TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats = new TreeMap<>();
@@ -176,17 +182,23 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     String fieldName = aggregation.getName();
                     if (aggregation instanceof Terms) {
                         Terms termAgg = (Terms) aggregation;
+                        // init the data structure if not present
                         if (stringFieldValueCounts.containsKey(fieldName) == false) {
                             stringFieldValueCounts.put(fieldName, new TreeMap<String, TreeMap<String, Long>>());
                             allTermsPerField.put(fieldName, new TreeSet<String>());
                         }
-                        TreeMap<String, Long> termCounts = new TreeMap<>();
+                        TreeMap<String, TreeMap<String, Long>> valueCounts = stringFieldValueCounts.get(fieldName);
+
 
                         for (Terms.Bucket termBucket : termAgg.getBuckets()) {
+                            String value = termBucket.getKeyAsString();
+                            if (valueCounts.containsKey(value) == false) {
+                                valueCounts.put(value, new TreeMap<String, Long>());
+                            }
+                            TreeMap<String, Long> termCountsPerClass = valueCounts.get(value);
                             allTermsPerField.get(fieldName).add(termBucket.getKeyAsString());
-                            termCounts.put(termBucket.getKeyAsString(), termBucket.getDocCount());
+                            termCountsPerClass.put(className, termBucket.getDocCount());
                         }
-                        stringFieldValueCounts.get(fieldName).put(className, termCounts);
                     } else if (aggregation instanceof ExtendedStats) {
                         ExtendedStats extendedStats = (ExtendedStats) aggregation;
                         if (numericFieldStats.get(fieldName) == null) {
@@ -202,7 +214,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     }
                 }
             }
-            setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats);
+            setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats, classLabels);
 
 
             final PMML pmml = new PMML();
@@ -229,9 +241,54 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         }
 
         private void setBayesInputs(NaiveBayesModel naiveBayesModel, TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,
-                                    TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats) {
+                                    TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats, String[] classNames) {
             BayesInputs bayesInputs = new BayesInputs();
-            //for (Map.Entry <String, TreeMap<String, TreeMap<String, Long>> )
+            for (Map.Entry<String, TreeMap<String, TreeMap<String, Long>>> categoricalField : stringFieldValueCounts.entrySet()) {
+                String fieldName = categoricalField.getKey();
+                BayesInput bayesInput = new BayesInput();
+                bayesInput.setFieldName(new FieldName(fieldName));
+                for (Map.Entry<String, TreeMap<String, Long>> valueCounts : categoricalField.getValue().entrySet()) {
+                    String value = valueCounts.getKey();
+                    PairCounts pairCounts = new PairCounts();
+                    pairCounts.setValue(value);
+                    TargetValueCounts targetValueCounts = new TargetValueCounts();
+                    TreeMap<String, Long> classCounts = valueCounts.getValue();
+                    for (String className : classNames ) {
+                        if (classCounts.containsKey(className)) {
+                            targetValueCounts.addTargetValueCounts(new TargetValueCount().setValue(className).setCount(classCounts.get
+                                    (className)));
+
+                        } else {
+                            targetValueCounts.addTargetValueCounts(new TargetValueCount().setValue(className).setCount(0));
+                        }
+                    }
+                    pairCounts.setTargetValueCounts(targetValueCounts);
+                    bayesInput.addPairCounts(pairCounts);
+                }
+                bayesInputs.addBayesInputs(bayesInput);
+            }
+            for (Map.Entry<String, TreeMap<String, Map<String, Double>>> continuousField : numericFieldStats.entrySet()) {
+                String fieldName = continuousField.getKey();
+                BayesInput bayesInput = new BayesInput();
+                bayesInput.setFieldName(new FieldName(fieldName));
+                TargetValueStats targetValueStats = new TargetValueStats();
+                for (Map.Entry<String, Map<String, Double>> valueStats : continuousField.getValue().entrySet()) {
+                    String className = valueStats.getKey();
+
+
+                    GaussianDistribution gaussianDistribution = new GaussianDistribution();
+                    gaussianDistribution.setMean(valueStats.getValue().get("mean"));
+                    gaussianDistribution.setVariance(valueStats.getValue().get("variance"));
+
+                    TargetValueStat targetValueStat = new TargetValueStat();
+                    targetValueStat.setValue(className);
+                    targetValueStat.setContinuousDistribution(gaussianDistribution);
+                    targetValueStats.addTargetValueStats(targetValueStat);
+                }
+                bayesInput.setTargetValueStats(targetValueStats);
+                bayesInputs.addBayesInputs(bayesInput);
+            }
+            naiveBayesModel.setBayesInputs(bayesInputs);
         }
 
         private static void setDataDictionary(PMML pmml, TreeMap<String, TreeSet<String>> allTermsPerField, Set<String> numericFieldsNames) {

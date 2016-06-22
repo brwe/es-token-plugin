@@ -17,9 +17,8 @@
  * under the License.
  */
 
-package org.elasticsearch.action.preparespec;
+package org.elasticsearch.action.trainnaivebayes;
 
-import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesRequestBuilder;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -46,7 +45,7 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
     }
 
     @Test
-    public void testSimpleTextFieldRequestWithSignificantTerms() throws Exception {
+    public void testNaiveBayesTraining() throws Exception {
         indexDocs();
         refresh();
         TrainNaiveBayesRequestBuilder builder = new TrainNaiveBayesRequestBuilder(client());
@@ -63,7 +62,8 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
 
 
     private void indexDocs() {
-        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)).get();
+        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1))
+                .get();
         client().prepareIndex("index", "type", "1").setSource("text", "I hate json", "label", "bad", "num", 1).execute().actionGet();
         client().prepareIndex("index", "type", "2").setSource("text", "json sucks", "label", "bad", "num", 2).execute().actionGet();
         client().prepareIndex("index", "type", "3").setSource("text", "json is much worse than xml", "label", "bad", "num", 3).execute()
@@ -75,7 +75,7 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
                 "num", 6)
                 .execute().actionGet();
         client().prepareIndex("index", "type", "7").setSource("text", "if any of my fellow developers reads this, they will tar and " +
-                "feather me and hang my mutilated body above the entrace to amsterdam headquaters as a warning to others", "label",
+                        "feather me and hang my mutilated body above the entrace to amsterdam headquaters as a warning to others", "label",
                 "good", "num", 7).execute().actionGet();
         client().prepareIndex("index", "type", "8").setSource("text", "obviously I am joking", "label", "good", "num", 8).execute()
                 .actionGet();
