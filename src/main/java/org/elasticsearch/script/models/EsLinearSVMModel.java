@@ -37,13 +37,18 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
     }
 
     @Override
-    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
         return prepareResult(val);
     }
 
     @Override
-    public Map<String, Object> evaluate(double[] featureValues) {
+    Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+        throw new UnsupportedOperationException("can only run with parameter debug: true");
+    }
+
+    @Override
+    public Map<String, Object> evaluateDebug(double[] featureValues) {
         double val = linearFunction(featureValues, intercept, coefficients);
         return prepareResult(val);
     }
@@ -54,5 +59,4 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
         result.put("class", classValue);
         return result;
     }
-
 }

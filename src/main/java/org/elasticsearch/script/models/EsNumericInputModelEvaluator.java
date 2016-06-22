@@ -26,23 +26,39 @@ import java.util.Map;
 
 public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator {
 
-    abstract Map<String, Object> evaluate(Tuple<int[], double[]> featureValues);
+    abstract Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues);
 
-    abstract Map<String, Object> evaluate(double[] featureValues);
+    abstract Object evaluate(Tuple<int[], double[]> featureValues);
+
+    abstract Map<String, Object> evaluateDebug(double[] featureValues);
 
     @Override
-    public Map<String, Object> evaluate(Map<String, Object> vector) {
+    public Map<String, Object> evaluateDebug(Map<String, Object> vector) {
         if (vector.containsKey("indices") == false) {
             Map<String, Object> denseVector = vector;
             assert (denseVector.get("values") instanceof double[]);
-            return evaluate((double[]) denseVector.get("values"));
+            return evaluateDebug((double[]) denseVector.get("values"));
         } else {
             Map<String, Object> sparseVector = vector;
             assert (sparseVector.get("indices") instanceof int[]);
             assert (sparseVector.get("values") instanceof double[]);
-            Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get("values"));
-            return evaluate(indicesAndValues);
+            Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get
+                    ("values"));
+            return evaluateDebug(indicesAndValues);
         }
+    }
+
+    @Override
+    public Object evaluate(Map<String, Object> vector) {
+        if (vector.containsKey("indices") == false) {
+         throw new UnsupportedOperationException("cannot evaluate dense vector without param debug: true");
+        }
+        Map<String, Object> sparseVector = vector;
+        assert (sparseVector.get("indices") instanceof int[]);
+        assert (sparseVector.get("values") instanceof double[]);
+        Tuple<int[], double[]> indicesAndValues = new Tuple<>((int[]) sparseVector.get("indices"), (double[]) sparseVector.get("values"));
+        return evaluate(indicesAndValues);
+
     }
 }
 

@@ -79,11 +79,11 @@ public class ModelTests extends ESTestCase {
             Map<String, Object> vector = new HashMap<>();
             vector.put("indices", new int[]{0, 1, 2});
             vector.put("values", new double[]{vals[0], vals[1], vals[2]});
-            Map<String, Object> result = esLinearSVMModel.evaluate(vector);
+            Map<String, Object> result = esLinearSVMModel.evaluateDebug(vector);
             double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
             assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
             EsModelEvaluator esSVMModel = new EsLinearSVMModel(modelParams, 0.1, new String[]{"1", "0"});
-            result = esSVMModel.evaluate(vector);
+            result = esSVMModel.evaluateDebug(vector);
             assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
         }
     }
@@ -103,11 +103,11 @@ public class ModelTests extends ESTestCase {
             Map<String, Object> vector = new HashMap<>();
             vector.put("indices", new int[]{0, 1, 2});
             vector.put("values", new double[]{vals[0], vals[1], vals[2]});
-            Map<String, Object> result = esLogisticRegressionModel.evaluate(vector);
+            Map<String, Object> result = esLogisticRegressionModel.evaluateDebug(vector);
             assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
 
             EsModelEvaluator esLLRModel = new EsLogisticRegressionModel(modelParams, 0.1, new String[]{"1", "0"});
-            result = esLLRModel.evaluate(vector);
+            result = esLLRModel.evaluateDebug(vector);
             assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
 
         }
@@ -130,7 +130,7 @@ public class ModelTests extends ESTestCase {
             Map<String, Object> vector = new HashMap<>();
             vector.put("indices", new int[]{0, 1, 2, 3});
             vector.put("values", new double[]{vals[0], vals[1], vals[2], vals[3]});
-            Map<String, Object> result = esNaiveBayesModel.evaluate(vector);
+            Map<String, Object> result = esNaiveBayesModel.evaluateDebug(vector);
             assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
         }
     }

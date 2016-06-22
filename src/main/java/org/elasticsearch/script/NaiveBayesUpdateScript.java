@@ -108,7 +108,7 @@ public class NaiveBayesUpdateScript extends AbstractSearchScript {
         Tuple<int[], double[]> indicesAndValues;
         indicesAndValues = SharedMethods.getIndicesAndValuesFromAnalyzedTokens(wordMap, analyzeResponse.getTokens());
         /** until here **/
-        Map<String, Object> resultValues = model.evaluate(indicesAndValues);
+        Map<String, Object> resultValues = model.evaluateDebug(indicesAndValues);
         ((Map<String, Object>) (context.get("_source"))).put("results", resultValues);
         return resultValues;
     }

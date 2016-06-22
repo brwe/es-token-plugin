@@ -42,11 +42,16 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
     }
 
     @Override
-    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
 
         double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
         double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
         return prepareResult(valClass0, valClass1);
+    }
+
+    @Override
+    Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+        throw new UnsupportedOperationException("can only run with parameter debug: true");
     }
 
     protected Map<String, Object> prepareResult(double valClass0, double valClass1) {
@@ -56,9 +61,11 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
         return results;
     }
 
-    public Map<String, Object> evaluate(double[] featureValues) {
+    public Map<String, Object> evaluateDebug(double[] featureValues) {
         double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
         double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
         return prepareResult(valClass0, valClass1);
     }
+
+
 }

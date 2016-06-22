@@ -207,8 +207,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         }
 
 
-        public PMMLModel newScript(LeafSearchLookup lookup) {
-            return new PMMLModel(features, model, lookup);
+        public PMMLModel newScript(LeafSearchLookup lookup, boolean debug) {
+            return new PMMLModel(features, model, lookup, debug);
         }
     }
 
@@ -236,7 +236,11 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             @Override
             public LeafSearchScript getLeafSearchScript(LeafReaderContext context) throws IOException {
                 final LeafSearchLookup leafLookup = lookup.getLeafSearchLookup(context);
-                PMMLModel scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup);
+                boolean debug = true;
+                if (vars.containsKey("debug")) {
+                    debug = (Boolean)vars.get("debug");
+                }
+                PMMLModel scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);
                 return scriptObject;
             }
 
@@ -250,6 +254,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     public static class PMMLModel implements LeafSearchScript {
         EsModelEvaluator model = null;
+        private boolean debug;
         private final VectorRangesToVector features;
         private LeafSearchLookup lookup;
 
@@ -262,11 +267,13 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         /**
          * @throws ScriptException
          */
-        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup) throws ScriptException {
+        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup, boolean debug) throws
+                ScriptException {
 
             this.lookup = lookup;
             this.features = features;
             this.model = model;
+            this.debug = debug;
         }
 
         @Override
@@ -277,7 +284,11 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         public Object run() {
             Object vector = features.vector(lookup.doc(), lookup.fields(), lookup.indexLookup(), lookup.source());
             assert vector instanceof Map;
-            return model.evaluate((Map<String, Object>) vector);
+            if (debug) {
+                return model.evaluateDebug((Map<String, Object>) vector);
+            } else {
+                return model.evaluate((Map<String, Object>) vector);
+            }
         }
 
         @Override

@@ -187,7 +187,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
@@ -229,7 +229,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[2];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
             double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
             double prob1 = (Double) ((Map<String, Object>) resultValues.get("probs")).get(">50K");
             assertThat("result " + i + " had wrong probability for class " + "<=50K", prob0, Matchers.closeTo(Double.parseDouble(expectedResult[0]), 1.e-7));
@@ -289,7 +289,7 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluate(result);
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
             assertThat("result " + i + " has wrong prediction", expectedClass, equalTo(resultValues.get("class")));
         }
     }

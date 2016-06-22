@@ -127,7 +127,12 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
     }
 
     @Override
-    public Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
+        double[] classProbs = getClassProbs(featureValues);
+        return prepareResult(classProbs);
+    }
+
+    private double[] getClassProbs(Tuple<int[], double[]> featureValues) {
         double[] classProbs = new double[classLabels.length];
         System.arraycopy(classPriors, 0, classProbs, 0, classProbs.length);
         for (int i = 0; i < featureValues.v1().length; i++) {
@@ -135,7 +140,23 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
                 classProbs[j] += functions[j][featureValues.v1()[i]].eval(featureValues.v2()[i]);
             }
         }
-        return prepareResult(classProbs);
+        return classProbs;
+    }
+
+    @Override
+    Object evaluate(Tuple<int[], double[]> featureValues) {
+        double[] classProbs = getClassProbs(featureValues);
+        int bestClass = 0;
+        // sum the values to get the actual probs
+        double bestProb = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < classProbs.length; i++) {
+            if (bestProb < classProbs[i]) {
+                bestClass = i;
+                bestProb = classProbs[i];
+            }
+        }
+        return classLabels[bestClass];
+
     }
 
     protected Map<String, Object> prepareResult(double... val) {
@@ -161,7 +182,7 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
         return results;
     }
 
-    public Map<String, Object> evaluate(double[] featureValues) {
+    public Map<String, Object> evaluateDebug(double[] featureValues) {
         throw new UnsupportedOperationException("Naive Bayes with miced inputs not implemented for dense vectors");
     }
 

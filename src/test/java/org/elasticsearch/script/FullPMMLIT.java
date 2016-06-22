@@ -43,6 +43,7 @@ import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertAcke
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertHitCount;
 import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertSearchResponse;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 
 /**
  */
@@ -75,6 +76,21 @@ public class FullPMMLIT extends ESIntegTestCase {
         assertHitCount(client().prepareSearch().get(), 1);
         indexAdultModel("/org/elasticsearch/script/lr_model_adult_full.xml");
         checkClassificationCorrect("/org/elasticsearch/script/singleresultforintegtest.txt");
+    }
+
+    @Test
+    public void testSingleAdultNotDebug() throws IOException, ExecutionException, InterruptedException {
+
+        indexAdultData("/org/elasticsearch/script/singlevalueforintegtest.txt", this);
+        assertHitCount(client().prepareSearch().get(), 1);
+        indexAdultModel("/org/elasticsearch/script/naive-bayes-adult-full-r.xml");
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("debug", false);
+        SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
+                .INDEXED, PMMLModelScriptEngineService.NAME, params)).addField("_source").setSize(10000).get();
+        assertSearchResponse(searchResponse);
+        assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), instanceOf(String.class));
+        assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), equalTo(">50K"));
     }
 
     private void checkClassificationCorrect(String resultFile) throws IOException {

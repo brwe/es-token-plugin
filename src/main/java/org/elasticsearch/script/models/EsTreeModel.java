@@ -46,9 +46,15 @@ public class EsTreeModel extends EsModelEvaluator {
     }
 
     @Override
-    public Map<String, Object> evaluate(Map<String, Object> vector) {
+    public Map<String, Object> evaluateDebug(Map<String, Object> vector) {
         assert startNode.predicate.match(vector);
         return startNode.evaluate(vector);
+    }
+
+    @Override
+    public Object evaluate(Map<String, Object> vector) {
+        assert startNode.predicate.match(vector);
+        return startNode.evaluate(vector).get("class");
     }
 
     static class EsTreeNode {
