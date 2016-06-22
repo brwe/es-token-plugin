@@ -32,6 +32,7 @@ import org.dmg.pmml.MiningField;
 import org.dmg.pmml.MiningFunctionType;
 import org.dmg.pmml.MiningSchema;
 import org.dmg.pmml.NaiveBayesModel;
+import org.dmg.pmml.ObjectFactory;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.PairCounts;
@@ -65,10 +66,13 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 import org.jpmml.model.JAXBUtil;
 
+import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -182,13 +186,13 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 classLabels[classCounter] = bucket.getKeyAsString();
                 classCounter++;
             }
-            if (classCounter <2 ) {
+            if (classCounter < 2) {
                 throw new RuntimeException("Need at least two classes for naive bayes!");
             }
             setTargetValueCounts(naiveBayesModel, classAgg, classCounts, classLabels);
 
             // field, value, class -> count
-            TreeMap<String, TreeMap<String,TreeMap<String, Long>>> stringFieldValueCounts = new TreeMap<>();
+            TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts = new TreeMap<>();
             TreeMap<String, TreeSet<String>> allTermsPerField = new TreeMap<>();
             TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats = new TreeMap<>();
             for (Terms.Bucket bucket : classAgg.getBuckets()) {
@@ -236,23 +240,24 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             setDataDictionary(pmml, allTermsPerField, numericFieldStats.keySet());
             setMiningFields(naiveBayesModel, allTermsPerField.keySet(), numericFieldStats.keySet(), classAgg.getName());
 
-            naiveBayesModel.setThreshold(1.0/searchResponse.getHits().totalHits());
+            naiveBayesModel.setThreshold(1.0 / searchResponse.getHits().totalHits());
             pmml.addModels(naiveBayesModel);
-            final StreamResult streamResult = new StreamResult();
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            streamResult.setOutputStream(outputStream);
 
+            final StringWriter stringWriter = new StringWriter();
             AccessController.doPrivileged(new PrivilegedAction<Object>() {
                 public Object run() {
                     try {
-                        JAXBUtil.marshal(pmml, streamResult);
+                        JAXBContext context = JAXBContext.newInstance(ObjectFactory.class);
+                        Marshaller marshaller = context.createMarshaller();
+                        marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
+                        marshaller.marshal(pmml, stringWriter);
                     } catch (JAXBException e) {
                         throw new RuntimeException("No idea what went wrong here", e);
                     }
                     return null;
                 }
             });
-            String pmmlString = new String(outputStream.toByteArray(), Charset.defaultCharset());
+            String pmmlString = stringWriter.toString();
             client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
                     .execute(new ActionListener<IndexResponse>() {
                         @Override
@@ -270,14 +275,14 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
 
         private static void setMiningFields(NaiveBayesModel naiveBayesModel, Set<String> categoricalFields, Set<String> numericFields,
                                             String classField) {
-            MiningSchema miningSchema  = new MiningSchema();
-            for(String fieldName : categoricalFields) {
+            MiningSchema miningSchema = new MiningSchema();
+            for (String fieldName : categoricalFields) {
                 MiningField miningField = new MiningField();
                 miningField.setName(new FieldName(fieldName));
                 miningField.setUsageType(FieldUsageType.ACTIVE);
                 miningSchema.addMiningFields(miningField);
             }
-            for(String fieldName : numericFields) {
+            for (String fieldName : numericFields) {
                 MiningField miningField = new MiningField();
                 miningField.setName(new FieldName(fieldName));
                 miningField.setUsageType(FieldUsageType.ACTIVE);
@@ -303,7 +308,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     pairCounts.setValue(value);
                     TargetValueCounts targetValueCounts = new TargetValueCounts();
                     TreeMap<String, Long> classCounts = valueCounts.getValue();
-                    for (String className : classNames ) {
+                    for (String className : classNames) {
                         if (classCounts.containsKey(className)) {
                             targetValueCounts.addTargetValueCounts(new TargetValueCount().setValue(className).setCount(classCounts.get
                                     (className)));
