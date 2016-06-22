@@ -69,11 +69,13 @@ import javax.xml.bind.JAXBException;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -250,7 +252,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     return null;
                 }
             });
-            String pmmlString = new String(outputStream.toByteArray());
+            String pmmlString = new String(outputStream.toByteArray(), Charset.defaultCharset());
             client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
                     .execute(new ActionListener<IndexResponse>() {
                         @Override

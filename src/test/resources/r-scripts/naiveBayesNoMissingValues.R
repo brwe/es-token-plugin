@@ -19,9 +19,9 @@ source(script)
 
 data<- loadData()
 data<-convertStringsToFactors(data)
-
-myNB <- naiveBayes(class ~ age + workclass + education_num + marital_status + occupation + relationship + race + sex + hours_per_week 
-                   + native_country, data = data, threshold = 1.0/32560.0)
+threshold = 1.0/32560.0
+myNB <- naiveBayes(class ~ age + fnlwgt+education + education_num + marital_status  + relationship + race + sex + hours_per_week 
+                   + capital_gain + capital_loss, data = data, threshold = 3.071253e-05) #threshold = 1.0/32560.0
 
 # convert to pmmlgetwd
 pmmlModel <- pmml(myNB, predictedField = "class")
@@ -37,4 +37,4 @@ colnames(result)<-c("probClass0", "probClass1" ,"predictedClass")
 cMatrix <-confusionMatrix(result$predictedClass, data$class, positive = NULL, 
                           dnn = c("result", "class"))
 
-write.table(result, file = paste(result.dir, "r_naive_bayes_adult_result_no_missing_value_replacement.csv", sep =""),row.names = F, sep=",")
+write.table(result, file = paste(result.dir, "r_naive_bayes_adult_result_no_missing_values.csv", sep =""),row.names = F, sep=",")
