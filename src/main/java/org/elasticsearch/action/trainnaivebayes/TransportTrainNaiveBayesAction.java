@@ -26,7 +26,11 @@ import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.FieldName;
+import org.dmg.pmml.FieldUsageType;
 import org.dmg.pmml.GaussianDistribution;
+import org.dmg.pmml.MiningField;
+import org.dmg.pmml.MiningFunctionType;
+import org.dmg.pmml.MiningSchema;
 import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
@@ -38,6 +42,7 @@ import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
@@ -46,7 +51,9 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.SharedMethods;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -100,7 +107,8 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             listener.onFailure(e);
         }
 
-        final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client);
+        final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client,
+                request.id());
         client.prepareSearch().addAggregation(aggregationBuilder).execute(naiveBayesTrainingActionListener);
     }
 
@@ -121,7 +129,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         String index = (String) parsedSource.get("index");
         String type = (String) parsedSource.get("type");
         List<String> fields = (List<String>) parsedSource.get("fields");
-        TermsBuilder topLevelClassAgg = terms("class");
+        TermsBuilder topLevelClassAgg = terms(targetField);
         topLevelClassAgg.field(targetField);
         topLevelClassAgg.size(Integer.MAX_VALUE);
         topLevelClassAgg.shardMinDocCount(1);
@@ -149,10 +157,12 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
 
         private ActionListener<TrainNaiveBayesResponse> listener;
         final private Client client;
+        private String id;
 
-        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client) {
+        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client, String id) {
             this.listener = listener;
             this.client = client;
+            this.id = id;
         }
 
         @Override
@@ -169,6 +179,9 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 classCounts[classCounter] = bucket.getDocCount();
                 classLabels[classCounter] = bucket.getKeyAsString();
                 classCounter++;
+            }
+            if (classCounter <2 ) {
+                throw new RuntimeException("Need at least two classes for naive bayes!");
             }
             setTargetValueCounts(naiveBayesModel, classAgg, classCounts, classLabels);
 
@@ -215,12 +228,13 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 }
             }
             setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats, classLabels);
-
+            naiveBayesModel.setFunctionName(MiningFunctionType.CLASSIFICATION);
 
             final PMML pmml = new PMML();
             setDataDictionary(pmml, allTermsPerField, numericFieldStats.keySet());
+            setMiningFields(naiveBayesModel, allTermsPerField.keySet(), numericFieldStats.keySet(), classAgg.getName());
 
-
+            naiveBayesModel.setThreshold(1.0/searchResponse.getHits().totalHits());
             pmml.addModels(naiveBayesModel);
             final StreamResult streamResult = new StreamResult();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -237,7 +251,41 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 }
             });
             String pmmlString = new String(outputStream.toByteArray());
-            int i = 0;
+            client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
+                    .execute(new ActionListener<IndexResponse>() {
+                        @Override
+                        public void onResponse(IndexResponse indexResponse) {
+                            listener.onResponse(new TrainNaiveBayesResponse(indexResponse.getIndex(), indexResponse.getType(),
+                                    indexResponse.getId()));
+                        }
+
+                        @Override
+                        public void onFailure(Throwable e) {
+                            listener.onFailure(e);
+                        }
+                    });
+        }
+
+        private static void setMiningFields(NaiveBayesModel naiveBayesModel, Set<String> categoricalFields, Set<String> numericFields,
+                                            String classField) {
+            MiningSchema miningSchema  = new MiningSchema();
+            for(String fieldName : categoricalFields) {
+                MiningField miningField = new MiningField();
+                miningField.setName(new FieldName(fieldName));
+                miningField.setUsageType(FieldUsageType.ACTIVE);
+                miningSchema.addMiningFields(miningField);
+            }
+            for(String fieldName : numericFields) {
+                MiningField miningField = new MiningField();
+                miningField.setName(new FieldName(fieldName));
+                miningField.setUsageType(FieldUsageType.ACTIVE);
+                miningSchema.addMiningFields(miningField);
+            }
+            MiningField miningField = new MiningField();
+            miningField.setName(new FieldName(classField));
+            miningField.setUsageType(FieldUsageType.PREDICTED);
+            miningSchema.addMiningFields(miningField);
+            naiveBayesModel.setMiningSchema(miningSchema);
         }
 
         private void setBayesInputs(NaiveBayesModel naiveBayesModel, TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,

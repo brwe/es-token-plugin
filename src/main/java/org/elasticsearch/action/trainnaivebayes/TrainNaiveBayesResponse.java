@@ -51,7 +51,7 @@ public class TrainNaiveBayesResponse extends ActionResponse implements ToXConten
 
     }
 
-    public TrainNaiveBayesResponse(String index, String type, String id, int length) {
+    public TrainNaiveBayesResponse(String index, String type, String id) {
         this.index = index;
         this.type = type;
         this.id = id;
