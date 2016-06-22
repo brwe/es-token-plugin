@@ -19,20 +19,30 @@
 
 package org.elasticsearch.action.trainnaivebayes;
 
+import org.dmg.pmml.BayesInput;
 import org.dmg.pmml.BayesInputs;
 import org.dmg.pmml.BayesOutput;
 import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DataType;
 import org.dmg.pmml.FieldName;
+import org.dmg.pmml.FieldUsageType;
+import org.dmg.pmml.GaussianDistribution;
+import org.dmg.pmml.MiningField;
+import org.dmg.pmml.MiningFunctionType;
+import org.dmg.pmml.MiningSchema;
 import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
+import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueCount;
 import org.dmg.pmml.TargetValueCounts;
+import org.dmg.pmml.TargetValueStat;
+import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
@@ -41,7 +51,9 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.SharedMethods;
+import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -57,11 +69,13 @@ import javax.xml.bind.JAXBException;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -95,7 +109,8 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             listener.onFailure(e);
         }
 
-        final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client);
+        final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client,
+                request.id());
         client.prepareSearch().addAggregation(aggregationBuilder).execute(naiveBayesTrainingActionListener);
     }
 
@@ -116,7 +131,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         String index = (String) parsedSource.get("index");
         String type = (String) parsedSource.get("type");
         List<String> fields = (List<String>) parsedSource.get("fields");
-        TermsBuilder topLevelClassAgg = terms("class");
+        TermsBuilder topLevelClassAgg = terms(targetField);
         topLevelClassAgg.field(targetField);
         topLevelClassAgg.size(Integer.MAX_VALUE);
         topLevelClassAgg.shardMinDocCount(1);
@@ -144,10 +159,12 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
 
         private ActionListener<TrainNaiveBayesResponse> listener;
         final private Client client;
+        private String id;
 
-        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client) {
+        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client, String id) {
             this.listener = listener;
             this.client = client;
+            this.id = id;
         }
 
         @Override
@@ -165,8 +182,12 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 classLabels[classCounter] = bucket.getKeyAsString();
                 classCounter++;
             }
+            if (classCounter <2 ) {
+                throw new RuntimeException("Need at least two classes for naive bayes!");
+            }
             setTargetValueCounts(naiveBayesModel, classAgg, classCounts, classLabels);
 
+            // field, value, class -> count
             TreeMap<String, TreeMap<String,TreeMap<String, Long>>> stringFieldValueCounts = new TreeMap<>();
             TreeMap<String, TreeSet<String>> allTermsPerField = new TreeMap<>();
             TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats = new TreeMap<>();
@@ -176,17 +197,23 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     String fieldName = aggregation.getName();
                     if (aggregation instanceof Terms) {
                         Terms termAgg = (Terms) aggregation;
+                        // init the data structure if not present
                         if (stringFieldValueCounts.containsKey(fieldName) == false) {
                             stringFieldValueCounts.put(fieldName, new TreeMap<String, TreeMap<String, Long>>());
                             allTermsPerField.put(fieldName, new TreeSet<String>());
                         }
-                        TreeMap<String, Long> termCounts = new TreeMap<>();
+                        TreeMap<String, TreeMap<String, Long>> valueCounts = stringFieldValueCounts.get(fieldName);
+
 
                         for (Terms.Bucket termBucket : termAgg.getBuckets()) {
+                            String value = termBucket.getKeyAsString();
+                            if (valueCounts.containsKey(value) == false) {
+                                valueCounts.put(value, new TreeMap<String, Long>());
+                            }
+                            TreeMap<String, Long> termCountsPerClass = valueCounts.get(value);
                             allTermsPerField.get(fieldName).add(termBucket.getKeyAsString());
-                            termCounts.put(termBucket.getKeyAsString(), termBucket.getDocCount());
+                            termCountsPerClass.put(className, termBucket.getDocCount());
                         }
-                        stringFieldValueCounts.get(fieldName).put(className, termCounts);
                     } else if (aggregation instanceof ExtendedStats) {
                         ExtendedStats extendedStats = (ExtendedStats) aggregation;
                         if (numericFieldStats.get(fieldName) == null) {
@@ -202,13 +229,14 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     }
                 }
             }
-            setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats);
-
+            setBayesInputs(naiveBayesModel, stringFieldValueCounts, numericFieldStats, classLabels);
+            naiveBayesModel.setFunctionName(MiningFunctionType.CLASSIFICATION);
 
             final PMML pmml = new PMML();
             setDataDictionary(pmml, allTermsPerField, numericFieldStats.keySet());
+            setMiningFields(naiveBayesModel, allTermsPerField.keySet(), numericFieldStats.keySet(), classAgg.getName());
 
-
+            naiveBayesModel.setThreshold(1.0/searchResponse.getHits().totalHits());
             pmml.addModels(naiveBayesModel);
             final StreamResult streamResult = new StreamResult();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -224,14 +252,93 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                     return null;
                 }
             });
-            String pmmlString = new String(outputStream.toByteArray());
-            int i = 0;
+            String pmmlString = new String(outputStream.toByteArray(), Charset.defaultCharset());
+            client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
+                    .execute(new ActionListener<IndexResponse>() {
+                        @Override
+                        public void onResponse(IndexResponse indexResponse) {
+                            listener.onResponse(new TrainNaiveBayesResponse(indexResponse.getIndex(), indexResponse.getType(),
+                                    indexResponse.getId()));
+                        }
+
+                        @Override
+                        public void onFailure(Throwable e) {
+                            listener.onFailure(e);
+                        }
+                    });
+        }
+
+        private static void setMiningFields(NaiveBayesModel naiveBayesModel, Set<String> categoricalFields, Set<String> numericFields,
+                                            String classField) {
+            MiningSchema miningSchema  = new MiningSchema();
+            for(String fieldName : categoricalFields) {
+                MiningField miningField = new MiningField();
+                miningField.setName(new FieldName(fieldName));
+                miningField.setUsageType(FieldUsageType.ACTIVE);
+                miningSchema.addMiningFields(miningField);
+            }
+            for(String fieldName : numericFields) {
+                MiningField miningField = new MiningField();
+                miningField.setName(new FieldName(fieldName));
+                miningField.setUsageType(FieldUsageType.ACTIVE);
+                miningSchema.addMiningFields(miningField);
+            }
+            MiningField miningField = new MiningField();
+            miningField.setName(new FieldName(classField));
+            miningField.setUsageType(FieldUsageType.PREDICTED);
+            miningSchema.addMiningFields(miningField);
+            naiveBayesModel.setMiningSchema(miningSchema);
         }
 
         private void setBayesInputs(NaiveBayesModel naiveBayesModel, TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,
-                                    TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats) {
+                                    TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats, String[] classNames) {
             BayesInputs bayesInputs = new BayesInputs();
-            //for (Map.Entry <String, TreeMap<String, TreeMap<String, Long>> )
+            for (Map.Entry<String, TreeMap<String, TreeMap<String, Long>>> categoricalField : stringFieldValueCounts.entrySet()) {
+                String fieldName = categoricalField.getKey();
+                BayesInput bayesInput = new BayesInput();
+                bayesInput.setFieldName(new FieldName(fieldName));
+                for (Map.Entry<String, TreeMap<String, Long>> valueCounts : categoricalField.getValue().entrySet()) {
+                    String value = valueCounts.getKey();
+                    PairCounts pairCounts = new PairCounts();
+                    pairCounts.setValue(value);
+                    TargetValueCounts targetValueCounts = new TargetValueCounts();
+                    TreeMap<String, Long> classCounts = valueCounts.getValue();
+                    for (String className : classNames ) {
+                        if (classCounts.containsKey(className)) {
+                            targetValueCounts.addTargetValueCounts(new TargetValueCount().setValue(className).setCount(classCounts.get
+                                    (className)));
+
+                        } else {
+                            targetValueCounts.addTargetValueCounts(new TargetValueCount().setValue(className).setCount(0));
+                        }
+                    }
+                    pairCounts.setTargetValueCounts(targetValueCounts);
+                    bayesInput.addPairCounts(pairCounts);
+                }
+                bayesInputs.addBayesInputs(bayesInput);
+            }
+            for (Map.Entry<String, TreeMap<String, Map<String, Double>>> continuousField : numericFieldStats.entrySet()) {
+                String fieldName = continuousField.getKey();
+                BayesInput bayesInput = new BayesInput();
+                bayesInput.setFieldName(new FieldName(fieldName));
+                TargetValueStats targetValueStats = new TargetValueStats();
+                for (Map.Entry<String, Map<String, Double>> valueStats : continuousField.getValue().entrySet()) {
+                    String className = valueStats.getKey();
+
+
+                    GaussianDistribution gaussianDistribution = new GaussianDistribution();
+                    gaussianDistribution.setMean(valueStats.getValue().get("mean"));
+                    gaussianDistribution.setVariance(valueStats.getValue().get("variance"));
+
+                    TargetValueStat targetValueStat = new TargetValueStat();
+                    targetValueStat.setValue(className);
+                    targetValueStat.setContinuousDistribution(gaussianDistribution);
+                    targetValueStats.addTargetValueStats(targetValueStat);
+                }
+                bayesInput.setTargetValueStats(targetValueStats);
+                bayesInputs.addBayesInputs(bayesInput);
+            }
+            naiveBayesModel.setBayesInputs(bayesInputs);
         }
 
         private static void setDataDictionary(PMML pmml, TreeMap<String, TreeSet<String>> allTermsPerField, Set<String> numericFieldsNames) {

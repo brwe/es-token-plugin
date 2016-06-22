@@ -1,0 +1,380 @@
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+ <Header copyright="Copyright (c) 2016 britta" description="NaiveBayes Model">
+  <Extension name="user" value="britta" extender="Rattle/PMML"/>
+  <Application name="Rattle/PMML" version="1.4"/>
+  <Timestamp>2016-06-22 14:38:58</Timestamp>
+ </Header>
+ <DataDictionary numberOfFields="12">
+  <DataField name="class" optype="categorical" dataType="string">
+   <Value value="&lt;=50K"/>
+   <Value value="&gt;50K"/>
+  </DataField>
+  <DataField name="age" optype="continuous" dataType="double"/>
+  <DataField name="fnlwgt" optype="continuous" dataType="double"/>
+  <DataField name="education" optype="categorical" dataType="string">
+   <Value value="10th"/>
+   <Value value="11th"/>
+   <Value value="12th"/>
+   <Value value="1st-4th"/>
+   <Value value="5th-6th"/>
+   <Value value="7th-8th"/>
+   <Value value="9th"/>
+   <Value value="Assoc-acdm"/>
+   <Value value="Assoc-voc"/>
+   <Value value="Bachelors"/>
+   <Value value="Doctorate"/>
+   <Value value="HS-grad"/>
+   <Value value="Masters"/>
+   <Value value="Preschool"/>
+   <Value value="Prof-school"/>
+   <Value value="Some-college"/>
+  </DataField>
+  <DataField name="education_num" optype="continuous" dataType="double"/>
+  <DataField name="marital_status" optype="categorical" dataType="string">
+   <Value value="Divorced"/>
+   <Value value="Married-AF-spouse"/>
+   <Value value="Married-civ-spouse"/>
+   <Value value="Married-spouse-absent"/>
+   <Value value="Never-married"/>
+   <Value value="Separated"/>
+   <Value value="Widowed"/>
+  </DataField>
+  <DataField name="relationship" optype="categorical" dataType="string">
+   <Value value="Husband"/>
+   <Value value="Not-in-family"/>
+   <Value value="Other-relative"/>
+   <Value value="Own-child"/>
+   <Value value="Unmarried"/>
+   <Value value="Wife"/>
+  </DataField>
+  <DataField name="race" optype="categorical" dataType="string">
+   <Value value="Amer-Indian-Eskimo"/>
+   <Value value="Asian-Pac-Islander"/>
+   <Value value="Black"/>
+   <Value value="Other"/>
+   <Value value="White"/>
+  </DataField>
+  <DataField name="sex" optype="categorical" dataType="string">
+   <Value value="Female"/>
+   <Value value="Male"/>
+  </DataField>
+  <DataField name="hours_per_week" optype="continuous" dataType="double"/>
+  <DataField name="capital_gain" optype="continuous" dataType="double"/>
+  <DataField name="capital_loss" optype="continuous" dataType="double"/>
+ </DataDictionary>
+ <NaiveBayesModel modelName="naiveBayes_Model" functionName="classification" threshold="3.071253e-05">
+  <MiningSchema>
+   <MiningField name="class" usageType="predicted"/>
+   <MiningField name="age" usageType="active"/>
+   <MiningField name="fnlwgt" usageType="active"/>
+   <MiningField name="education" usageType="active"/>
+   <MiningField name="education_num" usageType="active"/>
+   <MiningField name="marital_status" usageType="active"/>
+   <MiningField name="relationship" usageType="active"/>
+   <MiningField name="race" usageType="active"/>
+   <MiningField name="sex" usageType="active"/>
+   <MiningField name="hours_per_week" usageType="active"/>
+   <MiningField name="capital_gain" usageType="active"/>
+   <MiningField name="capital_loss" usageType="active"/>
+  </MiningSchema>
+  <Output>
+   <OutputField name="Predicted_class" feature="predictedValue"/>
+   <OutputField name="Probability_&lt;=50K" optype="continuous" dataType="double" feature="probability" value="&lt;=50K"/>
+   <OutputField name="Probability_&gt;50K" optype="continuous" dataType="double" feature="probability" value="&gt;50K"/>
+  </Output>
+  <BayesInputs>
+   <BayesInput fieldName="age">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="36.7839313888102" variance="196.569907660314"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="44.2498405815585" variance="110.649944171011"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+   <BayesInput fieldName="fnlwgt">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="190347.437396335" variance="11337864989.1866"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="188005" variance="10514815717.013"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+   <BayesInput fieldName="education">
+    <PairCounts value="10th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="871"/>
+      <TargetValueCount value="&gt;50K" count="62"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="11th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="1115"/>
+      <TargetValueCount value="&gt;50K" count="60"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="12th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="400"/>
+      <TargetValueCount value="&gt;50K" count="33"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="1st-4th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="162"/>
+      <TargetValueCount value="&gt;50K" count="6"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="5th-6th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="317"/>
+      <TargetValueCount value="&gt;50K" count="16"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="7th-8th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="606"/>
+      <TargetValueCount value="&gt;50K" count="40"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="9th">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="487"/>
+      <TargetValueCount value="&gt;50K" count="27"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Assoc-acdm">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="802"/>
+      <TargetValueCount value="&gt;50K" count="265"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Assoc-voc">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="1021"/>
+      <TargetValueCount value="&gt;50K" count="361"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Bachelors">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="3134"/>
+      <TargetValueCount value="&gt;50K" count="2221"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Doctorate">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="107"/>
+      <TargetValueCount value="&gt;50K" count="306"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="HS-grad">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="8826"/>
+      <TargetValueCount value="&gt;50K" count="1675"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Masters">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="764"/>
+      <TargetValueCount value="&gt;50K" count="959"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Preschool">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="51"/>
+      <TargetValueCount value="&gt;50K" count="0"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Prof-school">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="153"/>
+      <TargetValueCount value="&gt;50K" count="423"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Some-college">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="5903"/>
+      <TargetValueCount value="&gt;50K" count="1387"/>
+     </TargetValueCounts>
+    </PairCounts>
+   </BayesInput>
+   <BayesInput fieldName="education_num">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="9.59504834337959" variance="5.93504466045917"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="11.6116566764443" variance="5.6888385943588"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+   <BayesInput fieldName="marital_status">
+    <PairCounts value="Divorced">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="3980"/>
+      <TargetValueCount value="&gt;50K" count="463"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Married-AF-spouse">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="13"/>
+      <TargetValueCount value="&gt;50K" count="10"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Married-civ-spouse">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="8284"/>
+      <TargetValueCount value="&gt;50K" count="6692"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Married-spouse-absent">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="384"/>
+      <TargetValueCount value="&gt;50K" count="34"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Never-married">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="10191"/>
+      <TargetValueCount value="&gt;50K" count="491"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Separated">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="959"/>
+      <TargetValueCount value="&gt;50K" count="66"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Widowed">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="908"/>
+      <TargetValueCount value="&gt;50K" count="85"/>
+     </TargetValueCounts>
+    </PairCounts>
+   </BayesInput>
+   <BayesInput fieldName="relationship">
+    <PairCounts value="Husband">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="7275"/>
+      <TargetValueCount value="&gt;50K" count="5918"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Not-in-family">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="7449"/>
+      <TargetValueCount value="&gt;50K" count="856"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Other-relative">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="943"/>
+      <TargetValueCount value="&gt;50K" count="37"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Own-child">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="5001"/>
+      <TargetValueCount value="&gt;50K" count="67"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Unmarried">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="3228"/>
+      <TargetValueCount value="&gt;50K" count="218"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Wife">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="823"/>
+      <TargetValueCount value="&gt;50K" count="745"/>
+     </TargetValueCounts>
+    </PairCounts>
+   </BayesInput>
+   <BayesInput fieldName="race">
+    <PairCounts value="Amer-Indian-Eskimo">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="275"/>
+      <TargetValueCount value="&gt;50K" count="36"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Asian-Pac-Islander">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="763"/>
+      <TargetValueCount value="&gt;50K" count="276"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Black">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="2737"/>
+      <TargetValueCount value="&gt;50K" count="387"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Other">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="246"/>
+      <TargetValueCount value="&gt;50K" count="25"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="White">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="20698"/>
+      <TargetValueCount value="&gt;50K" count="7117"/>
+     </TargetValueCounts>
+    </PairCounts>
+   </BayesInput>
+   <BayesInput fieldName="sex">
+    <PairCounts value="Female">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="9591"/>
+      <TargetValueCount value="&gt;50K" count="1179"/>
+     </TargetValueCounts>
+    </PairCounts>
+    <PairCounts value="Male">
+     <TargetValueCounts>
+      <TargetValueCount value="&lt;=50K" count="15128"/>
+      <TargetValueCount value="&gt;50K" count="6662"/>
+     </TargetValueCounts>
+    </PairCounts>
+   </BayesInput>
+   <BayesInput fieldName="hours_per_week">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="38.8401634370322" variance="151.763714124918"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="45.4730263996939" variance="121.285528709635"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+   <BayesInput fieldName="capital_gain">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="148.758485375622" variance="927673.958983643"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="4006.14245631935" variance="212295942.783913"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+   <BayesInput fieldName="capital_loss">
+    <TargetValueStats>
+     <TargetValueStat value="&lt;=50K">
+      <GaussianDistribution mean="53.0558679558235" variance="96385.714614708"/>
+     </TargetValueStat>
+     <TargetValueStat value="&gt;50K">
+      <GaussianDistribution mean="195.001530417039" variance="354605.450762964"/>
+     </TargetValueStat>
+    </TargetValueStats>
+   </BayesInput>
+  </BayesInputs>
+  <BayesOutput fieldName="class">
+   <TargetValueCounts>
+    <TargetValueCount value="&lt;=50K" count="24719"/>
+    <TargetValueCount value="&gt;50K" count="7841"/>
+   </TargetValueCounts>
+  </BayesOutput>
+ </NaiveBayesModel>
+</PMML>
