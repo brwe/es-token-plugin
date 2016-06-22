@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class EsTreeModel extends EsModelEvaluator {
 
@@ -360,6 +361,9 @@ public class EsTreeModel extends EsModelEvaluator {
 
         public boolean match(Map<String, Object> vector) {
             Object fieldValue = vector.get(field);
+            if (fieldValue instanceof HashSet) {
+                fieldValue = new ComparableSet((HashSet) fieldValue);
+            }
             if (fieldValue == null) {
                 return false;
             }
@@ -410,12 +414,34 @@ public class EsTreeModel extends EsModelEvaluator {
         @Override
         public boolean match(Map<String, Object> vector) {
             // we do not check for null because HashSet allows null values.
-            return values.contains(vector.get(field));
+            for (Object value : (Set)vector.get(field))  {
+                if (values.contains(value)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
         public boolean notEnoughValues(Map vector) {
             return vector.containsKey(field) == false;
+        }
+    }
+
+    public static class ComparableSet extends HashSet<Comparable> implements Comparable {
+
+        public ComparableSet(HashSet<Comparable> set) {
+            this.addAll(set);
+        }
+        @Override
+        public int compareTo(Object o) {
+            if (this.size()!= 1) {
+                throw new UnsupportedOperationException("cannot really compare sets, I am just pretending!");
+            }
+            if (o instanceof Comparable == false) {
+                throw new UnsupportedOperationException("cannot compare to object " + o.getClass().getName());
+            }
+            return this.toArray(new Comparable[1])[0].compareTo((Comparable)o);
         }
     }
 }

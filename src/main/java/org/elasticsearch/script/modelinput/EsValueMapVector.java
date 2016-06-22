@@ -19,16 +19,18 @@
 
 package org.elasticsearch.script.modelinput;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class EsValueMapVector implements EsVector {
-    private Map<String, Object> values;
+    private Map<String, Set<Object>> values;
 
-    public EsValueMapVector(Map<String, Object> values) {
+    public EsValueMapVector(Map<String, Set<Object>> values) {
         this.values = values;
     }
 
-    public Map<String, Object> getValues() {
+    public Map<String, Set<Object>> getValues() {
         return values;
     }
 }

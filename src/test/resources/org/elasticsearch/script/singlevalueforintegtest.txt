@@ -1,2 +1,3 @@
 "age","workclass","fnlwgt","education","education_num","marital_status","occupation","relationship","race","sex","capital_gain","capital_loss","hours_per_week","native_country","class"
-31, Private, 183043, Masters, 14, Married-civ-spouse, Exec-managerial, Husband, White, Male, 0, 1977, 48, United-States, >50K
+54,,180211,Some-college,10,Married-civ-spouse,,Husband,Asian-Pac-Islander,Male,0,0,60,South,>50K
+

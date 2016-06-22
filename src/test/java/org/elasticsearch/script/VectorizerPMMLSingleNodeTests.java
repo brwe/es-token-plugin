@@ -46,6 +46,7 @@ import org.elasticsearch.test.ESSingleNodeTestCase;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
@@ -56,11 +57,13 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
     IndexFieldDataService ifdService;
     IndexService indexService;
 
-    private LeafDocLookup indexDoc(String work, String education, Integer age) throws IOException {
+    private LeafDocLookup indexDoc(String[] work, String education, Integer age) throws IOException {
         IndexWriter writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
         Document doc = new Document();
         if (work != null) {
-            doc.add(new StringField("work", work, Store.YES));
+            for (String value : work) {
+                doc.add(new StringField("work", value, Store.YES));
+            }
         }
         if (education != null) {
             doc.add(new StringField("education", education, Store.YES));
@@ -82,7 +85,7 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
     public void testGLMOnActualLookup() throws Exception {
         setupServices();
 
-        LeafDocLookup docLookup = indexDoc("Self-emp-inc", null, 60);
+        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
@@ -95,7 +98,7 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
 
         // test missing values
-        docLookup = indexDoc("Self-emp-inc", null, null);
+        docLookup = indexDoc(new String[]{"Self-emp-inc"}, null, null);
         docLookup.setDocument(0);
         vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
@@ -112,10 +115,27 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
     }
 
+    public void testGLMOnActualLookupMultipleStringValues() throws Exception {
+        setupServices();
+
+        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc", "Private"}, null, 60);
+        final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
+        PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
+                ) fieldsToVectorAndModel.getVectorRangesToVector();
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        assertThat(((double[]) vector.get("values")).length, equalTo(4));
+        assertThat(((int[]) vector.get("indices")).length, equalTo(4));
+        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 1, 2, 5, });
+        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0, 1.0}, 1.e-7);
+    }
+
+
     public void testTreeModelOnActualLookup() throws Exception {
         setupServices();
 
-        LeafDocLookup docLookup = indexDoc("Self-emp-inc", "Prof-school", 60);
+        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
@@ -123,18 +143,18 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
                 ) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(vector.size(), equalTo(3));
-        assertThat(((Double) vector.get("age_z")).doubleValue(), closeTo(1.5702107070685085, 0.0));
-        assertThat((String)vector.get("education"), equalTo("Prof-school"));
-        assertThat((String)vector.get("work"), equalTo("Self-emp-inc"));
+        assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(1.5702107070685085, 0.0));
+        assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("Prof-school"));
+        assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("Self-emp-inc"));
 
         // test missing values
         docLookup = indexDoc(null, null, null);
         docLookup.setDocument(0);
         vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(vector.size(), equalTo(3));
-        assertThat(((Double) vector.get("age_z")).doubleValue(), closeTo(-76.13993490863606, 0.0));
-        assertThat((String)vector.get("education"), equalTo("too-lazy-to-study"));
-        assertThat((String)vector.get("work"), equalTo("other"));
+        assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(-76.13993490863606, 0.0));
+        assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("too-lazy-to-study"));
+        assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("other"));
     }
 
     protected void setupServices() throws IOException {

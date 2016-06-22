@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class NaiveBayesModelHelper {
@@ -103,7 +102,7 @@ public class NaiveBayesModelHelper {
                     DerivedField[derivedFields
                     .size()]));
         } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLVectorRange.SparseCategorical1OfKVectorRange(rawField, miningField, derivedFields.toArray(new
+            featureEntries = new PMMLVectorRange.SparseCategoricalVectorRange(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else {

@@ -26,15 +26,17 @@ import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Expression;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.NormContinuous;
-import org.dmg.pmml.PPCell;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafFieldsLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /*
 * Maps a single field to vector entries. Includes pre processing.
@@ -44,19 +46,32 @@ public abstract class PMMLVectorRange extends VectorRange {
     protected PreProcessingStep[] preProcessingSteps;
 
 
-    protected Object applyPreProcessing(Map<String, List> fieldValues) {
-        List valueList = fieldValues.get(field);
-        Object value = valueList == null || valueList.size() == 0 ? null : valueList.get(0);
-        for (int i = 0; i < preProcessingSteps.length; i++) {
-            value = preProcessingSteps[i].apply(value);
+    protected List<Object> applyPreProcessing(Map<String, List> fieldValues) {
+        List<Object> processedValues = new ArrayList<>();
+        List valueList = new ArrayList();
+
+        if (fieldValues.get(field) == null) {
+            valueList = new ArrayList();
+            valueList.add(null);
+        } else if (fieldValues.get(field).size() == 0) {
+            valueList.add(null);
+        } else {
+            valueList.addAll(fieldValues.get(field));
         }
-        return value;
+        for (Object value : valueList) {
+            for (int i = 0; i < preProcessingSteps.length; i++) {
+                value = preProcessingSteps[i].apply(value);
+            }
+            processedValues.add(value);
+        }
+        return processedValues;
     }
 
     public PMMLVectorRange(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
         super(dataField.getName().getValue(),
                 derivedFields.length == 0 ? dataField.getName().getValue() : derivedFields[derivedFields.length - 1].getName().getValue(),
-                derivedFields.length == 0 ? dataField.getDataType().value() : derivedFields[derivedFields.length - 1].getDataType().value());
+                derivedFields.length == 0 ? dataField.getDataType().value() : derivedFields[derivedFields.length - 1].getDataType().value
+                        ());
         this.field = dataField.getName().getValue();
         if (miningField.getMissingValueReplacement() != null) {
             preProcessingSteps = new PreProcessingStep[derivedFields.length + 1];
@@ -66,6 +81,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
         fillPreProcessingSteps(derivedFields);
     }
+
     public PMMLVectorRange(String field, String lastDerivedFieldName, String type) {
         super(field, lastDerivedFieldName, type);
     }
@@ -76,10 +92,10 @@ public abstract class PMMLVectorRange extends VectorRange {
      * Converts a 1 of k feature into a vector that has a 1 where the field value is the nth category and 0 everywhere else.
      * Categories will be numbered according to the order given in categories parameter.
      */
-    public static class SparseCategorical1OfKVectorRange extends PMMLVectorRange {
+    public static class SparseCategoricalVectorRange extends PMMLVectorRange {
         Map<String, Integer> categoryToIndexHashMap = new HashMap<>();
 
-        public SparseCategorical1OfKVectorRange(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
+        public SparseCategoricalVectorRange(DataField dataField, MiningField miningField, DerivedField[] derivedFields) {
             super(dataField, miningField, derivedFields);
         }
 
@@ -91,15 +107,28 @@ public abstract class PMMLVectorRange extends VectorRange {
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object processedCategory = applyPreProcessing(fieldValues);
-            Integer index = categoryToIndexHashMap.get(processedCategory);
-            if (index == null) {
-                // TODO: Should we throw an exception here? Can this actually happen?
-                return new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
-            } else {
-                indicesAndValues = new Tuple<>(new int[]{index}, new double[]{1.0});
-                return new EsSparseNumericVector(indicesAndValues);
+            List<Object> processedCategory = applyPreProcessing(fieldValues);
+
+            List<Integer> indices = new ArrayList<>();
+            Integer lastIndex = -1;
+            for (Object value : processedCategory) {
+                Integer index = categoryToIndexHashMap.get(value);
+                if (index != null) {
+                    indices.add(index);
+                    assert lastIndex < index;
+                    lastIndex = index;
+                }
             }
+            int[] indicesArray = new int[indices.size()];
+            double[] values = new double[indices.size()];
+            int indexCounter = 0;
+            for (Integer index : indices) {
+                indicesArray[indexCounter] = index;
+                values[indexCounter] = 1.0;
+                indexCounter++;
+            }
+            indicesAndValues = new Tuple<>(indicesArray, values);
+            return new EsSparseNumericVector(indicesAndValues);
         }
 
         @Override
@@ -137,9 +166,13 @@ public abstract class PMMLVectorRange extends VectorRange {
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
-            Object finalValue = applyPreProcessing(fieldValues);
-            indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) finalValue).doubleValue()});
-            return new EsSparseNumericVector(indicesAndValues);
+            List<Object> finalValues = applyPreProcessing(fieldValues);
+            if (finalValues.size() > 0) {
+                indicesAndValues = new Tuple<>(new int[]{index}, new double[]{((Number) finalValues.get(0)).doubleValue()});
+                return new EsSparseNumericVector(indicesAndValues);
+            } else {
+                return new EsSparseNumericVector(new Tuple<>(new int[]{}, new double[]{}));
+            }
         }
 
         @Override
@@ -158,7 +191,8 @@ public abstract class PMMLVectorRange extends VectorRange {
 
         int derivedFieldIndex = derivedFields.length - 1;
         // don't start at the beginning, we might have a pre processing step there already from the mining field
-        for (int preProcessingStepIndex = preProcessingSteps.length - derivedFields.length; preProcessingStepIndex < preProcessingSteps.length;
+        for (int preProcessingStepIndex = preProcessingSteps.length - derivedFields.length; preProcessingStepIndex < preProcessingSteps
+                .length;
              preProcessingStepIndex++) {
             DerivedField derivedField = derivedFields[derivedFieldIndex];
             if (derivedField.getExpression() != null) {
@@ -253,9 +287,11 @@ public abstract class PMMLVectorRange extends VectorRange {
 
         @Override
         public EsVector getVector(Map<String, List> fieldValues) {
-            Object finalValue = applyPreProcessing(fieldValues);
-            Map<String, Object> values = new HashMap<>();
-            values.put(finalFieldName, finalValue);
+            List<Object> finalValue = applyPreProcessing(fieldValues);
+            Set<Object> valueSet = new HashSet<>();
+            valueSet.addAll(finalValue);
+            Map<String, Set<Object>> values = new HashMap<>();
+            values.put(finalFieldName, valueSet);
             return new EsValueMapVector(values);
         }
     }

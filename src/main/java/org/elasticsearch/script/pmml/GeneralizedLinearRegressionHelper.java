@@ -64,7 +64,7 @@ public class GeneralizedLinearRegressionHelper {
                     DerivedField[derivedFields
                     .size()]));
         } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLVectorRange.SparseCategorical1OfKVectorRange(rawField, miningField, derivedFields.toArray(new
+            featureEntries = new PMMLVectorRange.SparseCategoricalVectorRange(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields
                     .size()]));
         } else {
