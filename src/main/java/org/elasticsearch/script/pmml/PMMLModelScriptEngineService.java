@@ -82,7 +82,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     @Override
     public String[] extensions() {
-        return new String[0];
+        return new String[]{NAME};
     }
 
     @Override
