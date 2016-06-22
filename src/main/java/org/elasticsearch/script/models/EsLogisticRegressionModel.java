@@ -43,8 +43,10 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
     }
 
     @Override
-    Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
-        throw new UnsupportedOperationException("can only run with parameter debug: true");
+    Object evaluate(Tuple<int[], double[]> featureValues) {
+        double val = linearFunction(featureValues, intercept, coefficients);
+        double prob = 1 / (1 + Math.exp(-1.0 * val));
+        return prob > 0.5 ? classes[0] : classes[1];
     }
 
     protected Map<String, Object> prepareResult(double val) {
