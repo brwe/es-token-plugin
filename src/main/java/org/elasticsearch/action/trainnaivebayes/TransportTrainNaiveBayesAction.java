@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.trainnaivebayes;
 
+import com.google.common.collect.Lists;
 import org.dmg.pmml.BayesInput;
 import org.dmg.pmml.BayesInputs;
 import org.dmg.pmml.BayesOutput;
@@ -52,34 +53,31 @@ import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.Environment;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-import org.jpmml.model.JAXBUtil;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -92,16 +90,18 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
 
     private Client client;
     private ClusterService clusterService;
+    private Environment environment;
 
     @Inject
     public TransportTrainNaiveBayesAction(Settings settings, ThreadPool threadPool, TransportService transportService,
                                           ActionFilters actionFilters,
                                           IndexNameExpressionResolver indexNameExpressionResolver, Client client, ClusterService
-                                                  clusterService) {
+                                                  clusterService, Environment environment) {
         super(settings, TrainNaiveBayesAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
                 TrainNaiveBayesRequest.class);
         this.client = client;
         this.clusterService = clusterService;
+        this.environment = environment;
     }
 
     @Override
@@ -114,7 +114,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         }
 
         final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client,
-                request.id());
+                request.id(), environment);
         client.prepareSearch().addAggregation(aggregationBuilder).execute(naiveBayesTrainingActionListener);
     }
 
@@ -164,11 +164,13 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         private ActionListener<TrainNaiveBayesResponse> listener;
         final private Client client;
         private String id;
+        private Environment environment;
 
-        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client, String id) {
+        public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client, String id, Environment environment) {
             this.listener = listener;
             this.client = client;
             this.id = id;
+            this.environment = environment;
         }
 
         @Override
@@ -258,6 +260,13 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 }
             });
             String pmmlString = stringWriter.toString();
+            Path file = environment.scriptsFile().resolve(id + ".pmml_model");
+            try {
+                Files.createDirectories(environment.scriptsFile());
+                Files.write(file, Lists.asList(pmmlString, new String[]{}), Charset.forName("UTF-8"));
+            } catch (IOException e) {
+                throw new RuntimeException("Could not write file", e);
+            }
             client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
                     .execute(new ActionListener<IndexResponse>() {
                         @Override
