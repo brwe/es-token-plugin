@@ -103,15 +103,18 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
     @Override
     protected void doExecute(final TrainNaiveBayesRequest request, final ActionListener<TrainNaiveBayesResponse> listener) {
         AggregationBuilder aggregationBuilder = null;
+        String index = null;
         try {
             aggregationBuilder = parseNaiveBayesTrainRequests(request.source());
+            index = parseIndex(request.source());
         } catch (IOException e) {
             listener.onFailure(e);
+            return;
         }
 
         final NaiveBayesTrainingActionListener naiveBayesTrainingActionListener = new NaiveBayesTrainingActionListener(listener, client,
                 request.id());
-        client.prepareSearch().addAggregation(aggregationBuilder).execute(naiveBayesTrainingActionListener);
+        client.prepareSearch().setIndices(index).addAggregation(aggregationBuilder).execute(naiveBayesTrainingActionListener);
     }
 
     AggregationBuilder parseNaiveBayesTrainRequests(String source) throws IOException {
@@ -153,6 +156,17 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             }
         }
         return topLevelClassAgg;
+    }
+
+    String parseIndex(String source) throws IOException {
+        Map<String, Object> parsedSource = SharedMethods.getSourceAsMap(source);
+
+        if (parsedSource.get("index") == null) {
+            throw new ElasticsearchException("index is missing for naive bayes training");
+        }
+
+        String index = (String) parsedSource.get("index");
+        return index;
     }
 
     public static class NaiveBayesTrainingActionListener implements ActionListener<SearchResponse> {
