@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.trainnaivebayes;
 
+import org.elasticsearch.action.admin.cluster.storedscripts.GetStoredScriptResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
@@ -36,6 +37,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +62,6 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
     public void testNaiveBayesTraining() throws Exception {
         indexDocs();
         refresh();
@@ -77,16 +78,16 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         TrainNaiveBayesResponse response = builder.get();
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(response.getId(), ScriptService
                 .ScriptType
-                .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
-            String label = (String) ((Map<String, Object>) (hit.field("pmml").values().get(0))).get("class");
+            @SuppressWarnings("unchecked") String label = (String) ((Map<String, Object>) (hit.field("pmml").values().get(0))).get("class");
             assertThat(label, anyOf(equalTo("good"), equalTo("bad")));
         }
 
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testNaiveBayesTrainingInElasticsearchSameAsInR() throws Exception {
         FullPMMLIT.indexAdultData("/org/elasticsearch/script/adult.data", this);
         FullPMMLIT.indexAdultModel("/org/elasticsearch/script/naive-bayes-adult-full-r-no-missing-values.xml");
@@ -109,22 +110,20 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
                 .endObject();
         builder.source(sourceBuilder.string());
         TrainNaiveBayesResponse response = builder.get();
-        GetResponse getResponse = client().prepareGet(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, response.getId())
-                .get();
-        assertTrue(getResponse.isExists());
+        client().admin().cluster().prepareGetStoredScript(PMMLModelScriptEngineService.NAME, response.getId()).get();
         SearchResponse searchResponseEsModel = client().prepareSearch("test").addScriptField("pmml", new Script(response.getId(),
                 ScriptService
                         .ScriptType
-                        .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
+                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
                 .addSort
-                ("_id", SortOrder.ASC).get();
+                ("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseEsModel);
         SearchResponse searchResponseRModel = client().prepareSearch("test").addScriptField("pmml", new Script("1",
                 ScriptService
                         .ScriptType
-                        .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
+                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
                 .addSort
-                ("_id", SortOrder.ASC).get();
+                ("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseRModel);
 
         int hitCounter = 0;
@@ -146,9 +145,33 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
     }
 
 
-    private void indexDocs() {
+    private void indexDocs() throws IOException {
+        XContentBuilder mapping = jsonBuilder();
+        mapping.startObject();
+        {
+            mapping.startObject("type");
+            {
+                mapping.startObject("properties");
+                {
+                    mapping.startObject("text");
+                    {
+                        mapping.field("type", "text");
+                        mapping.field("fielddata", true);
+                    }
+                    mapping.endObject();
+                    mapping.startObject("label");
+                    {
+                        mapping.field("type", "keyword");
+                    }
+                    mapping.endObject();
+                }
+                mapping.endObject();
+            }
+            mapping.endObject();
+        }
+        mapping.endObject();
         client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1))
-                .get();
+                .addMapping("type", mapping).get();
         client().prepareIndex("index", "type", "1").setSource("text", "I hate json", "label", "bad", "num", 1).execute().actionGet();
         client().prepareIndex("index", "type", "2").setSource("text", "json sucks", "label", "bad", "num", 2).execute().actionGet();
         client().prepareIndex("index", "type", "3").setSource("text", "json is much worse than xml", "label", "bad", "num", 3).execute()

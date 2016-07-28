@@ -47,7 +47,7 @@ public abstract class VectorRange {
 
     public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
 
-    public abstract EsVector getVector(Map<String, List> fieldValues);
+    public abstract EsVector getVector(Map<String, List<Object>> fieldValues);
 
     public String getField() {
         return field;

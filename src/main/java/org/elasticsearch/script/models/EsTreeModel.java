@@ -113,7 +113,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
 
                 @Override
-                public boolean notEnoughValues(Map vector) {
+                public boolean notEnoughValues(Map<String, Object> vector) {
                     return false;
                 }
             };
@@ -127,7 +127,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 }
 
                 @Override
-                public boolean notEnoughValues(Map vector) {
+                public boolean notEnoughValues(Map<String, Object> vector) {
                     return false;
                 }
             };
@@ -142,7 +142,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 return new EsCompoundPredicate(predicates) {
 
                     @Override
-                    protected boolean matchList(Map vector) {
+                    protected boolean matchList(Map<String, Object> vector) {
                         boolean result = true;
                         for (EsPredicate childPredicate : predicates) {
                             result = result && childPredicate.match(vector);
@@ -155,7 +155,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 return new EsCompoundPredicate(predicates) {
 
                     @Override
-                    protected boolean matchList(Map vector) {
+                    protected boolean matchList(Map<String, Object> vector) {
                         boolean result = false;
                         for (EsPredicate childPredicate : predicates) {
                             result = result || childPredicate.match(vector);
@@ -168,7 +168,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 return new EsCompoundPredicate(predicates) {
 
                     @Override
-                    protected boolean matchList(Map vector) {
+                    protected boolean matchList(Map<String, Object> vector) {
                         boolean result = false;
                         for (EsPredicate childPredicate : predicates) {
                             if (result == false) {
@@ -188,7 +188,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 return new EsCompoundPredicate(predicates) {
 
                     @Override
-                    protected boolean matchList(Map vector) {
+                    protected boolean matchList(Map<String, Object> vector) {
                         for (EsPredicate childPredicate : predicates) {
                             if (childPredicate.notEnoughValues(vector) == false) {
                                 return childPredicate.match(vector);
@@ -199,7 +199,7 @@ public class EsTreeModel extends EsModelEvaluator {
                     }
 
                     @Override
-                    public boolean notEnoughValues(Map vector) {
+                    public boolean notEnoughValues(Map<String, Object> vector) {
                         boolean notEnoughValues = true;
                         for (EsPredicate predicate : predicates) {
                             // only one needs to have enough values and then the predicate is defined
@@ -227,7 +227,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 for (String value : values) {
                     valuesSet.add(value);
                 }
-                return new EsSimpleSetPredicate(valuesSet, field);
+                return new EsSimpleSetPredicate<>(valuesSet, field);
             }
 
             if (setArray.getType().equals(Array.Type.STRING)) {
@@ -239,7 +239,7 @@ public class EsTreeModel extends EsModelEvaluator {
                 for (String value : values) {
                     valuesSet.add(Double.parseDouble(value));
                 }
-                return new EsSimpleSetPredicate(valuesSet, field);
+                return new EsSimpleSetPredicate<>(valuesSet, field);
             }
             if (setArray.getType().equals(Array.Type.INT)) {
                 HashSet<Integer> valuesSet = new HashSet<>();
@@ -250,13 +250,13 @@ public class EsTreeModel extends EsModelEvaluator {
                 for (String value : values) {
                     valuesSet.add(Integer.parseInt(value));
                 }
-                return new EsSimpleSetPredicate(valuesSet, field);
+                return new EsSimpleSetPredicate<>(valuesSet, field);
             }
         }
         throw new UnsupportedOperationException("Predicate Type " + predicate.getClass().getName() + " for TreeModel not implemented yet.");
     }
 
-    protected static <T extends Comparable> EsSimplePredicate<T> getSimplePredicate(T value, String field, String operator) {
+    protected static <T extends Comparable<T>> EsSimplePredicate<T> getSimplePredicate(T value, String field, String operator) {
         if (operator.equals("equal")) {
             return new EsSimplePredicate<T>(value, field) {
                 @Override
@@ -349,10 +349,10 @@ public class EsTreeModel extends EsModelEvaluator {
 
         public abstract boolean match(Map<String, Object> vector);
 
-        public abstract boolean notEnoughValues(Map vector);
+        public abstract boolean notEnoughValues(Map<String, Object> vector);
     }
 
-    abstract static class EsSimplePredicate<T extends Comparable> extends EsPredicate {
+    abstract static class EsSimplePredicate<T extends Comparable<T>> extends EsPredicate {
 
         protected final T value;
         protected String field;
@@ -365,10 +365,11 @@ public class EsTreeModel extends EsModelEvaluator {
 
         public abstract boolean match(T fieldValue);
 
+        @SuppressWarnings("unchecked")
         public boolean match(Map<String, Object> vector) {
             Object fieldValue = vector.get(field);
             if (fieldValue instanceof HashSet) {
-                fieldValue = new ComparableSet((HashSet) fieldValue);
+                fieldValue = new ComparableSet<>((HashSet<Comparable<T>>) fieldValue);
             }
             if (fieldValue == null) {
                 return false;
@@ -377,7 +378,7 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         @Override
-        public boolean notEnoughValues(Map vector) {
+        public boolean notEnoughValues(Map<String, Object> vector) {
             return vector.containsKey(field) == false;
         }
     }
@@ -397,7 +398,7 @@ public class EsTreeModel extends EsModelEvaluator {
         protected abstract boolean matchList(Map<String, Object> vector);
 
         @Override
-        public boolean notEnoughValues(Map vector) {
+        public boolean notEnoughValues(Map<String, Object> vector) {
             boolean valuesMissing = false;
             for (EsPredicate predicate : predicates) {
                 valuesMissing = predicate.notEnoughValues(vector) || valuesMissing;
@@ -406,12 +407,12 @@ public class EsTreeModel extends EsModelEvaluator {
         }
     }
 
-    static class EsSimpleSetPredicate extends EsPredicate {
+    static class EsSimpleSetPredicate<T> extends EsPredicate {
 
-        protected HashSet values;
+        protected HashSet<T> values;
         private String field;
 
-        public EsSimpleSetPredicate(HashSet values, String field) {
+        public EsSimpleSetPredicate(HashSet<T> values, String field) {
             this.values = values;
             this.field = field;
         }
@@ -429,25 +430,29 @@ public class EsTreeModel extends EsModelEvaluator {
         }
 
         @Override
-        public boolean notEnoughValues(Map vector) {
+        public boolean notEnoughValues(Map<String, Object> vector) {
             return vector.containsKey(field) == false;
         }
     }
 
-    public static class ComparableSet extends HashSet<Comparable> implements Comparable {
+    public static class ComparableSet<T> extends HashSet<Comparable<T>> implements Comparable<T> {
 
-        public ComparableSet(HashSet<Comparable> set) {
+        public ComparableSet(HashSet<Comparable<T>> set) {
             this.addAll(set);
         }
+
+        @SuppressWarnings("unchecked")
         @Override
-        public int compareTo(Object o) {
+        public int compareTo(T o) {
             if (this.size()!= 1) {
                 throw new UnsupportedOperationException("cannot really compare sets, I am just pretending!");
             }
             if (o instanceof Comparable == false) {
                 throw new UnsupportedOperationException("cannot compare to object " + o.getClass().getName());
             }
-            return this.toArray(new Comparable[1])[0].compareTo((Comparable)o);
+            //noinspection unchecked
+            Comparable<T> first = this.iterator().next();
+            return first.compareTo(o);
         }
     }
 }

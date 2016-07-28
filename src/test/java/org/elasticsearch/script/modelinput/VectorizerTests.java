@@ -54,8 +54,7 @@ public class VectorizerTests extends ESTestCase {
         List<FieldSpec> specs= new ArrayList<>();
         specs.add(new StringFieldSpec( new String[]{"a", "b", "c"}, "tf", "text1"));
         specs.add(new StringFieldSpec( new String[]{"d", "e", "f"}, "occurrence", "text2"));
-        Map<String, Object> sourceAsMap = SourceLookup.sourceAsMap(TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false, 6).bytes());
-        String script = (String)sourceAsMap.get("script");
+        String script = TransportPrepareSpecAction.FieldSpecActionListener.createSpecSource(specs, false, 6).string();
         XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(script);
         return parser.mapOrdered();
     }

@@ -24,66 +24,44 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentBuilderString;
 
 import java.io.IOException;
 
 public class TrainNaiveBayesResponse extends ActionResponse implements ToXContent {
 
-    public String getIndex() {
-        return index;
-    }
-
-    public String getType() {
-        return type;
-    }
-
     public String getId() {
         return id;
     }
 
-
-    String index;
-    String type;
     String id;
 
     public TrainNaiveBayesResponse() {
 
     }
 
-    public TrainNaiveBayesResponse(String index, String type, String id) {
-        this.index = index;
-        this.type = type;
+    public TrainNaiveBayesResponse(String id) {
         this.id = id;
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.field(Fields.INDEX, index);
-        builder.field(Fields.TYPE, type);
         builder.field(Fields.ID, id);
         return builder;
     }
 
     static final class Fields {
-        static final XContentBuilderString INDEX = new XContentBuilderString("index");
-        static final XContentBuilderString TYPE = new XContentBuilderString("type");
-        static final XContentBuilderString ID = new XContentBuilderString("id");
+        static final String ID = "id";
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        index = in.readString();
-        type = in.readString();
         id = in.readString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(index);
-        out.writeString(type);
         out.writeString(id);
     }
 }

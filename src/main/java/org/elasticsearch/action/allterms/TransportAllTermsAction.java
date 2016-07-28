@@ -22,12 +22,12 @@ package org.elasticsearch.action.allterms;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
-import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.block.ClusterBlockLevel;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.routing.GroupShardsIterator;
 import org.elasticsearch.cluster.routing.ShardIterator;
+import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.util.concurrent.AtomicArray;
@@ -35,6 +35,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequest, AllTermsResponse> {
 
@@ -46,7 +47,8 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
     public TransportAllTermsAction(Settings settings, ThreadPool threadPool, TransportService transportService,
                                    ClusterService clusterService, TransportAllTermsShardAction shardAction, ActionFilters actionFilters,
                                    IndexNameExpressionResolver indexNameExpressionResolver) {
-        super(settings, AllTermsAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver, AllTermsRequest.class);
+        super(settings, AllTermsAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
+                AllTermsRequest::new);
         this.clusterService = clusterService;
         this.shardAction = shardAction;
     }
@@ -57,11 +59,13 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
 
         clusterState.blocks().globalBlockedRaiseException(ClusterBlockLevel.READ);
 
-        final GroupShardsIterator groupShardsIterator = clusterService.operationRouting().searchShards(clusterState, request.indices(), null, null);
+        final GroupShardsIterator groupShardsIterator = clusterService.operationRouting().searchShards(clusterState, request.indices(),
+                null, null);
         final AtomicArray<AllTermsSingleShardResponse> shardResponses = new AtomicArray<>(groupShardsIterator.size());
         final AtomicInteger shardCounter = new AtomicInteger(shardResponses.length());
         for (final ShardIterator shardIterator : groupShardsIterator) {
-            final AllTermsShardRequest shardRequest = new AllTermsShardRequest(request, request.indices()[0], shardIterator.shardId().id(), request.field(), request.size(), request.from(), request.minDocFreq());
+            final AllTermsShardRequest shardRequest = new AllTermsShardRequest(request, request.indices()[0], shardIterator.shardId().id(),
+                    request.field(), request.size(), request.from(), request.minDocFreq());
             shardAction.execute(shardRequest, new ActionListener<AllTermsSingleShardResponse>() {
                 @Override
                 public void onResponse(AllTermsSingleShardResponse response) {
@@ -79,7 +83,8 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
                 }
 
                 public void finish() {
-                    AllTermsResponse response = new AllTermsResponse(shardResponses.toArray(new AllTermsSingleShardResponse[shardResponses.length()]), request.size());
+                    AllTermsResponse response = new AllTermsResponse(shardResponses.toArray(
+                            new AllTermsSingleShardResponse[shardResponses.length()]), request.size());
                     listener.onResponse(response);
                 }
             });

@@ -21,26 +21,13 @@ package org.elasticsearch.plugin.tokenplugin;
 
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import org.elasticsearch.plugin.TokenPlugin;
-import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.test.rest.ESRestTestCase;
 import org.elasticsearch.test.rest.RestTestCandidate;
 import org.elasticsearch.test.rest.parser.RestTestParseException;
 
 import java.io.IOException;
-import java.util.Collection;
 
 public class TokenPluginRestIT extends ESRestTestCase {
-
-    @Override
-    protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
-    }
-
-    @Override
-    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
-        return pluginList(TokenPlugin.class);
-    }
 
     public TokenPluginRestIT(@Name("yaml") RestTestCandidate testCandidate) {
         super(testCandidate);

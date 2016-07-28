@@ -19,7 +19,20 @@
 
 package org.elasticsearch.script;
 
-import org.dmg.pmml.*;
+import org.dmg.pmml.DataDictionary;
+import org.dmg.pmml.DataField;
+import org.dmg.pmml.DataType;
+import org.dmg.pmml.FieldName;
+import org.dmg.pmml.FieldUsageType;
+import org.dmg.pmml.MiningField;
+import org.dmg.pmml.MiningFunctionType;
+import org.dmg.pmml.MiningSchema;
+import org.dmg.pmml.NumericPredictor;
+import org.dmg.pmml.OpType;
+import org.dmg.pmml.PMML;
+import org.dmg.pmml.RegressionModel;
+import org.dmg.pmml.RegressionNormalizationMethodType;
+import org.dmg.pmml.RegressionTable;
 import org.jpmml.model.JAXBUtil;
 
 import javax.xml.bind.JAXBException;
@@ -29,7 +42,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
 public class PMMLGenerator {
-    public static String generateSVMPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException, UnsupportedEncodingException {
+    public static String generateSVMPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException,
+            UnsupportedEncodingException {
         PMML pmml = new PMML();
         // create DataDictionary
         DataDictionary dataDictionary = createDataDictionary(weights);
@@ -57,7 +71,8 @@ public class PMMLGenerator {
         // write to string
     }
 
-    public static String generateLRPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException, UnsupportedEncodingException {
+    public static String generateLRPMMLModel(double intercept, double[] weights, double[] labels) throws JAXBException,
+            UnsupportedEncodingException {
         PMML pmml = new PMML();
         // create DataDictionary
         DataDictionary dataDictionary = createDataDictionary(weights);

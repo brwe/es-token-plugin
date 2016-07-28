@@ -19,23 +19,23 @@
 
 package org.elasticsearch.action.preparespec;
 
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import static org.elasticsearch.action.preparespec.PrepareSpecTests.*;
+import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithAllTerms;
+import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithGivenTerms;
+import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithSignificnatTerms;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 
@@ -52,61 +52,79 @@ public class PrepareSpecIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
     public void testSimpleTextFieldRequestWithSignificantTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithSignificnatTerms().string()).setId("my_id").get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(
+                getTextFieldRequestSourceWithSignificnatTerms().string()).setId("my_id").get();
         assertThat(prepareSpecResponse.getLength(), greaterThan(0));
-        assertThat(prepareSpecResponse.getId(), equalTo("my_id"));
-        GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        String script = (String)spec.getSourceAsMap().get("script");
-        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
-        Map<String, Object> parsedSource = parser.mapOrdered();
+        Map<String, Object> parsedSource = prepareSpecResponse.getSpecAsMap();
         VectorRangesToVector entries = new VectorRangesToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
 
-    @Test
     public void testSimpleTextFieldRequestWithAllTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(
+                getTextFieldRequestSourceWithAllTerms().string()).get();
         assertThat(prepareSpecResponse.getLength(), equalTo(6));
-        GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        String script = (String)spec.getSourceAsMap().get("script");
-        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
-        Map<String, Object> parsedSource = parser.mapOrdered();
+        Map<String, Object> parsedSource = prepareSpecResponse.getSpecAsMap();
         VectorRangesToVector entries = new VectorRangesToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
 
-    @Test
     public void testSimpleTextFieldRequestWithGivenTerms() throws Exception {
         indexDocs();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithGivenTerms().string()).get();
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(
+                getTextFieldRequestSourceWithGivenTerms().string()).get();
         assertThat(prepareSpecResponse.getLength(), equalTo(3));
-        GetResponse spec = client().prepareGet().setIndex(prepareSpecResponse.index).setType(prepareSpecResponse.type).setId(prepareSpecResponse.id).get();
-        String script = (String)spec.getSourceAsMap().get("script");
-        XContentParser parser =XContentFactory.xContent(XContentType.JSON).createParser(script);
-        Map<String, Object> parsedSource = parser.mapOrdered();
+        Map<String, Object> parsedSource = prepareSpecResponse.getSpecAsMap();
         VectorRangesToVector entries = new VectorRangesToVectorJSON(parsedSource);
         assertThat(entries.isSparse(), equalTo(false));
         assertThat(entries.getEntries().size(), equalTo(1));
     }
 
-    private void indexDocs() {
-        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)).get();
+    private void indexDocs() throws IOException {
+        XContentBuilder mapping = jsonBuilder();
+        mapping.startObject();
+        {
+            mapping.startObject("type");
+            {
+                mapping.startObject("properties");
+                {
+                    mapping.startObject("text");
+                    {
+                        mapping.field("type", "text");
+                        mapping.field("fielddata", true);
+                    }
+                    mapping.endObject();
+                    mapping.startObject("label");
+                    {
+                        mapping.field("type", "keyword");
+                    }
+                    mapping.endObject();
+                }
+                mapping.endObject();
+            }
+            mapping.endObject();
+        }
+        mapping.endObject();
+        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1))
+                .addMapping("type", mapping).get();
         client().prepareIndex("index", "type", "1").setSource("text", "I hate json", "label", "bad").execute().actionGet();
         client().prepareIndex("index", "type", "2").setSource("text", "json sucks", "label", "bad").execute().actionGet();
         client().prepareIndex("index", "type", "2").setSource("text", "json is much worse than xml", "label", "bad").execute().actionGet();
         client().prepareIndex("index", "type", "3").setSource("text", "xml is lovely", "label", "good").execute().actionGet();
         client().prepareIndex("index", "type", "4").setSource("text", "everyone loves xml", "label", "good").execute().actionGet();
-        client().prepareIndex("index", "type", "3").setSource("text", "seriously, xml is sooo much better than json", "label", "good").execute().actionGet();
-        client().prepareIndex("index", "type", "4").setSource("text", "if any of my fellow developers reads this, they will tar and feather me and hang my mutilated body above the entrace to amsterdam headquaters as a warning to others", "label", "good").execute().actionGet();
+        client().prepareIndex("index", "type", "3").setSource("text", "seriously, xml is sooo much better than json", "label", "good")
+                .execute().actionGet();
+        client().prepareIndex("index", "type", "4").setSource("text", "if any of my fellow developers reads this, they will tar and " +
+                "feather me and hang my mutilated body above the entrace to amsterdam headquaters as a warning to others", "label", "good")
+                .execute().actionGet();
         client().prepareIndex("index", "type", "4").setSource("text", "obviously I am joking", "label", "good").execute().actionGet();
     }
 

@@ -37,7 +37,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class AnalyzedTextFetchParseElement extends FetchSubPhaseParseElement<AnalyzedTextFetchContext> {
     @Override
-    protected void innerParse(XContentParser parser, AnalyzedTextFetchContext analyzedTextFetchContext, SearchContext searchContext) throws Exception {
+    protected void innerParse(XContentParser parser, AnalyzedTextFetchContext analyzedTextFetchContext, SearchContext searchContext)
+            throws Exception {
 
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
@@ -64,7 +65,7 @@ public class AnalyzedTextFetchParseElement extends FetchSubPhaseParseElement<Ana
     }
 
     @Override
-    protected FetchSubPhase.ContextFactory getContextFactory() {
+    protected FetchSubPhase.ContextFactory<AnalyzedTextFetchContext> getContextFactory() {
         return AnalyzedTextFetchSubPhase.CONTEXT_FACTORY;
     }
 }

@@ -53,7 +53,8 @@ public class TreeModelHelper {
                 && treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction")) {
 
             List<VectorRange> fields = getFieldValuesList(treeModel, pmml, modelNum);
-            VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel fieldsToVector = new VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel(fields);
+            VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel fieldsToVector =
+                    new VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel(fields);
             Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
             EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);
             return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);

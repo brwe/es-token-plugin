@@ -25,6 +25,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,12 +34,12 @@ import java.util.Set;
 
 public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest {
 
-    String searchRequest;
+    SearchSourceBuilder searchRequest;
     String index;
     String number;
     private String field;
 
-    public StringFieldSignificantTermsSpecRequest(String searchRequest, String index, String number, String field) {
+    public StringFieldSignificantTermsSpecRequest(SearchSourceBuilder searchRequest, String index, String number, String field) {
         this.searchRequest = searchRequest;
         this.index = index;
         this.number = number;

@@ -21,17 +21,15 @@ package org.elasticsearch.script;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.dmg.pmml.PMML;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -62,35 +60,34 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         Document doc = new Document();
         if (work != null) {
             for (String value : work) {
-                doc.add(new StringField("work", value, Store.YES));
+                doc.add(new SortedSetDocValuesField("work", new BytesRef(value)));
             }
         }
         if (education != null) {
-            doc.add(new StringField("education", education, Store.YES));
+            doc.add(new SortedSetDocValuesField("education", new BytesRef(education)));
         }
         if (age!=null) {
-            FieldType fieldType = new FieldType();
-            fieldType.setNumericType(FieldType.NumericType.INT);
-            fieldType.setDocValuesType(DocValuesType.NUMERIC);
-            doc.add(new IntField("age", age, fieldType));
+            doc.add(new SortedNumericDocValuesField("age", age));
         }
         writer.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(writer, true);
+        IndexReader reader = DirectoryReader.open(writer, true, true);
         LeafReaderContext leafReaderContext = reader.leaves().get(0);
-        LeafDocLookup docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"}).getLeafSearchLookup(leafReaderContext).doc();
+        LeafDocLookup docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"})
+                .getLeafSearchLookup(leafReaderContext).doc();
         reader.close();
         docLookup.setDocument(0);
         return docLookup;
     }
+    @SuppressWarnings("unchecked")
     public void testGLMOnActualLookup() throws Exception {
         setupServices();
 
         LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
-                ) fieldsToVectorAndModel.getVectorRangesToVector();
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
+                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
@@ -121,9 +118,10 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
         LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
-                ) fieldsToVectorAndModel.getVectorRangesToVector();
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
+                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(((double[]) vector.get("values")).length, equalTo(4));
         assertThat(((int[]) vector.get("indices")).length, equalTo(4));
@@ -132,15 +130,16 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
     }
 
 
+    @SuppressWarnings("unchecked")
     public void testTreeModelOnActualLookup() throws Exception {
         setupServices();
 
         LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML
-                ) fieldsToVectorAndModel.getVectorRangesToVector();
+        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
+                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(1.5702107070685085, 0.0));
@@ -167,12 +166,12 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
                 .field("doc_values", "true")
                 .endObject()
                 .startObject("work")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
+                .field("doc_values", "true")
                 .endObject()
                 .startObject("education")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
+                .field("doc_values", "true")
                 .endObject()
                 .endObject()
                 .endObject()

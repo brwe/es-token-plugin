@@ -20,19 +20,19 @@
 package org.elasticsearch.rest.action.preparespec;
 
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.allterms.AllTermsAction;
-import org.elasticsearch.action.allterms.AllTermsRequest;
-import org.elasticsearch.action.allterms.AllTermsResponse;
-import org.elasticsearch.action.percolate.PercolateRequestBuilder;
 import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.PrepareSpecRequest;
-import org.elasticsearch.action.preparespec.PrepareSpecRequestBuilder;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.rest.*;
+import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestChannel;
+import org.elasticsearch.rest.RestController;
+import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.action.support.RestBuilderListener;
 
 import java.nio.charset.Charset;
@@ -47,7 +47,7 @@ public class RestPrepareSpecAction extends BaseRestHandler {
 
     @Inject
     public RestPrepareSpecAction(Settings settings, RestController controller, Client client) {
-        super(settings, controller, client);
+        super(settings, client);
         controller.registerHandler(POST, "/_prepare_spec", this);
     }
 

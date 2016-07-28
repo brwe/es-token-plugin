@@ -113,7 +113,8 @@ public class ProcessPMMLHelper {
         }
 
         if (referencedField == null) {
-            throw new UnsupportedOperationException("could not find raw field name. Maybe this derived field references another derived field? Did not implement that yet.");
+            throw new UnsupportedOperationException("could not find raw field name. Maybe this derived field references another derived " +
+                    "field? Did not implement that yet.");
         }
         return referencedField;
     }

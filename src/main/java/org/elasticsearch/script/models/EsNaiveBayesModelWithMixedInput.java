@@ -70,8 +70,8 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
                     }
                     GaussianDistribution gaussianDistribution = (GaussianDistribution) continuousDistribution;
                     String classAssignment = targetValueStat.getValue();
-                    functionLists.get(classIndexMap.get(classAssignment)).add(new GaussFunction(gaussianDistribution.getVariance(), gaussianDistribution
-                            .getMean()));
+                    functionLists.get(classIndexMap.get(classAssignment)).add(new GaussFunction(gaussianDistribution.getVariance(),
+                            gaussianDistribution.getMean()));
                 }
             } else if (types.get(fieldName).equals(OpType.CATEGORICAL)) {
                 TreeMap<String, TargetValueCounts> sortedValues = new TreeMap<>();

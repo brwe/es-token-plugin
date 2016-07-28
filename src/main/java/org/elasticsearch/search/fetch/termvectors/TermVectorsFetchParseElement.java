@@ -33,7 +33,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class TermVectorsFetchParseElement extends FetchSubPhaseParseElement<TermVectorsFetchContext> {
     @Override
-    protected void innerParse(XContentParser parser, TermVectorsFetchContext termVectorsFetchContext, SearchContext searchContext) throws Exception {
+    protected void innerParse(XContentParser parser, TermVectorsFetchContext termVectorsFetchContext, SearchContext searchContext)
+            throws Exception {
 
         TermVectorsRequest request = new TermVectorsRequest();
         XContentBuilder newBuilder = jsonBuilder();
@@ -45,7 +46,7 @@ public class TermVectorsFetchParseElement extends FetchSubPhaseParseElement<Term
     }
 
     @Override
-    protected FetchSubPhase.ContextFactory getContextFactory() {
+    protected FetchSubPhase.ContextFactory<TermVectorsFetchContext> getContextFactory() {
         return TermVectorsFetchSubPhase.CONTEXT_FACTORY;
     }
 }

@@ -19,13 +19,11 @@
 
 package org.elasticsearch.search.fetch.analyzedtext;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.analyze.AnalyzeRequest;
-import org.elasticsearch.index.IndexService;
 import org.elasticsearch.index.analysis.CharFilterFactory;
 import org.elasticsearch.index.analysis.CustomAnalyzer;
 import org.elasticsearch.index.analysis.TokenFilterFactory;
@@ -39,6 +37,7 @@ import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,12 +65,7 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
 
     @Override
     public Map<String, ? extends SearchParseElement> parseElements() {
-        return ImmutableMap.of(NAMES[0], new AnalyzedTextFetchParseElement());
-    }
-
-    @Override
-    public boolean hitsExecutionNeeded(SearchContext context) {
-        return false;
+        return  Collections.singletonMap(NAMES[0], new AnalyzedTextFetchParseElement());
     }
 
     @Override
@@ -79,25 +73,22 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
     }
 
     @Override
-    public boolean hitExecutionNeeded(SearchContext context) {
-        return context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded();
-    }
-
-    @Override
     public void hitExecute(SearchContext context, HitContext hitContext) {
-        IndexService indexService = context.indexShard().indexService();
+        if (context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded() == false) {
+            return;
+        }
         AnalyzeRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
         Analyzer analyzer = null;
         boolean closeAnalyzer = false;
         String text = (String) context.lookup().source().extractValue(request.field());
         if (analyzer == null && request.analyzer() != null) {
-            analyzer = indexService.analysisService().analyzer(request.analyzer());
+            analyzer = context.analysisService().analyzer(request.analyzer());
             if (analyzer == null) {
                 throw new IllegalArgumentException("failed to find analyzer [" + request.analyzer() + "]");
             }
         } else if (request.tokenizer() != null) {
             TokenizerFactory tokenizerFactory;
-            tokenizerFactory = indexService.analysisService().tokenizer(request.tokenizer());
+            tokenizerFactory = context.analysisService().tokenizer(request.tokenizer());
             if (tokenizerFactory == null) {
                 throw new IllegalArgumentException("failed to find tokenizer under [" + request.tokenizer() + "]");
             }
@@ -106,7 +97,7 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
                 tokenFilterFactories = new TokenFilterFactory[request.tokenFilters().length];
                 for (int i = 0; i < request.tokenFilters().length; i++) {
                     String tokenFilterName = request.tokenFilters()[i];
-                    tokenFilterFactories[i] = indexService.analysisService().tokenFilter(tokenFilterName);
+                    tokenFilterFactories[i] = context.analysisService().tokenFilter(tokenFilterName);
                     if (tokenFilterFactories[i] == null) {
                         throw new IllegalArgumentException("failed to find token filter under [" + tokenFilterName + "]");
                     }
@@ -121,7 +112,7 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
                 charFilterFactories = new CharFilterFactory[request.charFilters().length];
                 for (int i = 0; i < request.charFilters().length; i++) {
                     String charFilterName = request.charFilters()[i];
-                    charFilterFactories[i] = indexService.analysisService().charFilter(charFilterName);
+                    charFilterFactories[i] = context.analysisService().charFilter(charFilterName);
                     if (charFilterFactories[i] == null) {
                         throw new IllegalArgumentException("failed to find token char under [" + charFilterName + "]");
                     }
@@ -132,8 +123,8 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
             }
             analyzer = new CustomAnalyzer(tokenizerFactory, charFilterFactories, tokenFilterFactories);
             closeAnalyzer = true;
-        } else if (analyzer == null) {
-            analyzer = indexService.analysisService().defaultIndexAnalyzer();
+        } else {
+            analyzer = context.analysisService().defaultIndexAnalyzer();
         }
         if (analyzer == null) {
             throw new IllegalArgumentException("failed to find analyzer");

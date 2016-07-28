@@ -22,9 +22,12 @@ package org.elasticsearch.script.modelinput;
 import org.apache.lucene.index.Fields;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.index.fielddata.ScriptDocValues;
-import org.elasticsearch.script.ScriptException;
 import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.search.lookup.*;
+import org.elasticsearch.search.lookup.IndexField;
+import org.elasticsearch.search.lookup.IndexFieldTerm;
+import org.elasticsearch.search.lookup.LeafDocLookup;
+import org.elasticsearch.search.lookup.LeafFieldsLookup;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -56,7 +59,8 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
                 case 3:
                     return "bm25";
             }
-            throw new IllegalStateException("There is no toString() for ordinal " + this.ordinal() + " - someone forgot to implement toString().");
+            throw new IllegalStateException("There is no toString() for ordinal " + this.ordinal() +
+                    " - someone forgot to implement toString().");
         }
 
         public static FeatureType fromString(String s) {
@@ -69,7 +73,8 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
             } else if (s.equals(BM25.toString())) {
                 return BM25;
             } else {
-                throw new IllegalStateException("Don't know what " + s + " is - choose one of " + OCCURRENCE.toString() + " " + TF.toString() + " " + TF_IDF.toString() + " " + BM25.toString());
+                throw new IllegalStateException("Don't know what " + s + " is - choose one of " + OCCURRENCE.toString() + " " +
+                        TF.toString() + " " + TF_IDF.toString() + " " + BM25.toString());
             }
         }
     }
@@ -97,7 +102,8 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
                     Fields fields = leafIndexLookup.termVectors();
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap,
+                        // docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
@@ -111,23 +117,24 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
                     if (fields == null) {
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
                         //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap, docValues, leafIndexLookup.get(field));
+                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap,
+                        // docValues, leafIndexLookup.get(field));
                         return EMPTY_SPARSE;
                     } else {
                         indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(fields, field, wordMap, leafIndexLookup);
                     }
 
                 } else {
-                    throw new ScriptException(number + " not implemented yet for sparse vector");
+                    throw new IllegalArgumentException(number + " not implemented yet for sparse vector");
                 }
                 return new EsSparseNumericVector(indicesAndValues);
             } catch (IOException ex) {
-                throw new ScriptException("Could not create sparse vector: ", ex);
+                throw new IllegalArgumentException("Could not create sparse vector: ", ex);
             }
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
@@ -159,25 +166,27 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
                     IndexFieldTerm indexTermField = indexField.get(terms[i]);
                     if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
                         values[i] = indexTermField.tf();
-                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
+                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(
+                            AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
                         values[i] = indexTermField.tf() > 0 ? 1 : 0;
-                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
+                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(
+                            AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
                         double tf = indexTermField.tf();
                         double df = indexTermField.df();
                         double numDocs = indexField.docCount();
                         values[i] = tf * Math.log((numDocs + 1) / (df + 1));
                     } else {
-                        throw new ScriptException(number + " not implemented yet for dense vector");
+                        throw new IllegalArgumentException(number + " not implemented yet for dense vector");
                     }
                 }
                 return new EsDenseNumericVector(values);
             } catch (IOException ex) {
-                throw new ScriptException("Could not get tf vector: ", ex);
+                throw new IllegalArgumentException("Could not get tf vector: ", ex);
             }
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 

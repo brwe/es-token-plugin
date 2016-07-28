@@ -24,6 +24,7 @@ import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
@@ -47,8 +48,7 @@ public class AnalyzedTextFetchIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
-    public void simpleTestFetchAnalyzedText() throws IOException {
+    public void testSimpleFetchAnalyzedText() throws IOException {
 
         client().index(
                 indexRequest("test").type("type").id("1")
@@ -56,11 +56,11 @@ public class AnalyzedTextFetchIT extends ESIntegTestCase {
         client().admin().indices().prepareRefresh().execute().actionGet();
         ensureGreen();
 
-        String searchSource = jsonBuilder().startObject()
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(jsonBuilder().startObject()
                 .startObject(AnalyzedTextFetchSubPhase.NAMES[0])
                 .field("field", "test")
                 .endObject()
-                .endObject().string();
+                .endObject());
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());

@@ -1,5 +1,22 @@
 setup:
   - do:
+      indices.create:
+        index: test
+
+  - do:
+      indices.put_mapping:
+        index: test
+        type: test
+        body:
+          test:
+            properties:
+              text:
+                type:     text
+                fielddata: true
+              label:
+                type:     keyword
+
+  - do:
       index:
           index:  test
           type:   test

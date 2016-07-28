@@ -45,7 +45,6 @@ public class AllTermsIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
     public void testSimpleTestOneDoc() throws Exception {
         indexDocs();
         refresh();
@@ -58,14 +57,15 @@ public class AllTermsIT extends ESIntegTestCase {
         client().prepareIndex("test", "type", "1").setSource("field", "don't  be").execute().actionGet();
         client().prepareIndex("test", "type", "2").setSource("field", "ever always forget  be").execute().actionGet();
         client().prepareIndex("test", "type", "3").setSource("field", "careful careful").execute().actionGet();
-        client().prepareIndex("test", "type", "4").setSource("field", "ever always careful careful don't be forget be").execute().actionGet();
+        client().prepareIndex("test", "type", "4").setSource("field", "ever always careful careful don't be forget be").execute()
+                .actionGet();
     }
 
-    @Test
     public void testSimpleTestOneDocWithFrom() throws Exception {
         indexDocs();
         refresh();
-        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("careful").execute().actionGet(10000);
+        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from("careful").execute()
+                .actionGet(10000);
         String[] expected = {"don't", "ever", "forget"};
         assertArrayEquals(response.allTerms.toArray(new String[3]), expected);
 
@@ -74,23 +74,23 @@ public class AllTermsIT extends ESIntegTestCase {
         assertArrayEquals(response.allTerms.toArray(new String[3]), expected2);
     }
 
-    @Test
-    @TestLogging("org.elasticsearch.action.allterms:TRACE")
     public void testSimpleTestOneDocWithFromAndMinDocFreq() throws Exception {
         createIndex();
         indexDocs();
         refresh();
-        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from(" be").minDocFreq(3).execute().actionGet(10000);
+        AllTermsResponse response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).from(" be").minDocFreq(3)
+                .execute().actionGet(10000);
         String[] expected = {"be"};
         assertArrayEquals(response.allTerms.toArray(new String[1]), expected);
 
-        response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).minDocFreq(3).from("arg").execute().actionGet(10000);
+        response = new AllTermsRequestBuilder(client()).index("test").field("field").size(10).minDocFreq(3).from("arg").execute()
+                .actionGet(10000);
         String[] expected2 = {"be"};
         assertArrayEquals(response.allTerms.toArray(new String[1]), expected2);
     }
 
     private void createIndex() {
-        client().admin().indices().prepareCreate("test").setSettings(Settings.settingsBuilder().put("index.number_of_shards", 1)).get();
+        client().admin().indices().prepareCreate("test").setSettings(Settings.builder().put("index.number_of_shards", 1)).get();
         ensureYellow("test");
     }
 }

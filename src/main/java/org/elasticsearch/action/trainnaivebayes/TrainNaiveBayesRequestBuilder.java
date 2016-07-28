@@ -23,7 +23,8 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.client.ElasticsearchClient;
 
-public class TrainNaiveBayesRequestBuilder extends ActionRequestBuilder<TrainNaiveBayesRequest, TrainNaiveBayesResponse, TrainNaiveBayesRequestBuilder> {
+public class TrainNaiveBayesRequestBuilder extends ActionRequestBuilder<TrainNaiveBayesRequest, TrainNaiveBayesResponse,
+        TrainNaiveBayesRequestBuilder> {
 
     public TrainNaiveBayesRequestBuilder(ElasticsearchClient client) {
         super(client, TrainNaiveBayesAction.INSTANCE, new TrainNaiveBayesRequest());

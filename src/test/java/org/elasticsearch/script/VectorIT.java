@@ -25,11 +25,12 @@ import org.elasticsearch.action.preparespec.PrepareSpecRequest;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.pmml.VectorScriptEngineService;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
@@ -61,7 +62,6 @@ public class VectorIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
     public void testVectorScript() throws IOException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
@@ -81,12 +81,12 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
 
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("doc_to_vector",
+                ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
         assertThat(values.length, equalTo(3));
@@ -96,8 +96,8 @@ public class VectorIT extends ESIntegTestCase {
 
     }
 
-    @Test
     public void testVectorScriptSparseOccurence() throws IOException, ExecutionException, InterruptedException {
+        client().admin().indices().prepareCreate("index").setSettings().addMapping("type", getMapping()).get();
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
         refresh();
@@ -116,12 +116,12 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
 
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("doc_to_vector",
+                ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
         assertThat(values.length, equalTo(3));
@@ -137,7 +137,6 @@ public class VectorIT extends ESIntegTestCase {
 
     }
 
-    @Test
     public void testVectorScriptDenseOccurence() throws IOException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
         ensureGreen("index");
@@ -157,12 +156,12 @@ public class VectorIT extends ESIntegTestCase {
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
 
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("doc_to_vector",
+                ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
         assertThat(values.length, equalTo(4));
@@ -173,7 +172,6 @@ public class VectorIT extends ESIntegTestCase {
 
     }
 
-    @Test
     public void testSparseVectorScript() throws IOException, ExecutionException, InterruptedException {
         createIndexWithTermVectors();
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
@@ -193,12 +191,12 @@ public class VectorIT extends ESIntegTestCase {
                 .field("sparse", true)
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("doc_to_vector",
+                ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
         assertThat(values.length, equalTo(3));
@@ -214,7 +212,7 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(length, equalTo(4));
     }
 
-    @Test
+
     @AwaitsFix(bugUrl = "Must fix Index lookup first")
     public void testSparseVectorScriptWithTFWithoutTermVectorsStored() throws IOException, ExecutionException, InterruptedException {
         client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick").get();
@@ -234,12 +232,12 @@ public class VectorIT extends ESIntegTestCase {
                 .field("sparse", true)
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addScriptField("vector", new Script("doc_to_vector",
+                ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
+        @SuppressWarnings("unchecked")
         Map<String, Object> vector = (Map<String, Object>) (searchResponse.getHits().getAt(0).field("vector").values().get(0));
         double[] values = (double[]) vector.get("values");
         assertThat(values.length, equalTo(3));
@@ -253,7 +251,7 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices[2], equalTo(3));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testSparseVectorWithIDF() throws IOException, ExecutionException, InterruptedException {
         createIndexWithTermVectors();
         indexRandom(true,
@@ -277,11 +275,10 @@ public class VectorIT extends ESIntegTestCase {
                 .field("sparse", true)
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new
+                Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
@@ -337,7 +334,7 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices[2], equalTo(4));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testSparseVectorWithTFSomeEmpty() throws IOException, ExecutionException, InterruptedException {
         createIndexWithTermVectors();
         indexRandom(true,
@@ -359,11 +356,10 @@ public class VectorIT extends ESIntegTestCase {
                 .field("sparse", true)
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new
+                Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
@@ -387,9 +383,11 @@ public class VectorIT extends ESIntegTestCase {
         assertThat(indices.length, equalTo(0));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
+
     public void testDenseVectorWithIDF() throws IOException, ExecutionException, InterruptedException {
-        assertAcked(client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)));
+        assertAcked(client().admin().indices().prepareCreate("index").setSettings(Settings.builder()
+                .put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)));
         indexRandom(true,
                 client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "the quick brown fox is quick"),
                 client().prepareIndex().setId("2").setIndex("index").setType("type").setSource("text", "the quick fox is brown"),
@@ -411,11 +409,10 @@ public class VectorIT extends ESIntegTestCase {
                 .field("sparse", false)
                 .endObject();
         PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(source.string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector", new Script(specResponse.getId(), ScriptService.ScriptType.INDEXED, VectorScriptEngineService.NAME, new HashMap<String, Object>())).get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", specResponse.getSpecAsMap());
+        SearchResponse searchResponse = client().prepareSearch("index").addSort("_uid", SortOrder.ASC).addScriptField("vector",
+                new Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params)).get();
         assertSearchResponse(searchResponse);
 
         assertThat(searchResponse.getHits().getAt(0).getId(), equalTo("1"));
@@ -462,7 +459,8 @@ public class VectorIT extends ESIntegTestCase {
 
     }
 
-    public PrepareSpecResponse createSpecWithGivenTerms(String number, boolean sparse) throws IOException, InterruptedException, ExecutionException {
+    public PrepareSpecResponse createSpecWithGivenTerms(String number, boolean sparse) throws IOException, InterruptedException,
+            ExecutionException {
         XContentBuilder source = jsonBuilder();
         source.startObject()
                 .startArray("features")
@@ -485,40 +483,56 @@ public class VectorIT extends ESIntegTestCase {
                 .startObject("type")
                 .startObject("properties")
                 .startObject("text")
-                .field("type", "string")
+                .field("type", "text")
                 .field("term_vector", "yes")
                 .endObject()
                 .endObject()
                 .endObject()
                 .endObject();
-        client().admin().indices().prepareCreate("index").addMapping("type", mapping).setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)).get();
+        client().admin().indices().prepareCreate("index").addMapping("type", mapping).setSettings(Settings.builder()
+                .put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1)).get();
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
+
     public void testVectorScriptWithSignificantTermsSortsTerms() throws IOException, ExecutionException, InterruptedException {
 
-        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1));
-        client().prepareIndex().setId("1").setIndex("index").setType("type").setSource("text", "I have to get up at 4am", "label", "negative").get();
-        client().prepareIndex().setId("2").setIndex("index").setType("type").setSource("text", "I need to get up at 5am", "label", "negative").get();
-        client().prepareIndex().setId("3").setIndex("index").setType("type").setSource("text", "I have to get up at 6am already", "label", "negative").get();
-        client().prepareIndex().setId("4").setIndex("index").setType("type").setSource("text", "I need to get up at 7am", "label", "negative").get();
-        client().prepareIndex().setId("5").setIndex("index").setType("type").setSource("text", "I got up at 8am", "label", "negative").get();
-        client().prepareIndex().setId("6").setIndex("index").setType("type").setSource("text", "I could sleep until 9am", "label", "positive").get();
-        client().prepareIndex().setId("7").setIndex("index").setType("type").setSource("text", "I only got up at 10am", "label", "positive").get();
-        client().prepareIndex().setId("8").setIndex("index").setType("type").setSource("text", "I slept until 11am", "label", "positive").get();
-        client().prepareIndex().setId("9").setIndex("index").setType("type").setSource("text", "I dragged myself out of bed at 12am", "label", "negative").get();
-        client().prepareIndex().setId("10").setIndex("index").setType("type").setSource("text", "Damn! I missed the alarm clock and got up at 1pm. Hope Clinton does not notice...", "label", "negative").get();
-        client().prepareIndex().setId("11").setIndex("index").setType("type").setSource("text", "I fell asleep at 8pm already", "label", "positive").get();
-        client().prepareIndex().setId("12").setIndex("index").setType("type").setSource("text", "I fell asleep at 9pm already", "label", "positive").get();
-        client().prepareIndex().setId("13").setIndex("index").setType("type").setSource("text", "I fell asleep at 10pm already", "label", "positive").get();
+        client().admin().indices().prepareCreate("index").setSettings(Settings.builder().put(IndexMetaData.SETTING_NUMBER_OF_SHARDS, 1))
+                .addMapping("type", getMapping()).get();
+        client().prepareIndex().setId("1").setIndex("index").setType("type")
+                .setSource("text", "I have to get up at 4am", "label", "negative").get();
+        client().prepareIndex().setId("2").setIndex("index").setType("type")
+                .setSource("text", "I need to get up at 5am", "label", "negative").get();
+        client().prepareIndex().setId("3").setIndex("index").setType("type")
+                .setSource("text", "I have to get up at 6am already", "label", "negative").get();
+        client().prepareIndex().setId("4").setIndex("index").setType("type")
+                .setSource("text", "I need to get up at 7am", "label", "negative").get();
+        client().prepareIndex().setId("5").setIndex("index").setType("type")
+                .setSource("text", "I got up at 8am", "label", "negative").get();
+        client().prepareIndex().setId("6").setIndex("index").setType("type")
+                .setSource("text", "I could sleep until 9am", "label", "positive").get();
+        client().prepareIndex().setId("7").setIndex("index").setType("type")
+                .setSource("text", "I only got up at 10am", "label", "positive").get();
+        client().prepareIndex().setId("8").setIndex("index").setType("type")
+                .setSource("text", "I slept until 11am", "label", "positive").get();
+        client().prepareIndex().setId("9").setIndex("index").setType("type")
+                .setSource("text", "I dragged myself out of bed at 12am", "label", "negative").get();
+        client().prepareIndex().setId("10").setIndex("index").setType("type")
+                .setSource("text", "Damn! I missed the alarm clock and got up at 1pm. Hope Clinton does not notice...", "label", "negative")
+                .get();
+        client().prepareIndex().setId("11").setIndex("index").setType("type")
+                .setSource("text", "I fell asleep at 8pm already", "label", "positive").get();
+        client().prepareIndex().setId("12").setIndex("index").setType("type")
+                .setSource("text", "I fell asleep at 9pm already", "label", "positive").get();
+        client().prepareIndex().setId("13").setIndex("index").setType("type")
+                .setSource("text", "I fell asleep at 10pm already", "label", "positive").get();
 
         ensureGreen("index");
         refresh();
 
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(getTextFieldRequestSourceWithSignificnatTerms().string())).get();
-        GetResponse spec = client().prepareGet(specResponse.getIndex(), specResponse.getType(), specResponse.getId()).get();
-
-        ArrayList<Map<String, Object>> features = (ArrayList<Map<String, Object>>) SharedMethods.getSourceAsMap((String) spec.getSource().get("script")).get("features");
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest
+                (getTextFieldRequestSourceWithSignificnatTerms().string())).get();
+        ArrayList<Map<String, Object>> features = (ArrayList<Map<String, Object>>) specResponse.getSpecAsMap().get("features");
         String lastTerm = "";
         for (String term : (ArrayList<String>) features.get(0).get("terms")) {
             assertThat(lastTerm.compareTo(term), lessThan(0));
@@ -567,13 +581,14 @@ public class VectorIT extends ESIntegTestCase {
         return source;
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
+
     public void testVectorScriptWithGivenTermsSortsTerms() throws IOException, ExecutionException, InterruptedException {
 
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(getTextFieldRequestSourceWithGivenTerms().string())).get();
-        GetResponse spec = client().prepareGet(specResponse.getIndex(), specResponse.getType(), specResponse.getId()).get();
+        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest
+                (getTextFieldRequestSourceWithGivenTerms().string())).get();
 
-        ArrayList<Map<String, Object>> features = (ArrayList<Map<String, Object>>) SharedMethods.getSourceAsMap((String) spec.getSource().get("script")).get("features");
+        ArrayList<Map<String, Object>> features = (ArrayList<Map<String, Object>>) specResponse.getSpecAsMap().get("features");
         String lastTerm = "";
         for (String term : (ArrayList<String>) features.get(0).get("terms")) {
             assertThat(lastTerm.compareTo(term), lessThan(0));
@@ -598,27 +613,31 @@ public class VectorIT extends ESIntegTestCase {
         return source;
     }
 
-  /*  @Test
-    public void testWithScroll() throws IOException, ExecutionException, InterruptedException {
-        createIndexWithTermVectors();
-        for (int i = 0; i< 1000; i++) {
-            client().prepareIndex().setIndex("test").setType("type").setSource("text", "a b c").get();
+    private XContentBuilder getMapping() throws IOException {
+        XContentBuilder mapping = jsonBuilder();
+        mapping.startObject();
+        {
+            mapping.startObject("type");
+            {
+                mapping.startObject("properties");
+                {
+                    mapping.startObject("text");
+                    {
+                        mapping.field("type", "text");
+                        mapping.field("fielddata", true);
+                    }
+                    mapping.endObject();
+                    mapping.startObject("label");
+                    {
+                        mapping.field("type", "keyword");
+                    }
+                    mapping.endObject();
+                }
+                mapping.endObject();
+            }
+            mapping.endObject();
         }
-        refresh();
-        PrepareSpecResponse specResponse = client().execute(PrepareSpecAction.INSTANCE, new PrepareSpecRequest(getTextFieldRequestSourceWithGivenTerms().string())).get();
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.put("spec_index", specResponse.getIndex());
-        parameters.put("spec_type", specResponse.getType());
-        parameters.put("spec_id", specResponse.getId());
-        SearchResponse searchResponse = client().prepareSearch("test").addScriptField("vector", new Script("vector", ScriptService.ScriptType.INLINE, "native", parameters)).setScroll("10m").setSize(10).get();
-
-        assertSearchResponse(searchResponse);
-        searchResponse = client().prepareSearchScroll(searchResponse.getScrollId()).setScroll("10m").get();
-        while(searchResponse.getHits().hits().length>0) {
-            logger.info("next scroll request...");
-            searchResponse = client().prepareSearchScroll(searchResponse.getScrollId()).setScroll("10m").get();
-        }
-        client().prepareClearScroll().addScrollId(searchResponse.getScrollId()).get();
-    }*/
-
+        mapping.endObject();
+        return mapping;
+    }
 }

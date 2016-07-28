@@ -36,7 +36,8 @@ public enum TokenGenerateMethod {
             case 2:
                 return "all_terms";
         }
-        throw new IllegalStateException("There is no toString() for ordinal " + this.ordinal() + " - someone forgot to implement toString().");
+        throw new IllegalStateException("There is no toString() for ordinal " + this.ordinal() +
+                " - someone forgot to implement toString().");
     }
 
     public static TokenGenerateMethod fromString(String s) {
@@ -47,7 +48,8 @@ public enum TokenGenerateMethod {
         } else if (s.equals(ALL_TERMS.toString())) {
             return ALL_TERMS;
         } else {
-            throw new IllegalStateException("Don't know what " + s + " is - choose one of " + GIVEN.toString() + " " + SIGNIFICANT_TERMS.toString() + " " + ALL_TERMS.toString() + " ");
+            throw new IllegalStateException("Don't know what " + s + " is - choose one of " + GIVEN.toString() + " " +
+                    SIGNIFICANT_TERMS.toString() + " " + ALL_TERMS.toString() + " ");
         }
     }
 }

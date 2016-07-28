@@ -27,10 +27,10 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.single.shard.TransportSingleShardAction;
-import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.cluster.routing.ShardIterator;
+import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.IndexService;
@@ -43,7 +43,6 @@ import org.elasticsearch.transport.TransportService;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class TransportAllTermsShardAction extends TransportSingleShardAction<AllTermsShardRequest, AllTermsSingleShardResponse> {
@@ -55,8 +54,10 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
 
     @Inject
     public TransportAllTermsShardAction(Settings settings, ClusterService clusterService, TransportService transportService,
-                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters, IndexNameExpressionResolver indexNameExpressionResolver) {
-        super(settings, ACTION_NAME, threadPool, clusterService, transportService, actionFilters, indexNameExpressionResolver, AllTermsShardRequest.class, ThreadPool.Names.GENERIC);
+                                        IndicesService indicesService, ThreadPool threadPool, ActionFilters actionFilters,
+                                        IndexNameExpressionResolver indexNameExpressionResolver) {
+        super(settings, ACTION_NAME, threadPool, clusterService, transportService, actionFilters, indexNameExpressionResolver,
+                AllTermsShardRequest::new, ThreadPool.Names.GENERIC);
         this.indicesService = indicesService;
     }
 
@@ -84,8 +85,8 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
     @Override
     protected AllTermsSingleShardResponse shardOperation(AllTermsShardRequest request, ShardId shardId) throws ElasticsearchException {
         List<String> terms = new ArrayList<>();
-        IndexService indexService = indicesService.indexServiceSafe(request.index());
-        IndexShard indexShard = indexService.shardSafe(shardId.id());
+        IndexService indexService = indicesService.indexServiceSafe(shardId.getIndex());
+        IndexShard indexShard = indexService.getShard(shardId.id());
         final Engine.Searcher searcher = indexShard.acquireSearcher("all_terms");
         IndexReader topLevelReader = searcher.reader();
 
@@ -122,7 +123,8 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         }
     }
 
-    protected static void findNMoreTerms(AllTermsShardRequest request, List<String> terms, List<TermsEnum> termIters, CharsRefBuilder spare, BytesRef lastTerm, int[] exhausted) {
+    protected static void findNMoreTerms(AllTermsShardRequest request, List<String> terms, List<TermsEnum> termIters, CharsRefBuilder spare,
+                                         BytesRef lastTerm, int[] exhausted) {
         if (getDocFreq(termIters, lastTerm, exhausted) >= request.minDocFreq()) {
             spare.copyUTF8Bytes(lastTerm);
             terms.add(spare.toString());
@@ -152,7 +154,8 @@ public class TransportAllTermsShardAction extends TransportSingleShardAction<All
         return termIters;
     }
 
-    protected static BytesRef findSmallestTermAfter(AllTermsShardRequest request, List<TermsEnum> termIters, BytesRef lastTerm, int[] exhausted) throws IOException {
+    protected static BytesRef findSmallestTermAfter(AllTermsShardRequest request, List<TermsEnum> termIters, BytesRef lastTerm,
+                                                    int[] exhausted) throws IOException {
         for (int i = 0; i < termIters.size(); i++) {
             BytesRef curTerm = null;
             if (request.from() != null) {

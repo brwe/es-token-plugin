@@ -1,6 +1,10 @@
 
 ---
 "Basic store_model":
+  - skip:
+      version: "all"
+      reason:  "need to store a real model now"
+
   - do:
       store_model:
          body: {"spec":"this is just gibberish but we do not validate yet so no problem", "model": "same as spec"}
@@ -21,6 +25,10 @@
 
 ---
 "store_model with existing spec":
+  - skip:
+      version: "all"
+      reason:  "need to store a real model now"
+
   - do:
       prepare_spec:
          body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf", "type": "string"}]}

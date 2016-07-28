@@ -27,13 +27,16 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.elasticsearch.action.preparespec.PrepareSpecTests.getTextFieldRequestSourceWithAllTerms;
@@ -54,8 +57,8 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
-    public void simpleTestFetchTermvectors() throws IOException {
+    @SuppressWarnings("unchecked")
+    public void testSimpleFetchTermvectors() throws IOException {
 
         client().admin()
                 .indices()
@@ -66,7 +69,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                                 .startObject().startObject("type")
                                 .startObject("properties")
                                 .startObject("test")
-                                .field("type", "string").field("term_vector", "yes")
+                                .field("type", "text").field("term_vector", "yes")
                                 .endObject()
                                 .endObject()
                                 .endObject().endObject()).execute().actionGet();
@@ -78,11 +81,12 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         client().admin().indices().prepareRefresh().execute().actionGet();
 
-        String searchSource = jsonBuilder().startObject()
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
+                jsonBuilder().startObject()
                 .startObject(TermVectorsFetchSubPhase.NAMES[0])
                 .field("fields", new String[]{"test"})
                 .endObject()
-                .endObject().string();
+                .endObject());
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
@@ -98,7 +102,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         assertThat((Integer) ((Map<String, Object>) freqs.get("sam")).get("term_freq"), equalTo(1));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testFetchTermvectorsAndFieldsWork() throws IOException {
 
         client().admin()
@@ -110,7 +114,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                                 .startObject().startObject("type")
                                 .startObject("properties")
                                 .startObject("text")
-                                .field("type", "string").field("term_vector", "yes")
+                                .field("type", "text").field("term_vector", "yes").field("store", "yes")
                                 .endObject()
                                 .endObject()
                                 .endObject().endObject()).execute().actionGet();
@@ -122,12 +126,13 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         client().admin().indices().prepareRefresh().execute().actionGet();
 
-        String searchSource = jsonBuilder().startObject()
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
+                jsonBuilder().startObject()
                 .startObject(TermVectorsFetchSubPhase.NAMES[0])
                 .field("fields", new String[]{"text"})
                 .endObject()
-                .field("fields", new String[]{"text"})
-                .endObject().string();
+                .endObject())
+                .field("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
@@ -145,7 +150,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         assertThat((String) textField.getValue(), equalTo("I am sam i am"));
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testFetchTermvectorsAndScriptFieldsWork() throws IOException {
 
         client().admin()
@@ -158,7 +163,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                                 .startObject().startObject("type")
                                 .startObject("properties")
                                 .startObject("text")
-                                .field("type", "string").field("term_vector", "yes")
+                                .field("type", "text").field("term_vector", "yes").field("store", "yes")
                                 .endObject()
                                 .endObject()
                                 .endObject().endObject()).execute().actionGet();
@@ -173,21 +178,18 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         ensureGreen();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
-        String searchSource = jsonBuilder().startObject()
+        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client())
+                .source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
+        Map<String, Object> params = new HashMap<>();
+        params.put("spec", prepareSpecResponse.getSpecAsMap());
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
+                jsonBuilder().startObject()
                 .startObject(TermVectorsFetchSubPhase.NAMES[0])
                 .field("fields", new String[]{"text"})
                 .endObject()
-                .startObject("script_fields")
-                .startObject("vectors")
-                .startObject("script")
-                .field("id", "my_id")
-                .field("lang", "doc_to_vector")
-                .endObject()
-                .endObject()
-                .endObject()
-                .field("fields", new String[]{"text"})
-                .endObject().string();
+                .endObject())
+                .scriptField("vectors", new Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params))
+                .field("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
@@ -209,7 +211,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
     }
 
-    @Test
+    @SuppressWarnings("unchecked")
     public void testFetchTermvectorsAndCustomAnalyzerWorks() throws IOException {
 
         client().admin()
@@ -222,7 +224,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                                 .startObject().startObject("type")
                                 .startObject("properties")
                                 .startObject("text")
-                                .field("type", "string").field("term_vector", "yes")
+                                .field("type", "text").field("term_vector", "yes")
                                 .endObject()
                                 .endObject()
                                 .endObject().endObject()).execute().actionGet();
@@ -237,13 +239,14 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         ensureGreen();
         refresh();
-        PrepareSpecResponse prepareSpecResponse = new PrepareSpecRequestBuilder(client()).source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
-        String searchSource = jsonBuilder().startObject()
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
+                jsonBuilder().startObject()
                 .startObject(TermVectorsFetchSubPhase.NAMES[0])
                 .startObject("per_field_analyzer")
                 .field("text", "keyword")
                 .endObject()
-                .endObject().string();
+                .endObject()
+                .endObject());
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());

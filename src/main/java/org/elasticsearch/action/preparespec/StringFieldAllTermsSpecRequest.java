@@ -40,10 +40,12 @@ public class StringFieldAllTermsSpecRequest implements FieldSpecRequest {
 
     @Override
     public void process(final TransportPrepareSpecAction.FieldSpecActionListener fieldSpecActionListener, Client client) {
-        new AllTermsRequestBuilder(client).field(field).minDocFreq(min_doc_freq).index(index).size(Integer.MAX_VALUE).execute(new ActionListener<AllTermsResponse>() {
+        new AllTermsRequestBuilder(client).field(field).minDocFreq(min_doc_freq).index(index).size(Integer.MAX_VALUE).execute(
+                new ActionListener<AllTermsResponse>() {
             @Override
             public void onResponse(AllTermsResponse allTerms) {
-                fieldSpecActionListener.onResponse(new StringFieldSpec(allTerms.getAllTerms().toArray(new String[allTerms.getAllTerms().size()]), number, field));
+                fieldSpecActionListener.onResponse(new StringFieldSpec(allTerms.getAllTerms().toArray(
+                        new String[allTerms.getAllTerms().size()]), number, field));
             }
 
             @Override

@@ -78,7 +78,7 @@ public class AllTermsTests extends ESTestCase {
         d.add(new TextField("_uid", "4", Field.Store.YES));
         w.addDocument(d);
         w.commit();
-        reader = DirectoryReader.open(w, true);
+        reader = DirectoryReader.open(w, true, true);
     }
 
     @After
@@ -197,20 +197,21 @@ public class AllTermsTests extends ESTestCase {
         SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
         BytesRef smallestTerm = smallestTermAndExhausted.getSmallestTerm();
         int[] exhausted = smallestTermAndExhausted.getExhausted();
-        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(2l));
+        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(2L));
     }
 
     public void testDocFreqForNotExistingTerm() throws IOException {
         SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
         BytesRef smallestTerm = new BytesRef("do");
         int[] exhausted = smallestTermAndExhausted.getExhausted();
-        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(0l));
+        assertThat(TransportAllTermsShardAction.getDocFreq(smallestTermAndExhausted.getTermsIters(), smallestTerm, exhausted), equalTo(0L));
     }
 
     public void testMoveIterators() throws IOException {
         SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("a");
         BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
-        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(), smallestTerm);
+        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(),
+                smallestTerm);
         for (int i = 0; i < 4; i++) {
             assertThat(smallestTermAndExhausted.getTermsIters().get(i).term(), greaterThan(smallestTerm));
         }
@@ -219,7 +220,8 @@ public class AllTermsTests extends ESTestCase {
     public void testMoveIteratorsWithSomeExhaustion() throws IOException {
         SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
         BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
-        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(), smallestTerm);
+        TransportAllTermsShardAction.moveIterators(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters(),
+                smallestTerm);
         int exhausted = 0;
         for (int i = 0; i < 4; i++) {
             if (smallestTermAndExhausted.getExhausted()[i] != 1) {
@@ -234,7 +236,8 @@ public class AllTermsTests extends ESTestCase {
     public void testFindSmallestTerm() throws IOException {
         SmallestTermAndExhausted smallestTermAndExhausted = getSmallestTermAndExhausted("careful");
         BytesRef smallestTerm = new BytesRef(smallestTermAndExhausted.getSmallestTerm().utf8ToString());
-        BytesRef newSmallestTerm = TransportAllTermsShardAction.findMinimum(smallestTermAndExhausted.exhausted, smallestTermAndExhausted.getTermsIters());
+        BytesRef newSmallestTerm = TransportAllTermsShardAction.findMinimum(smallestTermAndExhausted.exhausted,
+                smallestTermAndExhausted.getTermsIters());
         assertThat(newSmallestTerm.utf8ToString(), equalTo(smallestTerm.utf8ToString()));
     }
 

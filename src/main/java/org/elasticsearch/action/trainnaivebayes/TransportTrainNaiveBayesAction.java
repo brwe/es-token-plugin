@@ -42,24 +42,27 @@ import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.cluster.ClusterService;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
+import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.UUIDs;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
@@ -72,10 +75,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -95,7 +96,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                                           IndexNameExpressionResolver indexNameExpressionResolver, Client client, ClusterService
                                                   clusterService) {
         super(settings, TrainNaiveBayesAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
-                TrainNaiveBayesRequest.class);
+                TrainNaiveBayesRequest::new);
         this.client = client;
         this.clusterService = clusterService;
     }
@@ -133,19 +134,21 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         String targetField = (String) parsedSource.get("target_field");
         String index = (String) parsedSource.get("index");
         String type = (String) parsedSource.get("type");
-        List<String> fields = (List<String>) parsedSource.get("fields");
-        TermsBuilder topLevelClassAgg = terms(targetField);
+        @SuppressWarnings("unchecked") List<String> fields = (List<String>) parsedSource.get("fields");
+        TermsAggregationBuilder topLevelClassAgg = terms(targetField);
         topLevelClassAgg.field(targetField);
         topLevelClassAgg.size(Integer.MAX_VALUE);
         topLevelClassAgg.shardMinDocCount(1);
         topLevelClassAgg.minDocCount(1);
         topLevelClassAgg.order(Terms.Order.term(true));
-        Map fieldMappings = (Map) clusterService.state().getMetaData().getIndices().get(index).mapping(type).sourceAsMap().get
-                ("properties");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fieldMappings = (Map<String, Object>) clusterService.state().getMetaData().getIndices().get(index).mapping(type)
+                .sourceAsMap().get("properties");
         for (String field : fields) {
-            Map attributes = (Map) fieldMappings.get(field);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> attributes = (Map<String, Object>) fieldMappings.get(field);
             String fieldType = (String) attributes.get("type");
-            if (fieldType.equals("string")) {
+            if (fieldType.equals("text") || fieldType.equals("keyword")) {
                 topLevelClassAgg.subAggregation(terms(field).field(field).size(Integer.MAX_VALUE).shardMinDocCount(1).minDocCount(1)
                         .order(Terms.Order.term(true)));
             } else if (fieldType.equals("double") || fieldType.equals("float") || fieldType.equals("integer") || fieldType.equals("long")) {
@@ -267,12 +270,24 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                 }
             });
             String pmmlString = new String(outputStream.toByteArray(), Charset.defaultCharset());
-            client.prepareIndex(ScriptService.SCRIPT_INDEX, PMMLModelScriptEngineService.NAME, id).setSource("script", pmmlString)
-                    .execute(new ActionListener<IndexResponse>() {
+            if (id == null) {
+                //TODO: we can probably do better, but this should work for now
+                id = UUIDs.randomBase64UUID();
+            }
+            BytesReference source;
+            try {
+                XContentBuilder builder = XContentFactory.contentBuilder(Requests.INDEX_CONTENT_TYPE);
+                builder.startObject().field("script", pmmlString).endObject();
+                source = builder.bytes();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            client.admin().cluster().preparePutStoredScript().setScriptLang(PMMLModelScriptEngineService.NAME)
+                    .setSource(source).setId(id)
+                    .execute(new ActionListener<PutStoredScriptResponse>() {
                         @Override
-                        public void onResponse(IndexResponse indexResponse) {
-                            listener.onResponse(new TrainNaiveBayesResponse(indexResponse.getIndex(), indexResponse.getType(),
-                                    indexResponse.getId()));
+                        public void onResponse(PutStoredScriptResponse indexResponse) {
+                            listener.onResponse(new TrainNaiveBayesResponse(id));
                         }
 
                         @Override
@@ -304,7 +319,8 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             naiveBayesModel.setMiningSchema(miningSchema);
         }
 
-        private void setBayesInputs(NaiveBayesModel naiveBayesModel, TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,
+        private void setBayesInputs(NaiveBayesModel naiveBayesModel,
+                                    TreeMap<String, TreeMap<String, TreeMap<String, Long>>> stringFieldValueCounts,
                                     TreeMap<String, TreeMap<String, Map<String, Double>>> numericFieldStats, String[] classNames) {
             BayesInputs bayesInputs = new BayesInputs();
             for (Map.Entry<String, TreeMap<String, TreeMap<String, Long>>> categoricalField : stringFieldValueCounts.entrySet()) {
@@ -355,7 +371,8 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
             naiveBayesModel.setBayesInputs(bayesInputs);
         }
 
-        private static void setDataDictionary(PMML pmml, TreeMap<String, TreeSet<String>> allTermsPerField, Set<String> numericFieldsNames) {
+        private static void setDataDictionary(PMML pmml, TreeMap<String, TreeSet<String>> allTermsPerField,
+                                              Set<String> numericFieldsNames) {
 
             DataDictionary dataDictionary = new DataDictionary();
 

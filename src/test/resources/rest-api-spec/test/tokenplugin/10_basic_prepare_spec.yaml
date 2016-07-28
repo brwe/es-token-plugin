@@ -5,37 +5,6 @@
       prepare_spec:
          body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf", "type": "string"}]}
 
-  - do:
-      indices.refresh: {}
-
-  - do:
-      search:
-         index: .scripts
-         type:  doc_to_vector
-
-
-  - match: {hits.total: 1}
-  - match:  { hits.hits.0._index: .scripts  }
-  - match:  { hits.hits.0._type: doc_to_vector  }
-
----
-"Basic prepare spec with id":
-  - do:
-      prepare_spec:
-         body: {"features":[{"field":"some_field_name","tokens":"given","terms":["a","b","c"],"number":"tf", "type": "string"}]}
-         id: "some_id"
-
-  - do:
-      indices.refresh: {}
-
-  - do:
-      search:
-         index: .scripts
-         type:  doc_to_vector
-
-
-  - match: {hits.total: 1}
-  - match:  { hits.hits.0._index: .scripts  }
-  - match:  { hits.hits.0._type: doc_to_vector  }
-  - match:  { hits.hits.0._id: "some_id"  }
+  - match: {spec.length: "3"}
+  - match: {spec.features.0.number: "tf"}
 

@@ -39,6 +39,7 @@ public class VectorRangesToVectorJSON extends VectorRangesToVector {
         assert source.get("sparse") == null || source.get("sparse") instanceof Boolean;
         sparse = TransportPrepareSpecAction.getSparse(source.get("sparse"));
         assert (source.containsKey("features"));
+        @SuppressWarnings("unchecked")
         ArrayList<Map<String, Object>> featuresArray = (ArrayList<Map<String, Object>>) source.get("features");
         int offset = 0;
         for (Map<String, Object> feature : featuresArray) {
@@ -64,7 +65,7 @@ public class VectorRangesToVectorJSON extends VectorRangesToVector {
 
     private String[] getTerms(Object terms) {
         assert terms instanceof ArrayList;
-        ArrayList<String> termsList = (ArrayList<String>) terms;
+        @SuppressWarnings("unchecked") ArrayList<String> termsList = (ArrayList<String>) terms;
         String[] finalTerms = new String[termsList.size()];
         int i = 0;
         for (String term : termsList) {
@@ -74,7 +75,8 @@ public class VectorRangesToVectorJSON extends VectorRangesToVector {
         return finalTerms;
     }
 
-    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
+    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup,
+                         SourceLookup sourceLookup) {
         if (sparse) {
             int length = 0;
             List<EsSparseNumericVector> entries = new ArrayList<>();

@@ -20,14 +20,25 @@
 package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.common.ParseFieldMatcher;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.index.query.QueryParseContext;
+import org.elasticsearch.indices.query.IndicesQueriesRegistry;
+import org.elasticsearch.search.aggregations.AggregatorParsers;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.suggest.Suggesters;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
 public class StringFieldSpecRequestFactory {
 
-    public static FieldSpecRequest createStringFieldSpecRequest(Map<String, Object> parameters) {
+    public static FieldSpecRequest createStringFieldSpecRequest(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
+                                                                Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
+                                                                Map<String, Object> parameters) {
         String field = (String) parameters.remove("field");
         if (field == null) {
             throw new ElasticsearchException("field parameter missing from prepare spec request");
@@ -50,7 +61,9 @@ public class StringFieldSpecRequestFactory {
                 throw new ElasticsearchException("index parameter missing from prepare spec request");
             }
             assertParametersEmpty(parameters);
-            return new StringFieldSignificantTermsSpecRequest(searchRequest, index, number, field);
+            SearchSourceBuilder searchSourceBuilder = parseSearchRequest(queryRegistry, aggParsers, suggesters, parseFieldMatcher,
+                    searchRequest);
+            return new StringFieldSignificantTermsSpecRequest(searchSourceBuilder, index, number, field);
         }
         if (TokenGenerateMethod.fromString(tokens).equals(TokenGenerateMethod.ALL_TERMS)) {
             String index = (String) parameters.remove("index");
@@ -66,6 +79,7 @@ public class StringFieldSpecRequestFactory {
             return new StringFieldAllTermsSpecRequest(min_doc_freq, index, number, field);
         }
         if (TokenGenerateMethod.fromString(tokens).equals(TokenGenerateMethod.GIVEN)) {
+            @SuppressWarnings("unchecked")
             ArrayList<String> terms = (ArrayList<String>) parameters.remove("terms");
             if (terms == null) {
                 throw new ElasticsearchException("terms parameter missing from prepare spec request");
@@ -78,7 +92,19 @@ public class StringFieldSpecRequestFactory {
 
     private static void assertParametersEmpty(Map<String, Object> parameters) {
         if (parameters.isEmpty() == false) {
-            throw new IllegalStateException("found additional parameters and don't know what to do with them!" + Arrays.toString(parameters.keySet().toArray(new String[parameters.size()])));
+            throw new IllegalStateException("found additional parameters and don't know what to do with them!" +
+                    Arrays.toString(parameters.keySet().toArray(new String[parameters.size()])));
+        }
+    }
+
+    private static SearchSourceBuilder parseSearchRequest(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
+                                                          Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
+                                                          String searchRequest) {
+        try (XContentParser parser = XContentFactory.xContent(searchRequest).createParser(searchRequest)) {
+            QueryParseContext context = new QueryParseContext(queryRegistry, parser, parseFieldMatcher);
+            return SearchSourceBuilder.fromXContent(context, aggParsers, suggesters);
+        } catch (IOException e) {
+            throw new ElasticsearchException(e);
         }
     }
 }

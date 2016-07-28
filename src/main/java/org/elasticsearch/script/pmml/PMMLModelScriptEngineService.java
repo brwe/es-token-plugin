@@ -72,27 +72,18 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     }
 
     @Override
-    public void scriptRemoved(@Nullable CompiledScript script) {
+    public String getType() {
+        return NAME;
     }
 
     @Override
-    public String[] types() {
-        return new String[]{NAME};
+    public String getExtension() {
+        return NAME;
     }
 
     @Override
-    public String[] extensions() {
-        return new String[]{NAME};
-    }
-
-    @Override
-    public boolean sandboxed() {
-        return false;
-    }
-
-    @Override
-    public Object compile(String script) {
-        return new Factory(script);
+    public Object compile(String scriptName, String scriptSource, Map<String, String> params) {
+        return new Factory(scriptSource);
     }
 
     @Override
@@ -150,21 +141,15 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                     XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(vectorAndModel[0]);
                     parsedSource = parser.mapOrdered();
                 } catch (IOException e) {
-                    throw new ScriptException("pmml prediction failed", e);
+                    throw new IllegalArgumentException("pmml prediction failed", e);
                 }
                 features = new VectorRangesToVectorJSON(parsedSource);
 
                 if (model == null) {
                     try {
                         model = initModelWithoutPreProcessing(vectorAndModel[1]);
-
-
-                    } catch (IOException e) {
-                        throw new ScriptException("pmml prediction failed", e);
-                    } catch (SAXException e) {
-                        throw new ScriptException("pmml prediction failed", e);
-                    } catch (JAXBException e) {
-                        throw new ScriptException("pmml prediction failed", e);
+                    } catch (SAXException | JAXBException | IOException e) {
+                        throw new IllegalArgumentException("pmml prediction failed", e);
                     }
                 }
             } else {
@@ -184,7 +169,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         }
 
-        public static EsModelEvaluator initModelWithoutPreProcessing(final String pmmlString) throws IOException, SAXException, JAXBException {
+        public static EsModelEvaluator initModelWithoutPreProcessing(final String pmmlString) throws IOException, SAXException,
+                JAXBException {
             // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             Model model = pmml.getModels().get(0);
@@ -193,7 +179,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             } else if (model.getModelName().equals("linear SVM")) {
                 return initLinearSVM((RegressionModel) model);
             } else {
-                throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " + model.getModelName());
+                throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " +
+                        model.getModelName());
             }
 
         }
@@ -264,11 +251,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
          * method when the plugin is loaded.
          */
 
-        /**
-         * @throws ScriptException
-         */
-        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup, boolean debug) throws
-                ScriptException {
+        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup, boolean debug) {
 
             this.lookup = lookup;
             this.features = features;
@@ -280,6 +263,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         public void setNextVar(String s, Object o) {
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Object run() {
             Object vector = features.vector(lookup.doc(), lookup.fields(), lookup.indexLookup(), lookup.source());
@@ -308,11 +292,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             if (lookup != null) {
                 lookup.source().setSource(map);
             }
-        }
-
-        @Override
-        public float runAsFloat() {
-            throw new UnsupportedOperationException("model script not supported in this context!");
         }
 
         @Override

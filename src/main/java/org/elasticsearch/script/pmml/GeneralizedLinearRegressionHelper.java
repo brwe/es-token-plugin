@@ -78,7 +78,8 @@ public class GeneralizedLinearRegressionHelper {
         return featureEntries;
     }
 
-    static PMMLVectorRange getFeatureEntryFromGeneralRegressionModel(PMML model, int modelIndex, String fieldName, List<PPCell> cells, int indexCounter) {
+    static PMMLVectorRange getFeatureEntryFromGeneralRegressionModel(PMML model, int modelIndex, String fieldName, List<PPCell> cells,
+                                                                     int indexCounter) {
         if (model.getModels().get(modelIndex) instanceof GeneralRegressionModel == false) {
             throw new UnsupportedOperationException("Can only do GeneralRegressionModel so far");
         }
@@ -183,7 +184,8 @@ public class GeneralizedLinearRegressionHelper {
             addIntercept(grModel, vectorRangeList, fieldToPPCellMap, orderedParameterList);
 
             assert orderedParameterList.size() == grModel.getParameterList().getParameters().size();
-            VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = createGeneralizedRegressionModelVectorEntries(vectorRangeList, orderedParameterList
+            VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries =
+                    createGeneralizedRegressionModelVectorEntries(vectorRangeList, orderedParameterList
                     .toArray(new String[orderedParameterList.size()]));
 
             // now finally create the model!
@@ -290,13 +292,14 @@ public class GeneralizedLinearRegressionHelper {
         return coefficients;
     }
 
-    private static VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(List<VectorRange>
-                                                                                                                                    vectorRangeList, String[] orderedParameterList) {
+    private static VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(
+            List<VectorRange> vectorRangeList, String[] orderedParameterList) {
         int numEntries = 0;
         for (VectorRange entry : vectorRangeList) {
 
             numEntries += entry.size();
         }
-        return new VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression(vectorRangeList, numEntries, orderedParameterList);
+        return new VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression(vectorRangeList, numEntries,
+                orderedParameterList);
     }
 }

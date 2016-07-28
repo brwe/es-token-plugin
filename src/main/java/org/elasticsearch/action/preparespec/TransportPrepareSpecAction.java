@@ -21,19 +21,22 @@ package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.HandledTransportAction;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
+import org.elasticsearch.common.ParseFieldMatcher;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.*;
-import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.common.xcontent.ParseFieldRegistry;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.script.pmml.VectorScriptEngineService;
+import org.elasticsearch.search.aggregations.AggregatorParsers;
+import org.elasticsearch.search.suggest.Suggesters;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 
@@ -47,38 +50,53 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSpecRequest, PrepareSpecResponse> {
 
     private Client client;
+    private final IndicesQueriesRegistry queryRegistry;
+    private final AggregatorParsers aggParsers;
+    private final Suggesters suggesters;
+    private final ParseFieldMatcher parseFieldMatcher;
+
 
     @Inject
     public TransportPrepareSpecAction(Settings settings, ThreadPool threadPool, TransportService transportService,
-                                      ActionFilters actionFilters,
+                                      ActionFilters actionFilters, IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
+                                      Suggesters suggesters,
                                       IndexNameExpressionResolver indexNameExpressionResolver, Client client) {
-        super(settings, PrepareSpecAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver, PrepareSpecRequest.class);
+        super(settings, PrepareSpecAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
+                PrepareSpecRequest::new);
         this.client = client;
+        this.queryRegistry = queryRegistry;
+        this.aggParsers = aggParsers;
+        this.suggesters = suggesters;
+        this.parseFieldMatcher = new ParseFieldMatcher(settings);
     }
 
     @Override
     protected void doExecute(final PrepareSpecRequest request, final ActionListener<PrepareSpecResponse> listener) {
         Tuple<Boolean, List<FieldSpecRequest>> fieldSpecRequests = null;
         try {
-            fieldSpecRequests = parseFieldSpecRequests(request.source());
+            fieldSpecRequests = parseFieldSpecRequests(queryRegistry, aggParsers, suggesters, parseFieldMatcher, request.source());
         } catch (IOException e) {
             listener.onFailure(e);
         }
 
-        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener, client, fieldSpecRequests.v1(), request.id());
+        final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener,
+                client, fieldSpecRequests.v1(), request.id());
         for (final FieldSpecRequest fieldSpecRequest : fieldSpecRequests.v2()) {
             fieldSpecRequest.process(fieldSpecActionListener, client);
         }
     }
 
-    static Tuple<Boolean, List<FieldSpecRequest>> parseFieldSpecRequests(String source) throws IOException {
+    static Tuple<Boolean, List<FieldSpecRequest>> parseFieldSpecRequests(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
+                                                                         Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
+                                                                         String source) throws IOException {
         List<FieldSpecRequest> fieldSpecRequests = new ArrayList<>();
         Map<String, Object> parsedSource = SharedMethods.getSourceAsMap(source);
         if (parsedSource.get("features") == null) {
             throw new ElasticsearchException("reatures are missing in prepare spec request");
         }
         boolean sparse = getSparse(parsedSource.get("sparse"));
-        ArrayList<Map<String, Object>> actualFeatures = (ArrayList<Map<String, Object>>) parsedSource.get("features");
+        @SuppressWarnings("unchecked") ArrayList<Map<String, Object>> actualFeatures =
+                (ArrayList<Map<String, Object>>) parsedSource.get("features");
         for (Map<String, Object> field : actualFeatures) {
 
             String type = (String) field.remove("type");
@@ -86,7 +104,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                 throw new ElasticsearchException("type parameter is missing in prepare spec request");
             }
             if (type.equals("string")) {
-                fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest(field));
+                fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest(queryRegistry, aggParsers, suggesters,
+                        parseFieldMatcher, field));
             } else {
                 throw new UnsupportedOperationException("I am working as quick as I can! But I have not done it for " + type + " yet.");
             }
@@ -122,7 +141,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         private int currentResponses;
         final List<FieldSpec> fieldSpecs = new ArrayList<>();
 
-        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse, String id) {
+        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse,
+                                       String id) {
             this.numResponses = numResponses;
             this.listener = listener;
             this.client = client;
@@ -140,22 +160,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
                     for (FieldSpec fS : fieldSpecs) {
                         length += fS.getLength();
                     }
-                    final int finalLength = length;
-                    IndexRequestBuilder indexRequestBuilder = client.prepareIndex(ScriptService.SCRIPT_INDEX, VectorScriptEngineService.NAME).setSource(createSpecSource(fieldSpecs, sparse, length));
-                    if (id != null) {
-                        indexRequestBuilder.setId(id);
-                    }
-                    indexRequestBuilder.execute(new ActionListener<IndexResponse>() {
-                        @Override
-                        public void onResponse(IndexResponse indexResponse) {
-                            listener.onResponse(new PrepareSpecResponse(indexResponse.getIndex(), indexResponse.getType(), indexResponse.getId(), finalLength));
-                        }
-
-                        @Override
-                        public void onFailure(Throwable throwable) {
-                            listener.onFailure(throwable);
-                        }
-                    });
+                    listener.onResponse(new PrepareSpecResponse(createSpecSource(fieldSpecs, sparse, length).bytes(), length));
                 } catch (IOException e) {
                     listener.onFailure(e);
                 }
@@ -174,11 +179,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             sourceBuilder.endArray();
             sourceBuilder.field("length", Integer.toString(length));
             sourceBuilder.endObject();
-            XContentBuilder actualSource = jsonBuilder();
-            actualSource.startObject()
-                    .field("script", sourceBuilder.string())
-                    .endObject();
-            return actualSource;
+            return sourceBuilder;
         }
 
         @Override

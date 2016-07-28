@@ -46,12 +46,12 @@ public abstract class PMMLVectorRange extends VectorRange {
     protected PreProcessingStep[] preProcessingSteps;
 
 
-    protected List<Object> applyPreProcessing(Map<String, List> fieldValues) {
+    protected List<Object> applyPreProcessing(Map<String, List<Object>> fieldValues) {
         List<Object> processedValues = new ArrayList<>();
-        List valueList = new ArrayList();
+        List<Object> valueList = new ArrayList<>();
 
         if (fieldValues.get(field) == null) {
-            valueList = new ArrayList();
+            valueList = new ArrayList<>();
             valueList.add(null);
         } else if (fieldValues.get(field).size() == 0) {
             valueList.add(null);
@@ -105,7 +105,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
             List<Object> processedCategory = applyPreProcessing(fieldValues);
 
@@ -164,7 +164,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             Tuple<int[], double[]> indicesAndValues;
             List<Object> finalValues = applyPreProcessing(fieldValues);
             if (finalValues.size() > 0) {
@@ -257,7 +257,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             return new EsSparseNumericVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
         }
     }
@@ -286,7 +286,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(Map<String, List> fieldValues) {
+        public EsVector getVector(Map<String, List<Object>> fieldValues) {
             List<Object> finalValue = applyPreProcessing(fieldValues);
             Set<Object> valueSet = new HashSet<>();
             valueSet.addAll(finalValue);

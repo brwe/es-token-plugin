@@ -39,21 +39,23 @@ public class VectorRangesToVectorPMML extends VectorRangesToVector {
         this.numEntries = numEntries;
     }
 
-    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup, SourceLookup sourceLookup) {
+    @SuppressWarnings("unchecked")
+    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup,
+                         SourceLookup sourceLookup) {
 
-        HashMap<String, List> fieldValues = new HashMap<>();
+        HashMap<String, List<Object>> fieldValues = new HashMap<>();
         for (VectorRange vectorRange : this.vectorRangeList) {
             // TODO: vector range can depend on several fields
             String field = vectorRange.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
-                fieldValues.put(field, ((ScriptDocValues) docLookup.get(field)).getValues());
+                fieldValues.put(field, ((ScriptDocValues<Object>) docLookup.get(field)).getValues());
             }
         }
         return vector(fieldValues);
     }
 
-    public Object vector(Map<String, List> fieldValues) {
+    public Object vector(Map<String, List<Object>> fieldValues) {
         int length = 0;
         List<EsSparseNumericVector> sparseNumericVectors = new ArrayList<>();
         for (VectorRange vectorRange : this.vectorRangeList) {
@@ -100,7 +102,7 @@ public class VectorRangesToVectorPMML extends VectorRangesToVector {
         }
 
         @Override
-        public Object vector(Map<String, List> fieldValues) {
+        public Object vector(Map<String, List<Object>> fieldValues) {
             HashMap<String, Object> values = new HashMap<>();
             for (VectorRange vectorRange : vectorRangeList) {
                 assert vectorRange instanceof PMMLVectorRange.FieldToValue;

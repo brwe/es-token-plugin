@@ -44,7 +44,8 @@ public abstract class EsRegressionModelEvaluator extends EsNumericInputModelEval
         }
         this.coefficients = coefficients;
         this.intercept = regressionTable.getIntercept();
-        this.classes = new String[]{regressionModel.getRegressionTables().get(0).getTargetCategory(), regressionModel.getRegressionTables().get(1).getTargetCategory()};
+        this.classes = new String[]{regressionModel.getRegressionTables().get(0).getTargetCategory(), regressionModel.getRegressionTables()
+                .get(1).getTargetCategory()};
     }
 
     public EsRegressionModelEvaluator(double[] coefficients, double intercept, String[] classes) {

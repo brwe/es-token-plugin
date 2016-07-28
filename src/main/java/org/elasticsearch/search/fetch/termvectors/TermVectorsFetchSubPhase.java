@@ -19,12 +19,12 @@
 
 package org.elasticsearch.search.fetch.termvectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.action.termvectors.TermVectorsResponse;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.index.termvectors.TermVectorsService;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchParseElement;
@@ -35,6 +35,7 @@ import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,12 +64,7 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
 
     @Override
     public Map<String, ? extends SearchParseElement> parseElements() {
-        return ImmutableMap.of(NAMES[0], new TermVectorsFetchParseElement());
-    }
-
-    @Override
-    public boolean hitsExecutionNeeded(SearchContext context) {
-        return false;
+        return Collections.singletonMap(NAMES[0], new TermVectorsFetchParseElement());
     }
 
     @Override
@@ -76,12 +72,10 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
     }
 
     @Override
-    public boolean hitExecutionNeeded(SearchContext context) {
-        return context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded();
-    }
-
-    @Override
     public void hitExecute(SearchContext context, HitContext hitContext) {
+        if (context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded() == false) {
+            return;
+        }
         TermVectorsRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
 
         if (hitContext.hit().fieldsOrNull() == null) {
@@ -94,8 +88,8 @@ public class TermVectorsFetchSubPhase implements FetchSubPhase {
         }
         request.id(hitContext.hit().id());
         request.type(hitContext.hit().type());
-        request.index(context.indexShard().indexService().index().getName());
-        TermVectorsResponse termVector = context.indexShard().termVectorsService().getTermVectors(request, context.indexShard().indexService().index().getName());
+        request.index(context.indexShard().shardId().getIndexName());
+        TermVectorsResponse termVector = TermVectorsService.getTermVectors(context.indexShard(), request);
         XContentBuilder builder;
         try {
             builder = jsonBuilder();

@@ -20,79 +20,70 @@
 package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentBuilderString;
+import org.elasticsearch.common.xcontent.XContentHelper;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 public class PrepareSpecResponse extends ActionResponse implements ToXContent {
 
-    public String getIndex() {
-        return index;
+    private BytesReference spec;
+    private Map<String, Object> specAsMap;
+    private int length;
+
+    public PrepareSpecResponse() {
+
     }
 
-    public String getType() {
-        return type;
+    public PrepareSpecResponse(BytesReference spec, int length) {
+        this.spec = spec;
+        this.length = length;
+    }
+    public BytesReference getSpec() {
+        return spec;
     }
 
-    public String getId() {
-        return id;
+    public Map<String, Object> getSpecAsMap() {
+        if (specAsMap == null) {
+            specAsMap = Collections.unmodifiableMap(XContentHelper.convertToMap(spec, true).v2());
+        }
+        return specAsMap;
     }
 
     public int getLength() {
         return length;
     }
 
-    String index;
-    String type;
-    String id;
-    int length;
-
-    public PrepareSpecResponse() {
-
-    }
-
-    public PrepareSpecResponse(String index, String type, String id, int length) {
-        this.index = index;
-        this.type = type;
-        this.id = id;
-        this.length = length;
-    }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.field(Fields.INDEX, index);
-        builder.field(Fields.TYPE, type);
-        builder.field(Fields.ID, id);
+        builder.rawField(Fields.SPEC, spec);
         builder.field(Fields.LENGTH, length);
         return builder;
     }
 
     static final class Fields {
-        static final XContentBuilderString INDEX = new XContentBuilderString("index");
-        static final XContentBuilderString TYPE = new XContentBuilderString("type");
-        static final XContentBuilderString ID = new XContentBuilderString("id");
-        static final XContentBuilderString LENGTH = new XContentBuilderString("length");
+        static final String SPEC = "spec";
+        static final String LENGTH = "length";
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        index = in.readString();
-        type = in.readString();
-        id = in.readString();
+        spec = in.readBytesReference();
         length = in.readInt();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(index);
-        out.writeString(type);
-        out.writeString(id);
+        out.writeBytesReference(spec);
         out.writeInt(length);
     }
 }

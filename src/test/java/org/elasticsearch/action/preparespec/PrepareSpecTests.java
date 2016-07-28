@@ -20,38 +20,73 @@
 package org.elasticsearch.action.preparespec;
 
 import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.ParseFieldMatcher;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.ParseFieldRegistry;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.indices.query.IndicesQueriesRegistry;
+import org.elasticsearch.plugin.TokenPlugin;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.Aggregator;
+import org.elasticsearch.search.aggregations.AggregatorParsers;
+import org.elasticsearch.search.aggregations.bucket.significant.SignificantTermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.significant.SignificantTermsParser;
+import org.elasticsearch.search.aggregations.bucket.significant.heuristics.SignificanceHeuristicParser;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsParser;
+import org.elasticsearch.search.suggest.Suggesters;
+import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.ESTestCase;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.hamcrest.Matchers.equalTo;
 
 public class PrepareSpecTests extends ESTestCase {
+    private IndicesQueriesRegistry queryRegistry = new IndicesQueriesRegistry();
+
+    private ParseFieldRegistry<Aggregator.Parser> aggregationParserRegistry = new ParseFieldRegistry<>("aggregation");
+    private AggregatorParsers aggParsers = new AggregatorParsers(aggregationParserRegistry,
+            new ParseFieldRegistry<>("pipline_aggregation"));
+    private Suggesters suggesters = new Suggesters(new NamedWriteableRegistry());
+    private ParseFieldMatcher parseFieldMatcher = new ParseFieldMatcher(Settings.EMPTY);
+    private ParseFieldRegistry<SignificanceHeuristicParser> significanceHeuristicParserRegistry = new ParseFieldRegistry<>(
+            "significance_heuristic");
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        aggregationParserRegistry.register(new TermsParser(), TermsAggregationBuilder.AGGREGATION_NAME_FIELD);
+        aggregationParserRegistry.register(new SignificantTermsParser(significanceHeuristicParserRegistry, queryRegistry),
+                SignificantTermsAggregationBuilder.AGGREGATION_NAME_FIELD);
+    }
 
     public void testParseFieldSpecRequestsWithSignificantTemrs() throws IOException {
-        MappingMetaData mappingMetaData = getMappingMetaData();
         XContentBuilder source = getTextFieldRequestSourceWithSignificnatTerms();
-        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
+                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     public void testParseFieldSpecRequestsWithAllTerms() throws IOException {
-        MappingMetaData mappingMetaData = getMappingMetaData();
         XContentBuilder source = getTextFieldRequestSourceWithAllTerms();
-        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
+                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     public void testParseFieldSpecRequestsWithGivenTerms() throws IOException {
-        MappingMetaData mappingMetaData = getMappingMetaData();
         XContentBuilder source = getTextFieldRequestSourceWithGivenTerms();
-        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(source.string());
+        Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
+                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 

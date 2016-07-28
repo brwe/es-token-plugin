@@ -27,45 +27,52 @@ import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesAction;
 import org.elasticsearch.action.trainnaivebayes.TransportTrainNaiveBayesAction;
-import org.elasticsearch.index.mapper.token.AnalyzedTextFieldMapper;
-import org.elasticsearch.indices.IndicesModule;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.network.NetworkModule;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.rest.RestModule;
+import org.elasticsearch.plugins.ScriptPlugin;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.rest.action.preparespec.RestPrepareSpecAction;
 import org.elasticsearch.rest.action.storemodel.RestStoreModelAction;
 import org.elasticsearch.rest.action.trainnaivebayes.RestTrainNaiveBayesAction;
-import org.elasticsearch.script.NaiveBayesUpdateScript;
-import org.elasticsearch.script.ScriptModule;
+import org.elasticsearch.script.NativeScriptFactory;
+import org.elasticsearch.script.ScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
-import org.elasticsearch.script.pmml.VectorScriptEngineService;
+import org.elasticsearch.script.pmml.VectorScriptFactory;
 import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchSubPhase;
 import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  *
  */
-public class TokenPlugin extends Plugin {
+public class TokenPlugin extends Plugin implements ScriptPlugin {
 
-    @Override
-    public String name() {
-        return "token-plugin";
+    private final Settings settings;
+    private final boolean transportClientMode;
+
+
+    public TokenPlugin(Settings settings) {
+        this.settings = settings;
+        this.transportClientMode = TransportClient.CLIENT_TYPE.equals(settings.get(Client.CLIENT_TYPE_SETTING_S.getKey()));;
     }
 
     @Override
-    public String description() {
-        return "Tools for https://github.com/costin/poc";
+    public ScriptEngineService getScriptEngineService(Settings settings) {
+        return new PMMLModelScriptEngineService(settings);
     }
 
-
-    public void onModule(ScriptModule module) {
-        // Register each script that we defined in this plugin
-        module.registerScript(NaiveBayesUpdateScript.SCRIPT_NAME, NaiveBayesUpdateScript.Factory.class);
-        module.addScriptEngine(VectorScriptEngineService.class);
-        module.addScriptEngine(PMMLModelScriptEngineService.class);
+    @Override
+    public List<NativeScriptFactory> getNativeScripts() {
+        return Collections.singletonList(new VectorScriptFactory());
     }
 
+    //TODO: switch to ActionScript after 5.0.0-beta4
     public void onModule(ActionModule module) {
         module.registerAction(AllTermsAction.INSTANCE, TransportAllTermsAction.class,
                 TransportAllTermsShardAction.class);
@@ -73,19 +80,18 @@ public class TokenPlugin extends Plugin {
         module.registerAction(TrainNaiveBayesAction.INSTANCE, TransportTrainNaiveBayesAction.class);
     }
 
-    public void onModule(RestModule module) {
-        module.addRestAction(RestAllTermsAction.class);
-        module.addRestAction(RestPrepareSpecAction.class);
-        module.addRestAction(RestStoreModelAction.class);
-        module.addRestAction(RestTrainNaiveBayesAction.class);
-    }
-
-    public void onModule(IndicesModule indicesModule) {
-        indicesModule.registerMapper(AnalyzedTextFieldMapper.CONTENT_TYPE, new AnalyzedTextFieldMapper.TypeParser());
+    //TODO: switch to ActionScript after 5.0.0-beta4
+    public void onModule(NetworkModule module) {
+        if (!transportClientMode) {
+            module.registerRestHandler(RestAllTermsAction.class);
+            module.registerRestHandler(RestPrepareSpecAction.class);
+            module.registerRestHandler(RestStoreModelAction.class);
+            module.registerRestHandler(RestTrainNaiveBayesAction.class);
+        }
     }
 
     public void onModule(SearchModule searchModule) {
-        searchModule.registerFetchSubPhase(TermVectorsFetchSubPhase.class);
-        searchModule.registerFetchSubPhase(AnalyzedTextFetchSubPhase.class);
+        searchModule.registerFetchSubPhase(new TermVectorsFetchSubPhase());
+        searchModule.registerFetchSubPhase(new AnalyzedTextFetchSubPhase());
     }
 }

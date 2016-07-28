@@ -21,6 +21,7 @@ package org.elasticsearch.script;
 
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
@@ -50,7 +51,6 @@ import static org.hamcrest.Matchers.instanceOf;
 @ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
 public class FullPMMLIT extends ESIntegTestCase {
 
-
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
         return pluginList(TokenPlugin.class);
     }
@@ -60,7 +60,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         return pluginList(TokenPlugin.class);
     }
 
-    @Test
+
     public void testAdult() throws IOException, ExecutionException, InterruptedException {
 
         indexAdultData("/org/elasticsearch/script/adult.data", this);
@@ -69,7 +69,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         checkClassificationCorrect("/org/elasticsearch/script/knime_glm_adult_result.csv");
     }
 
-    @Test
+
     public void testSingleAdult() throws IOException, ExecutionException, InterruptedException {
 
         indexAdultData("/org/elasticsearch/script/singlevalueforintegtest.txt", this);
@@ -78,7 +78,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         checkClassificationCorrect("/org/elasticsearch/script/singleresultforintegtest.txt");
     }
 
-    @Test
+
     public void testSingleAdultNotDebug() throws IOException, ExecutionException, InterruptedException {
 
         indexAdultData("/org/elasticsearch/script/singlevalueforintegtest.txt", this);
@@ -87,7 +87,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("debug", false);
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
-                .INDEXED, PMMLModelScriptEngineService.NAME, params)).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, params)).addField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), instanceOf(String.class));
         assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), equalTo(">50K"));
@@ -101,9 +101,10 @@ public class FullPMMLIT extends ESIntegTestCase {
             expectedResults.put(Integer.toString(i), resultLines[i]);
         }
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
-                .INDEXED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
+            @SuppressWarnings("unchecked")
             String label = (String) ((Map<String, Object>) (hit.field("pmml").values().get(0))).get("class");
             String[] expectedResult = expectedResults.get(hit.id()).split(",");
             assertThat(label, equalTo(expectedResult[2].substring(1, expectedResult[2].length() - 1)));
@@ -114,10 +115,10 @@ public class FullPMMLIT extends ESIntegTestCase {
 
         final String pmmlString = copyToStringFromClasspath(modelFile);
         // create spec
-        client().prepareIndex(ScriptService.SCRIPT_INDEX, "pmml_model", "1").setSource(
+        client().admin().cluster().preparePutStoredScript().setScriptLang("pmml_model").setId("1").setSource(
                 jsonBuilder().startObject()
                         .field("script", pmmlString)
-                        .endObject()
+                        .endObject().bytes()
         ).get();
     }
 
@@ -131,38 +132,31 @@ public class FullPMMLIT extends ESIntegTestCase {
                 .field("type", "double")
                 .endObject()
                 .startObject("workclass")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("fnlwgt")
                 .field("type", "double")
                 .endObject()
                 .startObject("education")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("education_num")
                 .field("type", "double")
                 .endObject()
                 .startObject("marital_status")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("occupation")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("relationship")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("race")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("sex")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("capital_gain")
                 .field("type", "double")
@@ -174,12 +168,10 @@ public class FullPMMLIT extends ESIntegTestCase {
                 .field("type", "double")
                 .endObject()
                 .startObject("native_country")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
                 .startObject("class")
-                .field("type", "string")
-                .field("analyzer", "keyword")
+                .field("type", "keyword")
                 .endObject()
 
                 .endObject()

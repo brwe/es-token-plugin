@@ -24,7 +24,6 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentBuilderString;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -131,7 +130,7 @@ public class AllTermsResponse extends ActionResponse implements ToXContent {
     }
 
     static final class Fields {
-        static final XContentBuilderString TERMS = new XContentBuilderString("terms");
+        static final String TERMS = "terms";
     }
 
     @Override

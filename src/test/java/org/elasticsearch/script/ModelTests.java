@@ -19,42 +19,23 @@
 
 package org.elasticsearch.script;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.spark.mllib.classification.LogisticRegressionModel;
-import org.apache.spark.mllib.classification.NaiveBayesModel;
-import org.apache.spark.mllib.classification.SVMModel;
-import org.apache.spark.mllib.linalg.DenseVector;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
-import org.elasticsearch.script.models.EsLinearSVMModel;
-import org.elasticsearch.script.models.EsLogisticRegressionModel;
-import org.elasticsearch.script.models.EsModelEvaluator;
-import org.elasticsearch.script.models.EsNaiveBayesModel;
-import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.test.ESTestCase;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
-import org.junit.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBException;
 import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -63,119 +44,7 @@ import static org.hamcrest.Matchers.instanceOf;
  */
 public class ModelTests extends ESTestCase {
 
-
-    @Test
-    // only just checks that nothing crashes
-    // compares to mllib and fails every now and then because we do not consider the margin
-    public void testMLLibVsEsSVM() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i < 100; i++) {
-
-            double[] modelParams = {randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
-            SVMModel svmm = new SVMModel(new DenseVector(modelParams), 0.1);
-            String pmmlString = PMMLGenerator.generateSVMPMMLModel(0.1, modelParams, new double[]{1, 0});
-            EsModelEvaluator esLinearSVMModel = PMMLModelScriptEngineService.Factory.initModelWithoutPreProcessing(pmmlString);
-            assertThat(esLinearSVMModel, instanceOf(EsLinearSVMModel.class));
-            int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
-            Map<String, Object> vector = new HashMap<>();
-            vector.put("indices", new int[]{0, 1, 2});
-            vector.put("values", new double[]{vals[0], vals[1], vals[2]});
-            Map<String, Object> result = esLinearSVMModel.evaluateDebug(vector);
-            double mllibResult = svmm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2]}));
-            assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
-            EsModelEvaluator esSVMModel = new EsLinearSVMModel(modelParams, 0.1, new String[]{"1", "0"});
-            result = esSVMModel.evaluateDebug(vector);
-            assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
-        }
-    }
-
-    @Test
-    // only just checks that nothing crashes
-    public void testMLLibVsEsLLR() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i < 10; i++) {
-
-            double[] modelParams = new double[]{randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100), randomFloat() * randomIntBetween(-100, +100)};
-            LogisticRegressionModel lrm = new LogisticRegressionModel(new DenseVector(modelParams), 0.1);
-            String pmmlString = PMMLGenerator.generateLRPMMLModel(0.1, modelParams, new double[]{1, 0});
-            EsModelEvaluator esLogisticRegressionModel = PMMLModelScriptEngineService.Factory.initModelWithoutPreProcessing(pmmlString);
-            assertThat(esLogisticRegressionModel, instanceOf(EsLogisticRegressionModel.class));
-            int[] vals = new int[]{1, 1, 1, 0};//{randomIntBetween(0, +100), randomIntBetween(0, +100), randomIntBetween(0, +100), 0};
-            double mllibResult = lrm.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            Map<String, Object> vector = new HashMap<>();
-            vector.put("indices", new int[]{0, 1, 2});
-            vector.put("values", new double[]{vals[0], vals[1], vals[2]});
-            Map<String, Object> result = esLogisticRegressionModel.evaluateDebug(vector);
-            assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
-
-            EsModelEvaluator esLLRModel = new EsLogisticRegressionModel(modelParams, 0.1, new String[]{"1", "0"});
-            result = esLLRModel.evaluateDebug(vector);
-            assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
-
-        }
-    }
-
-    @Test
-    // only just checks that nothing crashes
-    public void testMLLibVsEsNB() throws IOException, JAXBException, SAXException {
-        for (int i = 0; i < 1000; i++) {
-
-            double[][] thetas = new double[][]{{randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)},
-                    {randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)}};
-            double[] pis = new double[]{randomFloat() * randomIntBetween(-100, -1), randomFloat() * randomIntBetween(-100, -1)};
-            String[] labels = {"0", "1"};
-            double[] labelsAsDoubles = {0.0d, 1.0d};
-            NaiveBayesModel nb = new NaiveBayesModel(labelsAsDoubles, pis, thetas);
-            EsModelEvaluator esNaiveBayesModel = new EsNaiveBayesModel(thetas, pis, labels);
-            int[] vals = {randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10), randomIntBetween(0, +10)};
-            double mllibResult = nb.predict(new DenseVector(new double[]{vals[0], vals[1], vals[2], vals[3]}));
-            Map<String, Object> vector = new HashMap<>();
-            vector.put("indices", new int[]{0, 1, 2, 3});
-            vector.put("values", new double[]{vals[0], vals[1], vals[2], vals[3]});
-            Map<String, Object> result = esNaiveBayesModel.evaluateDebug(vector);
-            assertThat(mllibResult, equalTo(Double.parseDouble((String) result.get("class"))));
-        }
-    }
-
-
-    @Test
-    @AwaitsFix(bugUrl = "needs to be replaced or removed")
-    public void testTextIndex() throws IOException, JAXBException, SAXException {
-        try (InputStream is = new ByteArrayInputStream(FileUtils.readFileToByteArray(FileUtils.getFile("/Users/britta/Downloads/test.xml")))) {
-            URL schemaFile = new URL("http://dmg.org/pmml/v4-2-1/pmml-4-2.xsd");
-            Source xmlFile = new StreamSource(is);
-            SchemaFactory schemaFactory = SchemaFactory
-                    .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            Schema schema = schemaFactory.newSchema(schemaFile);
-            Validator validator = schema.newValidator();
-            try {
-                validator.validate(xmlFile);
-                System.out.println(xmlFile.getSystemId() + " is valid");
-            } catch (SAXException e) {
-                System.out.println(xmlFile.getSystemId() + " is NOT valid");
-                System.out.println("Reason: " + e.getMessage());
-            }
-        }
-    }
-
-    @Test
-    @AwaitsFix(bugUrl = "needs to be replaced or removed")
-    public void checkMLlibPMMLOutputValid() throws IOException, JAXBException, SAXException {
-        try (InputStream is = new ByteArrayInputStream(FileUtils.readFileToByteArray(FileUtils.getFile("/Users/britta/tmp/test.xml")))) {
-            URL schemaFile = new URL("http://dmg.org/pmml/v4-2-1/pmml-4-2.xsd");
-            Source xmlFile = new StreamSource(is);
-            SchemaFactory schemaFactory = SchemaFactory
-                    .newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-            Schema schema = schemaFactory.newSchema(schemaFile);
-            Validator validator = schema.newValidator();
-            try {
-                validator.validate(xmlFile);
-                System.out.println(xmlFile.getSystemId() + " is valid");
-            } catch (SAXException e) {
-                System.out.println(xmlFile.getSystemId() + " is NOT valid");
-                System.out.println("Reason: " + e.getMessage());
-            }
-        }
-    }
-
+//    @AwaitsFix(bugUrl = "security manager issues")
     public void testGenerateLRPMML() throws JAXBException, IOException, SAXException {
 
         double[] weights = new double[]{randomDouble(), randomDouble(), randomDouble(), randomDouble()};
@@ -224,6 +93,7 @@ public class ModelTests extends ESTestCase {
     }
 
 
+    @AwaitsFix(bugUrl = "security manager issues")
     public void testGenerateSVMPMML() throws JAXBException, IOException, SAXException {
 
         double[] weights = new double[]{randomDouble(), randomDouble(), randomDouble(), randomDouble()};
@@ -292,7 +162,8 @@ public class ModelTests extends ESTestCase {
                 assertThat(model2.getModels().get(i), instanceOf(RegressionModel.class));
                 compareModels((RegressionModel) model, (RegressionModel) model2.getModels().get(i));
             } else {
-                throw new UnsupportedOperationException("model " + model.getAlgorithmName() + " is not supported and therfore not tested yet");
+                throw new UnsupportedOperationException("model " + model.getAlgorithmName() +
+                        " is not supported and therfore not tested yet");
             }
             i++;
         }
