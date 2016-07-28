@@ -79,7 +79,7 @@ public class StringFieldSignificantTermsSpecRequest implements FieldSpecRequest 
             }
 
             @Override
-            public void onFailure(Throwable throwable) {
+            public void onFailure(Exception throwable) {
                 fieldSpecActionListener.onFailure(throwable);
             }
         });

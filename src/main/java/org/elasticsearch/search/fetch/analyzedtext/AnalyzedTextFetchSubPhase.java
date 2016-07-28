@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.indices.analyze.AnalyzeRequest;
 import org.elasticsearch.index.analysis.CharFilterFactory;
 import org.elasticsearch.index.analysis.CustomAnalyzer;
 import org.elasticsearch.index.analysis.TokenFilterFactory;
@@ -77,7 +76,7 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
         if (context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded() == false) {
             return;
         }
-        AnalyzeRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
+        AnalyzedTextRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
         Analyzer analyzer = null;
         boolean closeAnalyzer = false;
         String text = (String) context.lookup().source().extractValue(request.field());

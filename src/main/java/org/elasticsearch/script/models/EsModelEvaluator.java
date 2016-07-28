@@ -24,8 +24,8 @@ import java.util.Map;
 
 public abstract class EsModelEvaluator {
 
-    abstract public Map<String, Object> evaluateDebug(Map<String, Object> vector);
-    abstract public Object evaluate(Map<String, Object> vector);
+    public abstract Map<String, Object> evaluateDebug(Map<String, Object> vector);
+    public abstract Object evaluate(Map<String, Object> vector);
 }
 
 

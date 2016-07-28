@@ -20,22 +20,20 @@
 package org.elasticsearch.search.fetch.analyzedtext;
 
 
-import org.elasticsearch.action.admin.indices.analyze.AnalyzeRequest;
-import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.search.fetch.FetchSubPhaseContext;
 
 public class AnalyzedTextFetchContext extends FetchSubPhaseContext {
 
-    private AnalyzeRequest request;
+    private AnalyzedTextRequest request;
 
     public AnalyzedTextFetchContext() {
     }
 
-    public AnalyzeRequest getRequest() {
+    public AnalyzedTextRequest getRequest() {
         return request;
     }
 
-    public void setRequest(AnalyzeRequest request) {
+    public void setRequest(AnalyzedTextRequest request) {
         this.request = request;
     }
 }

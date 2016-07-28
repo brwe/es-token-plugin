@@ -22,7 +22,7 @@ package org.elasticsearch.rest.action.allterms;
 import org.elasticsearch.action.allterms.AllTermsAction;
 import org.elasticsearch.action.allterms.AllTermsRequest;
 import org.elasticsearch.action.allterms.AllTermsResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -43,13 +43,13 @@ import static org.elasticsearch.rest.RestStatus.OK;
 public class RestAllTermsAction extends BaseRestHandler {
 
     @Inject
-    public RestAllTermsAction(Settings settings, RestController controller, Client client) {
-        super(settings, client);
+    public RestAllTermsAction(Settings settings, RestController controller) {
+        super(settings);
         controller.registerHandler(GET, "/{index}/_allterms/{field}", this);
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
+    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
         final AllTermsRequest allTermsRequest = new AllTermsRequest();
         allTermsRequest.index(request.param("index"));
         allTermsRequest.field(request.param("field"));

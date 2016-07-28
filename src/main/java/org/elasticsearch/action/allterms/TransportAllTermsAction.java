@@ -76,7 +76,7 @@ public class TransportAllTermsAction extends HandledTransportAction<AllTermsRequ
                 }
 
                 @Override
-                public void onFailure(Throwable e) {
+                public void onFailure(Exception e) {
                     if (shardCounter.decrementAndGet() == 0) {
                         finish();
                     }

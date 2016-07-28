@@ -73,7 +73,7 @@ public class SharedMethods {
         return new Tuple<>(indicesArray, valuesArray);
     }
 
-    static public Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String>
+    public static Tuple<int[], double[]> getIndicesAndValuesFromFielddataFields(Map<String, Integer> wordMap, ScriptDocValues<String>
             docValues) {
         Tuple<int[], double[]> indicesAndValues;
         List<Integer> indices = new ArrayList<>();

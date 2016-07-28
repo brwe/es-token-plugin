@@ -159,7 +159,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             }
         }
 
-        static private FieldsToVectorAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
+        private static FieldsToVectorAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
 
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {

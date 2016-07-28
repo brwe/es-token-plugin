@@ -91,7 +91,7 @@ public class ProcessPMMLHelper {
         return lastFieldName;
     }
 
-    static private String getReferencedFieldName(DerivedField derivedField) {
+    private static String getReferencedFieldName(DerivedField derivedField) {
         String referencedField = null;
         if (derivedField.getExpression() != null) {
             if (derivedField.getExpression() instanceof Apply) {

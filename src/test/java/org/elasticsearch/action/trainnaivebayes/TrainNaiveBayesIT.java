@@ -78,7 +78,7 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         TrainNaiveBayesResponse response = builder.get();
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(response.getId(), ScriptService
                 .ScriptType
-                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             @SuppressWarnings("unchecked") String label = (String) ((Map<String, Object>) (hit.field("pmml").values().get(0))).get("class");
@@ -114,14 +114,14 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         SearchResponse searchResponseEsModel = client().prepareSearch("test").addScriptField("pmml", new Script(response.getId(),
                 ScriptService
                         .ScriptType
-                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
+                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000)
                 .addSort
                 ("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseEsModel);
         SearchResponse searchResponseRModel = client().prepareSearch("test").addScriptField("pmml", new Script("1",
                 ScriptService
                         .ScriptType
-                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000)
+                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000)
                 .addSort
                 ("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseRModel);

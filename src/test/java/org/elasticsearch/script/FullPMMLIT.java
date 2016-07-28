@@ -87,7 +87,7 @@ public class FullPMMLIT extends ESIntegTestCase {
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("debug", false);
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
-                .STORED, PMMLModelScriptEngineService.NAME, params)).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, params)).addStoredField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), instanceOf(String.class));
         assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), equalTo(">50K"));
@@ -101,7 +101,7 @@ public class FullPMMLIT extends ESIntegTestCase {
             expectedResults.put(Integer.toString(i), resultLines[i]);
         }
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
-                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             @SuppressWarnings("unchecked")

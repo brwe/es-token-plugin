@@ -132,7 +132,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                 .field("fields", new String[]{"text"})
                 .endObject()
                 .endObject())
-                .field("text");
+                .storedField("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
@@ -189,7 +189,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                 .endObject()
                 .endObject())
                 .scriptField("vectors", new Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params))
-                .field("text");
+                .storedField("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());

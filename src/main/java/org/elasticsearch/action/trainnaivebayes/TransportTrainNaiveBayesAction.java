@@ -175,7 +175,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
     public static class NaiveBayesTrainingActionListener implements ActionListener<SearchResponse> {
 
         private ActionListener<TrainNaiveBayesResponse> listener;
-        final private Client client;
+        private final Client client;
         private String id;
 
         public NaiveBayesTrainingActionListener(ActionListener<TrainNaiveBayesResponse> listener, Client client, String id) {
@@ -291,7 +291,7 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
                         }
 
                         @Override
-                        public void onFailure(Throwable e) {
+                        public void onFailure(Exception e) {
                             listener.onFailure(e);
                         }
                     });
@@ -399,9 +399,8 @@ public class TransportTrainNaiveBayesAction extends HandledTransportAction<Train
         }
 
         @Override
-        public void onFailure(Throwable throwable) {
-
-            listener.onFailure(throwable);
+        public void onFailure(Exception exception) {
+            listener.onFailure(exception);
         }
     }
 

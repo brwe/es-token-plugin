@@ -24,6 +24,8 @@ import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.PrepareSpecRequest;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.node.NodeClient;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -46,19 +48,19 @@ import static org.elasticsearch.rest.RestStatus.OK;
 public class RestPrepareSpecAction extends BaseRestHandler {
 
     @Inject
-    public RestPrepareSpecAction(Settings settings, RestController controller, Client client) {
-        super(settings, client);
+    public RestPrepareSpecAction(Settings settings, RestController controller) {
+        super(settings);
         controller.registerHandler(POST, "/_prepare_spec", this);
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
+    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
         String id = request.param("id");
         final PrepareSpecRequest prepareSpecRequest = new PrepareSpecRequest();
         if (request.content() == null) {
             throw new ElasticsearchException("prepare spec request must have a body");
         }
-        prepareSpecRequest.source(new String(request.content().toBytes(), Charset.defaultCharset()));
+        prepareSpecRequest.source(new String(BytesReference.toBytes(request.content()), Charset.defaultCharset()));
         if (id != null) {
             prepareSpecRequest.id(id);
         }

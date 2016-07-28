@@ -23,7 +23,9 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptRequestBuilder;
 import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.UUIDs;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -51,13 +53,13 @@ import static org.elasticsearch.rest.RestStatus.OK;
 public class RestStoreModelAction extends BaseRestHandler {
 
     @Inject
-    public RestStoreModelAction(Settings settings, RestController controller, Client client) {
-        super(settings, client);
+    public RestStoreModelAction(Settings settings, RestController controller) {
+        super(settings);
         controller.registerHandler(POST, "/_store_model", this);
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
+    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
         final String id;
         if (request.hasParam("id")) {
             id = request.param("id");
@@ -69,7 +71,7 @@ public class RestStoreModelAction extends BaseRestHandler {
         }
         Map<String, Object> sourceAsMap;
         try {
-            sourceAsMap = SharedMethods.getSourceAsMap(new String(request.content().toBytes(), Charset.defaultCharset()));
+            sourceAsMap = SharedMethods.getSourceAsMap(new String(BytesReference.toBytes(request.content()), Charset.defaultCharset()));
         } catch (IOException e) {
             throw new ElasticsearchException("cannot store model", e);
         }

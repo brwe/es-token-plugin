@@ -49,8 +49,8 @@ public class StringFieldAllTermsSpecRequest implements FieldSpecRequest {
             }
 
             @Override
-            public void onFailure(Throwable throwable) {
-                fieldSpecActionListener.onFailure(throwable);
+            public void onFailure(Exception exception) {
+                fieldSpecActionListener.onFailure(exception);
             }
         });
     }

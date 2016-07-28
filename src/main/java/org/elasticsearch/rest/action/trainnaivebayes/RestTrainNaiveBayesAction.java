@@ -22,6 +22,8 @@ package org.elasticsearch.rest.action.trainnaivebayes;
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesRequestBuilder;
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.node.NodeClient;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -44,16 +46,16 @@ import static org.elasticsearch.rest.RestStatus.OK;
 public class RestTrainNaiveBayesAction extends BaseRestHandler {
 
     @Inject
-    public RestTrainNaiveBayesAction(Settings settings, RestController controller, Client client) {
-        super(settings, client);
+    public RestTrainNaiveBayesAction(Settings settings, RestController controller) {
+        super(settings);
         controller.registerHandler(POST, "_trainnaivebayes", this);
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final Client client) {
+    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
         TrainNaiveBayesRequestBuilder trainNaiveBayesRequestBuilder = new TrainNaiveBayesRequestBuilder(client);
         trainNaiveBayesRequestBuilder.setId(request.param("id"));
-        trainNaiveBayesRequestBuilder.source(new String(request.content().toBytes(), Charset.defaultCharset()));
+        trainNaiveBayesRequestBuilder.source(new String(BytesReference.toBytes(request.content()), Charset.defaultCharset()));
 
         trainNaiveBayesRequestBuilder.execute(new RestBuilderListener<TrainNaiveBayesResponse>(channel) {
             @Override

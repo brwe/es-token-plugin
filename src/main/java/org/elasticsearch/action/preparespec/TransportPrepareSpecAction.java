@@ -80,7 +80,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         }
 
         final FieldSpecActionListener fieldSpecActionListener = new FieldSpecActionListener(fieldSpecRequests.v2().size(), listener,
-                client, fieldSpecRequests.v1(), request.id());
+                fieldSpecRequests.v1());
         for (final FieldSpecRequest fieldSpecRequest : fieldSpecRequests.v2()) {
             fieldSpecRequest.process(fieldSpecActionListener, client);
         }
@@ -133,21 +133,16 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
 
     public static class FieldSpecActionListener implements ActionListener<FieldSpec> {
 
-        final private int numResponses;
+        private final int numResponses;
         private ActionListener<PrepareSpecResponse> listener;
-        final private Client client;
-        final private boolean sparse;
-        private String id;
+        private final boolean sparse;
         private int currentResponses;
         final List<FieldSpec> fieldSpecs = new ArrayList<>();
 
-        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, Client client, boolean sparse,
-                                       String id) {
+        public FieldSpecActionListener(int numResponses, ActionListener<PrepareSpecResponse> listener, boolean sparse) {
             this.numResponses = numResponses;
             this.listener = listener;
-            this.client = client;
             this.sparse = sparse;
-            this.id = id;
         }
 
         @Override
@@ -183,7 +178,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         }
 
         @Override
-        public void onFailure(Throwable throwable) {
+        public void onFailure(Exception throwable) {
             currentResponses = numResponses;
             listener.onFailure(throwable);
         }

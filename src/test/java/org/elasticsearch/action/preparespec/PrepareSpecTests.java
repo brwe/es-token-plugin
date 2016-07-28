@@ -45,6 +45,7 @@ import org.elasticsearch.test.ESTestCase;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -56,7 +57,7 @@ public class PrepareSpecTests extends ESTestCase {
     private ParseFieldRegistry<Aggregator.Parser> aggregationParserRegistry = new ParseFieldRegistry<>("aggregation");
     private AggregatorParsers aggParsers = new AggregatorParsers(aggregationParserRegistry,
             new ParseFieldRegistry<>("pipline_aggregation"));
-    private Suggesters suggesters = new Suggesters(new NamedWriteableRegistry());
+    private Suggesters suggesters = new Suggesters(Collections.emptyMap());
     private ParseFieldMatcher parseFieldMatcher = new ParseFieldMatcher(Settings.EMPTY);
     private ParseFieldRegistry<SignificanceHeuristicParser> significanceHeuristicParserRegistry = new ParseFieldRegistry<>(
             "significance_heuristic");

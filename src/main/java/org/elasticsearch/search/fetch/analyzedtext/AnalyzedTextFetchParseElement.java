@@ -19,12 +19,8 @@
 
 package org.elasticsearch.search.fetch.analyzedtext;
 
-import org.elasticsearch.action.admin.indices.analyze.AnalyzeRequest;
-import org.elasticsearch.action.termvectors.TermVectorsRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.SharedMethods;
 import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.fetch.FetchSubPhaseParseElement;
@@ -43,7 +39,7 @@ public class AnalyzedTextFetchParseElement extends FetchSubPhaseParseElement<Ana
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
         Map<String, Object> requestAsMap = SharedMethods.getSourceAsMap(newBuilder.string());
-        AnalyzeRequest request = new AnalyzeRequest();
+        AnalyzedTextRequest request = new AnalyzedTextRequest();
         if (requestAsMap.get("analyzer") != null) {
             request.analyzer((String) requestAsMap.remove("analyzer"));
         }
