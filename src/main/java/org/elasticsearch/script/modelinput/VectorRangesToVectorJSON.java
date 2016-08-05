@@ -20,10 +20,6 @@
 package org.elasticsearch.script.modelinput;
 
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,13 +71,12 @@ public class VectorRangesToVectorJSON extends VectorRangesToVector {
         return finalTerms;
     }
 
-    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup,
-                         SourceLookup sourceLookup) {
+    public Object vector(DataSource dataSource) {
         if (sparse) {
             int length = 0;
             List<EsSparseNumericVector> entries = new ArrayList<>();
             for (VectorRange fieldEntry : vectorRangeList) {
-                EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
+                EsSparseNumericVector vec = (EsSparseNumericVector) fieldEntry.getVector(dataSource);
                 entries.add(vec);
                 length += vec.values.v1().length;
             }
@@ -106,7 +101,7 @@ public class VectorRangesToVectorJSON extends VectorRangesToVector {
             int length = 0;
             List<double[]> entries = new ArrayList<>();
             for (VectorRange fieldEntry : vectorRangeList) {
-                EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(docLookup, fieldsLookup, leafIndexLookup);
+                EsDenseNumericVector vec = (EsDenseNumericVector) fieldEntry.getVector(dataSource);
                 entries.add(vec.values);
                 length += vec.values.length;
             }

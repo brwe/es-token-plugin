@@ -19,12 +19,6 @@
 
 package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.index.fielddata.ScriptDocValues;
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-import org.elasticsearch.search.lookup.SourceLookup;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +34,7 @@ public class VectorRangesToVectorPMML extends VectorRangesToVector {
     }
 
     @SuppressWarnings("unchecked")
-    public Object vector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup,
-                         SourceLookup sourceLookup) {
+    public Object vector(DataSource dataSource) {
 
         HashMap<String, List<Object>> fieldValues = new HashMap<>();
         for (VectorRange vectorRange : this.vectorRangeList) {
@@ -49,7 +42,7 @@ public class VectorRangesToVectorPMML extends VectorRangesToVector {
             String field = vectorRange.getField();
             if (field != null) {
                 // TODO: We assume here doc lookup will always give us something back. What if not?
-                fieldValues.put(field, ((ScriptDocValues<Object>) docLookup.get(field)).getValues());
+                fieldValues.put(field, dataSource.getValues(field));
             }
         }
         return vector(fieldValues);

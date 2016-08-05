@@ -25,9 +25,14 @@ import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.AbstractSearchScript;
 import org.elasticsearch.script.ExecutableScript;
 import org.elasticsearch.script.NativeScriptFactory;
+import org.elasticsearch.script.modelinput.DataSource;
+import org.elasticsearch.script.modelinput.EsDataSource;
 import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
+import org.elasticsearch.search.lookup.LeafDocLookup;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -67,6 +72,8 @@ public class VectorScriptFactory implements NativeScriptFactory {
 
         private final VectorRangesToVector features;
 
+        private DataSource dataSource;
+
         /**
          * Factory that is registered in
          * {@link TokenPlugin#onModule(org.elasticsearch.script.ScriptModule)}
@@ -75,11 +82,22 @@ public class VectorScriptFactory implements NativeScriptFactory {
 
         private VectorizerScript(VectorRangesToVector features) {
             this.features = features;
+            dataSource = new EsDataSource() {
+                @Override
+                protected LeafDocLookup getDocLookup() {
+                    return doc();
+                }
 
+                @Override
+                protected LeafIndexLookup getLeafIndexLookup() {
+                    return indexLookup();
+                }
+            };
         }
+
         @Override
         public Object run() {
-            return features.vector(doc(), fields(), indexLookup(), source());
+            return features.vector(dataSource);
         }
     }
 

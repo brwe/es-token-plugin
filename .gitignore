@@ -5,6 +5,7 @@
 *.ipr
 *.iws
 build-idea/
+classes/
 
 # eclipse files
 .project

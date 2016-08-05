@@ -19,10 +19,6 @@
 
 package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
-
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +41,7 @@ public abstract class VectorRange {
 
     public abstract int size();
 
-    public abstract EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup);
+    public abstract EsVector getVector(DataSource dataSource);
 
     public abstract EsVector getVector(Map<String, List<Object>> fieldValues);
 

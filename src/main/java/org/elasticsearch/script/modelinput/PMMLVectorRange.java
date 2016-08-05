@@ -27,9 +27,6 @@ import org.dmg.pmml.Expression;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.NormContinuous;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,7 +97,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+        public EsVector getVector(DataSource dataSource) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
@@ -159,7 +156,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+        public EsVector getVector(DataSource dataSource) {
             throw new UnsupportedOperationException("Remove this later, we should not get here.");
         }
 
@@ -252,7 +249,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+        public EsVector getVector(DataSource dataSource) {
             return new EsSparseNumericVector(new Tuple<>(new int[]{index}, new double[]{1.0}));
         }
 
@@ -281,7 +278,7 @@ public abstract class PMMLVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
+        public EsVector getVector(DataSource dataSource) {
             throw new UnsupportedOperationException("Not implemented for FieldToValue");
         }
 

@@ -19,93 +19,68 @@
 
 package org.elasticsearch.script;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.BytesRef;
 import org.dmg.pmml.PMML;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.IndexService;
-import org.elasticsearch.index.fielddata.IndexFieldDataService;
+import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.ProcessPMMLHelper;
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.SearchLookup;
-import org.elasticsearch.test.ESSingleNodeTestCase;
+import org.elasticsearch.test.ESTestCase;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.test.StreamsUtils.copyToStringFromClasspath;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.closeTo;
 
-public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
-    IndexFieldDataService ifdService;
-    IndexService indexService;
+public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
-    private LeafDocLookup indexDoc(String[] work, String education, Integer age) throws IOException {
-        IndexWriter writer = new IndexWriter(new RAMDirectory(), new IndexWriterConfig(new KeywordAnalyzer()));
-        Document doc = new Document();
+
+    private DataSource createTestDataSource(String[] work, String education, Integer age) throws IOException {
+        Map<String, List<Object>> data = new HashMap<>();
         if (work != null) {
-            for (String value : work) {
-                doc.add(new SortedSetDocValuesField("work", new BytesRef(value)));
-            }
+            Arrays.sort(work);
+            data.put("work", Arrays.asList((Object[])work));
         }
         if (education != null) {
-            doc.add(new SortedSetDocValuesField("education", new BytesRef(education)));
+            data.put("education", Collections.singletonList(education));
         }
-        if (age!=null) {
-            doc.add(new SortedNumericDocValuesField("age", age));
+        if (age != null) {
+            data.put("age", Collections.singletonList(age));
         }
-        writer.addDocument(doc);
-        IndexReader reader = DirectoryReader.open(writer, true, true);
-        LeafReaderContext leafReaderContext = reader.leaves().get(0);
-        LeafDocLookup docLookup = new SearchLookup(indexService.mapperService(), ifdService, new String[]{"test"})
-                .getLeafSearchLookup(leafReaderContext).doc();
-        reader.close();
-        docLookup.setDocument(0);
-        return docLookup;
+        return new MockDataSource(data);
     }
+
     @SuppressWarnings("unchecked")
     public void testGLMOnActualLookup() throws Exception {
-        setupServices();
-
-        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, null, 60);
+        DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
                 PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
         assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
 
         // test missing values
-        docLookup = indexDoc(new String[]{"Self-emp-inc"}, null, null);
-        docLookup.setDocument(0);
-        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, null);
+        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
         assertArrayEquals((double[]) vector.get("values"), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
 
         // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
-        docLookup = indexDoc(null, null, 60);
-        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        dataSource = createTestDataSource(null, null, 60);
+        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
@@ -113,16 +88,14 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
     }
 
     public void testGLMOnActualLookupMultipleStringValues() throws Exception {
-        setupServices();
-
-        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc", "Private"}, null, 60);
+        DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
                 PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         @SuppressWarnings("unchecked")
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(((double[]) vector.get("values")).length, equalTo(4));
         assertThat(((int[]) vector.get("indices")).length, equalTo(4));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 1, 2, 5, });
@@ -132,53 +105,25 @@ public class VectorizerPMMLSingleNodeTests extends ESSingleNodeTestCase {
 
     @SuppressWarnings("unchecked")
     public void testTreeModelOnActualLookup() throws Exception {
-        setupServices();
-
-        LeafDocLookup docLookup = indexDoc(new String[]{"Self-emp-inc"}, "Prof-school", 60);
+        DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
         PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
                 PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(1.5702107070685085, 0.0));
         assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("Prof-school"));
         assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("Self-emp-inc"));
 
         // test missing values
-        docLookup = indexDoc(null, null, null);
-        docLookup.setDocument(0);
-        vector = (Map<String, Object>) vectorEntries.vector(docLookup, null, null, null);
+        dataSource = createTestDataSource(null, null, null);
+        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(-76.13993490863606, 0.0));
         assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("too-lazy-to-study"));
         assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("other"));
     }
-
-    protected void setupServices() throws IOException {
-        XContentBuilder mappings = jsonBuilder();
-        mappings.startObject()
-                .startObject("test")
-                .startObject("properties")
-                .startObject("age")
-                .field("type", "integer")
-                .field("doc_values", "true")
-                .endObject()
-                .startObject("work")
-                .field("type", "keyword")
-                .field("doc_values", "true")
-                .endObject()
-                .startObject("education")
-                .field("type", "keyword")
-                .field("doc_values", "true")
-                .endObject()
-                .endObject()
-                .endObject()
-                .endObject();
-        indexService = createIndex("test", Settings.EMPTY, "test", mappings);
-        ifdService = indexService.fieldData();
-    }
-
 
 }

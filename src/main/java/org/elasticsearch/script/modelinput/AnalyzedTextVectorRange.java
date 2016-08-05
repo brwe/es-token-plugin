@@ -19,17 +19,8 @@
 
 package org.elasticsearch.script.modelinput;
 
-import org.apache.lucene.index.Fields;
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.index.fielddata.ScriptDocValues;
-import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.search.lookup.IndexField;
-import org.elasticsearch.search.lookup.IndexFieldTerm;
-import org.elasticsearch.search.lookup.LeafDocLookup;
-import org.elasticsearch.search.lookup.LeafFieldsLookup;
-import org.elasticsearch.search.lookup.LeafIndexLookup;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,42 +85,21 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
-            try {
-                /** here be the vectorizer **/
-                Tuple<int[], double[]> indicesAndValues;
-                if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
-                    Fields fields = leafIndexLookup.termVectors();
-                    if (fields == null) {
-                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap,
-                        // docValues, leafIndexLookup.get(field));
-                        return EMPTY_SPARSE;
-                    } else {
-                        indicesAndValues = SharedMethods.getIndicesAndValuesFromTermVectors(fields, field, wordMap);
-                    }
-
-                } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
-                    ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                    indicesAndValues = SharedMethods.getIndicesAndValuesFromFielddataFields(wordMap, docValues);
-                } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
-                    Fields fields = leafIndexLookup.termVectors();
-                    if (fields == null) {
-                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //ScriptDocValues<String> docValues = (ScriptDocValues.Strings) docLookup.get(field);
-                        //indicesAndValues = SharedMethods.getIndicesAndTfsFromFielddataFieldsAndIndexLookup(categoryToIndexHashMap,
-                        // docValues, leafIndexLookup.get(field));
-                        return EMPTY_SPARSE;
-                    } else {
-                        indicesAndValues = SharedMethods.getIndicesAndTF_IDFFromTermVectors(fields, field, wordMap, leafIndexLookup);
-                    }
-
-                } else {
-                    throw new IllegalArgumentException(number + " not implemented yet for sparse vector");
-                }
+        public EsVector getVector(DataSource dataSource) {
+            Tuple<int[], double[]> indicesAndValues;
+            if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
+                indicesAndValues = dataSource.getTfSparse(wordMap, field);
+            } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
+                indicesAndValues = dataSource.getOccurrenceSparse(wordMap, field);
+            } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
+                indicesAndValues = dataSource.getTfIdfSparse(wordMap, field);
+            } else {
+                throw new IllegalArgumentException(number + " not implemented yet for sparse vector");
+            }
+            if (indicesAndValues != null) {
                 return new EsSparseNumericVector(indicesAndValues);
-            } catch (IOException ex) {
-                throw new IllegalArgumentException("Could not create sparse vector: ", ex);
+            } else {
+                return EMPTY_SPARSE;
             }
         }
 
@@ -158,30 +128,15 @@ public abstract class AnalyzedTextVectorRange extends VectorRange {
         }
 
         @Override
-        public EsVector getVector(LeafDocLookup docLookup, LeafFieldsLookup fieldsLookup, LeafIndexLookup leafIndexLookup) {
-            double[] values = new double[terms.length];
-            try {
-                IndexField indexField = leafIndexLookup.get(field);
-                for (int i = 0; i < terms.length; i++) {
-                    IndexFieldTerm indexTermField = indexField.get(terms[i]);
-                    if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
-                        values[i] = indexTermField.tf();
-                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(
-                            AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
-                        values[i] = indexTermField.tf() > 0 ? 1 : 0;
-                    } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(
-                            AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
-                        double tf = indexTermField.tf();
-                        double df = indexTermField.df();
-                        double numDocs = indexField.docCount();
-                        values[i] = tf * Math.log((numDocs + 1) / (df + 1));
-                    } else {
-                        throw new IllegalArgumentException(number + " not implemented yet for dense vector");
-                    }
-                }
-                return new EsDenseNumericVector(values);
-            } catch (IOException ex) {
-                throw new IllegalArgumentException("Could not get tf vector: ", ex);
+        public EsVector getVector(DataSource dataSource) {
+            if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF)) {
+                return new EsDenseNumericVector(dataSource.getTfDense(terms, field));
+            } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.OCCURRENCE)) {
+                return new EsDenseNumericVector(dataSource.getOccurrenceDense(terms, field));
+            } else if (AnalyzedTextVectorRange.FeatureType.fromString(number).equals(AnalyzedTextVectorRange.FeatureType.TF_IDF)) {
+                return new EsDenseNumericVector(dataSource.getTfIdfDense(terms, field));
+            } else {
+                throw new IllegalArgumentException(number + " not implemented yet for dense vector");
             }
         }
 

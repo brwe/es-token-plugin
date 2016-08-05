@@ -36,17 +36,20 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.CompiledScript;
+import org.elasticsearch.script.ExecutableScript;
+import org.elasticsearch.script.LeafSearchScript;
+import org.elasticsearch.script.ScriptEngineService;
+import org.elasticsearch.script.ScriptModule;
+import org.elasticsearch.script.SearchScript;
+import org.elasticsearch.script.modelinput.DataSource;
+import org.elasticsearch.script.modelinput.EsDataSource;
 import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.script.models.EsLinearSVMModel;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.models.EsModelEvaluator;
-import org.elasticsearch.script.ExecutableScript;
-import org.elasticsearch.script.LeafSearchScript;
-import org.elasticsearch.script.ScriptEngineService;
-import org.elasticsearch.script.ScriptException;
-import org.elasticsearch.script.ScriptModule;
-import org.elasticsearch.script.SearchScript;
+import org.elasticsearch.search.lookup.LeafDocLookup;
+import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
 import org.xml.sax.SAXException;
@@ -144,7 +147,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                     throw new IllegalArgumentException("pmml prediction failed", e);
                 }
                 features = new VectorRangesToVectorJSON(parsedSource);
-
                 if (model == null) {
                     try {
                         model = initModelWithoutPreProcessing(vectorAndModel[1]);
@@ -244,6 +246,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         private boolean debug;
         private final VectorRangesToVector features;
         private LeafSearchLookup lookup;
+        private DataSource dataSource;
 
         /**
          * Factory that is registered in
@@ -252,7 +255,17 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
          */
 
         private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup, boolean debug) {
+            this.dataSource = new EsDataSource() {
+                @Override
+                protected LeafDocLookup getDocLookup() {
+                    return lookup.doc();
+                }
 
+                @Override
+                protected LeafIndexLookup getLeafIndexLookup() {
+                    return lookup.indexLookup();
+                }
+            };
             this.lookup = lookup;
             this.features = features;
             this.model = model;
@@ -266,7 +279,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         @SuppressWarnings("unchecked")
         @Override
         public Object run() {
-            Object vector = features.vector(lookup.doc(), lookup.fields(), lookup.indexLookup(), lookup.source());
+            Object vector = features.vector(dataSource);
             assert vector instanceof Map;
             if (debug) {
                 return model.evaluateDebug((Map<String, Object>) vector);
