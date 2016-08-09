@@ -37,7 +37,8 @@ import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
-import org.elasticsearch.script.models.MapModelInput;
+import org.elasticsearch.script.modelinput.MapModelInput;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,9 +50,9 @@ import java.util.Set;
 import java.util.TreeMap;
 
 
-public class GeneralizedLinearRegressionModelParser extends ModelParser<MapModelInput, GeneralRegressionModel> {
+public class GeneralizedLinearRegressionModelFactory extends ModelFactory<MapModelInput, GeneralRegressionModel> {
 
-    public GeneralizedLinearRegressionModelParser() {
+    public GeneralizedLinearRegressionModelFactory() {
         super(GeneralRegressionModel.class);
     }
 
@@ -178,8 +179,8 @@ public class GeneralizedLinearRegressionModelParser extends ModelParser<MapModel
 
     @SuppressWarnings("unchecked")
     @Override
-    public ModelAndInputEvaluator<MapModelInput> parse(GeneralRegressionModel grModel, DataDictionary dataDictionary,
-                                                       TransformationDictionary transformationDictionary) {
+    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(GeneralRegressionModel grModel, DataDictionary dataDictionary,
+                                                                    TransformationDictionary transformationDictionary) {
         if (grModel.getFunctionName().value().equals("classification") && (grModel.getModelType().value().equals
                 ("multinomialLogistic") || (grModel.getModelType().value().equals
                 ("generalizedLinear") && grModel.getDistribution().value().equals("binomial") && grModel.getLinkFunction().value().equals
@@ -216,7 +217,7 @@ public class GeneralizedLinearRegressionModelParser extends ModelParser<MapModel
             // this need to be more if we implement more than two class
             String[] targetCategories = findTargetCategories(dataDictionary, targetClassPCellMap, targetVariable);
             EsLogisticRegressionModel logisticRegressionModel = new EsLogisticRegressionModel(coefficients, 0.0, targetCategories);
-            return new ModelAndInputEvaluator<>(vectorEntries, logisticRegressionModel);
+            return new ModelAndModelInputEvaluator<>(vectorEntries, logisticRegressionModel);
 
         } else {
             throw new UnsupportedOperationException("Only implemented logistic regression with multinomialLogistic so far.");

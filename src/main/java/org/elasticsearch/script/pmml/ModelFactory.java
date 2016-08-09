@@ -21,16 +21,16 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.Model;
-import org.dmg.pmml.PMML;
 import org.dmg.pmml.TransformationDictionary;
-import org.elasticsearch.script.models.ModelInput;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
+import org.elasticsearch.script.modelinput.ModelInput;
 
 /**
  *
  */
-public abstract class ModelParser<T extends ModelInput, M extends Model> {
+public abstract class ModelFactory<T extends ModelInput, M extends Model> {
 
-    protected ModelParser(Class<M> supportedClass) {
+    protected ModelFactory(Class<M> supportedClass) {
         this.supportedClass = supportedClass;
     }
 
@@ -40,7 +40,7 @@ public abstract class ModelParser<T extends ModelInput, M extends Model> {
         return supportedClass;
     }
 
-    public abstract ModelAndInputEvaluator<T> parse(M model, DataDictionary dataDictionary,
-                                                    TransformationDictionary transformationDictionary);
+    public abstract ModelAndModelInputEvaluator<T> buildFromPMML(M model, DataDictionary dataDictionary,
+                                                                 TransformationDictionary transformationDictionary);
 
 }

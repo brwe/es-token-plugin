@@ -28,6 +28,7 @@ import org.dmg.pmml.SimplePredicate;
 import org.dmg.pmml.SimpleSetPredicate;
 import org.dmg.pmml.TreeModel;
 import org.dmg.pmml.True;
+import org.elasticsearch.script.modelinput.MapModelInput;
 
 import java.util.ArrayList;
 import java.util.HashMap;

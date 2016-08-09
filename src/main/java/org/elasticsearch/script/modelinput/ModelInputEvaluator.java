@@ -17,15 +17,11 @@
  * under the License.
  */
 
-package org.elasticsearch.script.models;
-
-import java.util.Map;
+package org.elasticsearch.script.modelinput;
 
 /**
- * Data converted into a format easily processed by Model Evaluator
+ *
  */
-public interface ModelInput {
-
-    Map<String, Object> getAsMap();
-
+public interface ModelInputEvaluator<T extends ModelInput> {
+    T convert(DataSource dataSource);
 }

@@ -20,6 +20,7 @@
 package org.elasticsearch.script.models;
 
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.modelinput.MapModelInput;
 
 import java.util.Map;
 

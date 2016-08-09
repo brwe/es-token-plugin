@@ -19,6 +19,8 @@
 
 package org.elasticsearch.script.models;
 
+import org.elasticsearch.script.modelinput.ModelInput;
+
 import java.util.Map;
 
 

@@ -26,18 +26,17 @@ import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.CompiledScript;
 import org.elasticsearch.script.ExecutableScript;
 import org.elasticsearch.script.LeafSearchScript;
 import org.elasticsearch.script.ScriptEngineService;
-import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.EsDataSource;
 import org.elasticsearch.script.models.EsModelEvaluator;
-import org.elasticsearch.script.models.ModelInput;
-import org.elasticsearch.script.models.ModelInputEvaluator;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
+import org.elasticsearch.script.modelinput.ModelInput;
+import org.elasticsearch.script.modelinput.ModelInputEvaluator;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
@@ -53,7 +52,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     public static final String NAME = "pmml_model";
 
-    public static final PMMLParser parser = PMMLParser.createDefaultPMMLParser();
+    public static final ModelFactories factories = ModelFactories.createDefaultModelFactories();
 
     @Inject
     public PMMLModelScriptEngineService(Settings settings) {
@@ -95,28 +94,22 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         @SuppressWarnings("unchecked")
         public Factory(String spec) {
-            ModelAndInputEvaluator<T> fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
-            features = fieldsToVectorAndModel.vectorRangesToVector;
-            model = fieldsToVectorAndModel.model;
+            ModelAndModelInputEvaluator<T> fieldsToVectorAndModel = parsePMML(spec);
+            features = fieldsToVectorAndModel.getVectorRangesToVector();
+            model = fieldsToVectorAndModel.getModel();
         }
 
-        private ModelAndInputEvaluator<T> initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
-
+        private ModelAndModelInputEvaluator<T> parsePMML(final String pmmlString) {
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {
                 throw new UnsupportedOperationException("Only implemented PMML for one model so far.");
             }
-            return getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-
+            return factories.buildFromPMML(pmml, 0);
         }
 
         public PMMLModel<T> newScript(LeafSearchLookup lookup, boolean debug) {
             return new PMMLModel<>(features, model, lookup, debug);
         }
-    }
-
-    public <T extends ModelInput> ModelAndInputEvaluator<T> getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
-        return parser.parse(pmml, modelNum);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -149,12 +142,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         private final ModelInputEvaluator<T> features;
         private LeafSearchLookup lookup;
         private DataSource dataSource;
-
-        /**
-         * Factory that is registered in
-         * {@link TokenPlugin#onModule(ScriptModule)}
-         * method when the plugin is loaded.
-         */
 
         private PMMLModel(ModelInputEvaluator<T> features, EsModelEvaluator<T> model, LeafSearchLookup lookup, boolean debug) {
             this.dataSource = new EsDataSource() {

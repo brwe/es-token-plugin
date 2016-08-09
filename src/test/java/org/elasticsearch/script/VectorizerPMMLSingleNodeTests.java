@@ -20,12 +20,11 @@
 package org.elasticsearch.script;
 
 import org.dmg.pmml.PMML;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
-import org.elasticsearch.script.models.MapModelInput;
-import org.elasticsearch.script.pmml.ModelAndInputEvaluator;
-import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
+import org.elasticsearch.script.modelinput.MapModelInput;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
+import org.elasticsearch.script.pmml.ModelFactories;
 import org.elasticsearch.script.pmml.ProcessPMMLHelper;
 import org.elasticsearch.test.ESTestCase;
 
@@ -61,12 +60,11 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
     @SuppressWarnings("unchecked")
     public void testGLMOnActualLookup() throws Exception {
-        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
+        ModelFactories parser = ModelFactories.createDefaultModelFactories();
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
-                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
@@ -92,12 +90,11 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
     }
 
     public void testGLMOnActualLookupMultipleStringValues() throws Exception {
-        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
+        ModelFactories parser = ModelFactories.createDefaultModelFactories();
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
-                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         @SuppressWarnings("unchecked")
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
@@ -110,12 +107,11 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
     @SuppressWarnings("unchecked")
     public void testTreeModelOnActualLookup() throws Exception {
-        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
+        ModelFactories parser = ModelFactories.createDefaultModelFactories();
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
-                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));

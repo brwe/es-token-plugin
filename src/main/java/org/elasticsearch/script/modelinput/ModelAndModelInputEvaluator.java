@@ -17,13 +17,30 @@
  * under the License.
  */
 
-package org.elasticsearch.script.models;
+package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.script.modelinput.DataSource;
+import org.elasticsearch.script.modelinput.ModelInput;
+import org.elasticsearch.script.modelinput.ModelInputEvaluator;
+import org.elasticsearch.script.models.EsModelEvaluator;
 
 /**
  *
  */
-public interface ModelInputEvaluator<T extends ModelInput> {
-    T convert(DataSource dataSource);
+public class ModelAndModelInputEvaluator<T extends ModelInput> {
+    private final ModelInputEvaluator<T> vectorRangesToVector;
+
+    private final EsModelEvaluator<T> model;
+
+    public ModelAndModelInputEvaluator(ModelInputEvaluator<T> vectorRangesToVector, EsModelEvaluator<T> model) {
+        this.vectorRangesToVector = vectorRangesToVector;
+        this.model = model;
+    }
+
+    public ModelInputEvaluator<T> getVectorRangesToVector() {
+        return vectorRangesToVector;
+    }
+
+    public EsModelEvaluator<T> getModel() {
+        return model;
+    }
 }

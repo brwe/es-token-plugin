@@ -17,30 +17,23 @@
  * under the License.
  */
 
-package org.elasticsearch.script.pmml;
+package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.script.models.EsModelEvaluator;
-import org.elasticsearch.script.models.ModelInput;
-import org.elasticsearch.script.models.ModelInputEvaluator;
+import java.util.Map;
 
 /**
  *
  */
-public class ModelAndInputEvaluator<T extends ModelInput> {
-    public ModelAndInputEvaluator(ModelInputEvaluator<T> vectorRangesToVector, EsModelEvaluator<T> model) {
-        this.vectorRangesToVector = vectorRangesToVector;
-        this.model = model;
+public class MapModelInput implements ModelInput {
+
+    private final Map<String, Object> map;
+
+    public MapModelInput(Map<String, Object> map) {
+        this.map = map;
     }
 
-    public ModelInputEvaluator<T> getVectorRangesToVector() {
-        return vectorRangesToVector;
+    @Override
+    public Map<String, Object> getAsMap() {
+        return map;
     }
-
-    final ModelInputEvaluator<T> vectorRangesToVector;
-
-    public EsModelEvaluator<T> getModel() {
-        return model;
-    }
-
-    final EsModelEvaluator<T> model;
 }

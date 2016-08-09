@@ -26,7 +26,6 @@ import org.dmg.pmml.DataField;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.Node;
-import org.dmg.pmml.PMML;
 import org.dmg.pmml.Predicate;
 import org.dmg.pmml.SimplePredicate;
 import org.dmg.pmml.SimpleSetPredicate;
@@ -36,7 +35,8 @@ import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.models.EsTreeModel;
-import org.elasticsearch.script.models.MapModelInput;
+import org.elasticsearch.script.modelinput.MapModelInput;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,15 +45,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TreeModelParser extends ModelParser<MapModelInput, TreeModel> {
+public class TreeModelFactory extends ModelFactory<MapModelInput, TreeModel> {
 
-    public TreeModelParser() {
+    public TreeModelFactory() {
         super(TreeModel.class);
     }
 
     @Override
-    public ModelAndInputEvaluator<MapModelInput> parse(TreeModel treeModel, DataDictionary dataDictionary,
-                                                       TransformationDictionary transformationDictionary) {
+    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(TreeModel treeModel, DataDictionary dataDictionary,
+                                                                    TransformationDictionary transformationDictionary) {
         if (treeModel.getFunctionName().value().equals("classification")
                 && treeModel.getSplitCharacteristic().value().equals("binarySplit")
                 && treeModel.getMissingValueStrategy().value().equals("defaultChild")
@@ -64,7 +64,7 @@ public class TreeModelParser extends ModelParser<MapModelInput, TreeModel> {
                     new VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel(fields);
             Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
             EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);
-            return new ModelAndInputEvaluator<>(fieldsToVector, esTreeModel);
+            return new ModelAndModelInputEvaluator<>(fieldsToVector, esTreeModel);
         } else {
             throw new UnsupportedOperationException("TreeModel does not support the following parameters yet: "
                     + " splitCharacteristic:" + treeModel.getSplitCharacteristic().value()

@@ -17,23 +17,15 @@
  * under the License.
  */
 
-package org.elasticsearch.script.models;
+package org.elasticsearch.script.modelinput;
 
 import java.util.Map;
 
 /**
- *
+ * Data converted into a format easily processed by Model Evaluator
  */
-public class MapModelInput implements ModelInput {
+public interface ModelInput {
 
-    private final Map<String, Object> map;
+    Map<String, Object> getAsMap();
 
-    public MapModelInput(Map<String, Object> map) {
-        this.map = map;
-    }
-
-    @Override
-    public Map<String, Object> getAsMap() {
-        return map;
-    }
 }

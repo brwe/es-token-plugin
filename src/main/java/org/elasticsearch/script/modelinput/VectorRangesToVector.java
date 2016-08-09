@@ -19,9 +19,6 @@
 
 package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.script.models.MapModelInput;
-import org.elasticsearch.script.models.ModelInputEvaluator;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

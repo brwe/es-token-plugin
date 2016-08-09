@@ -27,7 +27,6 @@ import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.OpType;
-import org.dmg.pmml.PMML;
 import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.TransformationDictionary;
@@ -36,7 +35,8 @@ import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput;
-import org.elasticsearch.script.models.MapModelInput;
+import org.elasticsearch.script.modelinput.MapModelInput;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,16 +44,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class NaiveBayesModelParser extends ModelParser<MapModelInput, NaiveBayesModel> {
+public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBayesModel> {
 
-    public NaiveBayesModelParser() {
+    public NaiveBayesModelFactory() {
         super(NaiveBayesModel.class);
     }
 
 
     @Override
-    public ModelAndInputEvaluator<MapModelInput> parse(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
-                                                       TransformationDictionary transformationDictionary) {
+    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
+                                                                    TransformationDictionary transformationDictionary) {
         if (naiveBayesModel.getFunctionName().value().equals("classification")) {
             // for each Bayes input
             // find the whole tranform pipeline (cp glm)
@@ -75,7 +75,7 @@ public class NaiveBayesModelParser extends ModelParser<MapModelInput, NaiveBayes
             VectorRangesToVectorPMML vectorPMML = new VectorRangesToVectorPMML(vectorRanges, indexCounter);
 
             EsModelEvaluator<MapModelInput> model = new EsNaiveBayesModelWithMixedInput(naiveBayesModel, types);
-            return new ModelAndInputEvaluator<>(vectorPMML, model);
+            return new ModelAndModelInputEvaluator<>(vectorPMML, model);
         } else {
             throw new UnsupportedOperationException("Naive does not support the following parameters yet: "
                     + " functionName:" + naiveBayesModel.getFunctionName().value());
