@@ -21,11 +21,11 @@ package org.elasticsearch.script.models;
 
 import java.util.Map;
 
+/**
+ * Data converted into a format easily processed by Model Evaluator
+ */
+public interface ModelInput {
 
-public abstract class EsModelEvaluator<T extends ModelInput> {
+    Map<String, Object> getAsMap();
 
-    public abstract Map<String, Object> evaluateDebug(T ModelInput);
-    public abstract Object evaluate(T ModelInput);
 }
-
-

@@ -17,40 +17,23 @@
  * under the License.
  */
 
-package org.elasticsearch.script.modelinput;
+package org.elasticsearch.script.models;
 
-import org.elasticsearch.script.models.MapModelInput;
-import org.elasticsearch.script.models.ModelInputEvaluator;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
-/*
-* Maps a list of fields to a vector.
-* */
+/**
+ *
+ */
+public class MapModelInput implements ModelInput {
 
-public abstract class VectorRangesToVector implements ModelInputEvaluator<MapModelInput> {
+    private final Map<String, Object> map;
 
-    public boolean isSparse() {
-        return sparse;
+    public MapModelInput(Map<String, Object> map) {
+        this.map = map;
     }
 
-    boolean sparse;
-    List<VectorRange> vectorRangeList = new ArrayList<>();
-
-    public List<VectorRange> getEntries() {
-        return vectorRangeList;
-    }
-
-    protected abstract Object vector(DataSource dataSource);
-
-    @SuppressWarnings("unchecked")
     @Override
-    public MapModelInput convert(DataSource dataSource) {
-        return new MapModelInput((Map<String, Object>)vector(dataSource));
+    public Map<String, Object> getAsMap() {
+        return map;
     }
-
-    protected int numEntries;
 }
-

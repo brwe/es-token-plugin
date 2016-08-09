@@ -21,6 +21,7 @@ package org.elasticsearch.script.pmml;
 
 
 import org.dmg.pmml.BayesInput;
+import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.MiningField;
@@ -29,11 +30,13 @@ import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueStats;
+import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput;
+import org.elasticsearch.script.models.MapModelInput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,11 +44,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class NaiveBayesModelHelper {
+public class NaiveBayesModelParser extends ModelParser<MapModelInput, NaiveBayesModel> {
+
+    public NaiveBayesModelParser() {
+        super(NaiveBayesModel.class);
+    }
 
 
-    public static PMMLModelScriptEngineService.FieldsToVectorAndModel getNaiveBayesFeaturesAndModel(PMML pmml, int modelNum) {
-        NaiveBayesModel naiveBayesModel = (NaiveBayesModel) pmml.getModels().get(modelNum);
+    @Override
+    public ModelAndInputEvaluator<MapModelInput> parse(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
+                                                       TransformationDictionary transformationDictionary) {
         if (naiveBayesModel.getFunctionName().value().equals("classification")) {
             // for each Bayes input
             // find the whole tranform pipeline (cp glm)
@@ -57,32 +65,34 @@ public class NaiveBayesModelHelper {
             Map<String, OpType> types = new HashMap<>();
             for (BayesInput bayesInput : naiveBayesModel.getBayesInputs()) {
                 String finalFieldName = bayesInput.getFieldName().getValue();
-                PMMLVectorRange vectorRange = getFeatureEntryFromNaiveBayesMModel(pmml, 0, finalFieldName, indexCounter, bayesInput, types);
+                PMMLVectorRange vectorRange = getFeatureEntryFromNaiveBayesMModel(naiveBayesModel, dataDictionary,
+                        transformationDictionary,
+                        finalFieldName, indexCounter, bayesInput, types);
                 vectorRanges.add(vectorRange);
                 indexCounter += vectorRange.size();
                 targetValueStats.add(bayesInput.getTargetValueStats());
             }
             VectorRangesToVectorPMML vectorPMML = new VectorRangesToVectorPMML(vectorRanges, indexCounter);
 
-            EsModelEvaluator model = new EsNaiveBayesModelWithMixedInput(naiveBayesModel, types);
-            return new PMMLModelScriptEngineService.FieldsToVectorAndModel(vectorPMML, model);
+            EsModelEvaluator<MapModelInput> model = new EsNaiveBayesModelWithMixedInput(naiveBayesModel, types);
+            return new ModelAndInputEvaluator<>(vectorPMML, model);
         } else {
             throw new UnsupportedOperationException("Naive does not support the following parameters yet: "
                     + " functionName:" + naiveBayesModel.getFunctionName().value());
         }
     }
 
-    static PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(PMML model, int modelIndex, String fieldName, int
-            indexCounter, BayesInput bayesInput, Map<String, OpType> types) {
-        if (model.getModels().get(modelIndex) instanceof NaiveBayesModel == false) {
-            throw new UnsupportedOperationException("Can only do NaiveBayes so far");
-        }
+    static PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(NaiveBayesModel model,
+                                                               DataDictionary dataDictionary,
+                                                               TransformationDictionary transformationDictionary,
+                                                               String fieldName,
+                                                               int indexCounter, BayesInput bayesInput, Map<String, OpType> types) {
 
-        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, modelIndex);
+        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, transformationDictionary);
         List<DerivedField> derivedFields = new ArrayList<>();
         String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
-        DataField rawField = ProcessPMMLHelper.getRawDataField(model, rawFieldName);
-        MiningField miningField = ProcessPMMLHelper.getMiningField(model, modelIndex, rawFieldName);
+        DataField rawField = ProcessPMMLHelper.getRawDataField(dataDictionary, rawFieldName);
+        MiningField miningField = ProcessPMMLHelper.getMiningField(model, rawFieldName);
         PMMLVectorRange featureEntries = getFieldVector(indexCounter, derivedFields, rawField, miningField, bayesInput, types);
         return featureEntries;
     }

@@ -17,15 +17,30 @@
  * under the License.
  */
 
-package org.elasticsearch.script.models;
+package org.elasticsearch.script.pmml;
 
-import java.util.Map;
+import org.dmg.pmml.DataDictionary;
+import org.dmg.pmml.Model;
+import org.dmg.pmml.PMML;
+import org.dmg.pmml.TransformationDictionary;
+import org.elasticsearch.script.models.ModelInput;
 
+/**
+ *
+ */
+public abstract class ModelParser<T extends ModelInput, M extends Model> {
 
-public abstract class EsModelEvaluator<T extends ModelInput> {
+    protected ModelParser(Class<M> supportedClass) {
+        this.supportedClass = supportedClass;
+    }
 
-    public abstract Map<String, Object> evaluateDebug(T ModelInput);
-    public abstract Object evaluate(T ModelInput);
+    private final Class<M> supportedClass;
+
+    public Class<M> getSupportedClass() {
+        return supportedClass;
+    }
+
+    public abstract ModelAndInputEvaluator<T> parse(M model, DataDictionary dataDictionary,
+                                                    TransformationDictionary transformationDictionary);
+
 }
-
-

@@ -97,7 +97,7 @@ public class VectorScriptFactory implements NativeScriptFactory {
 
         @Override
         public Object run() {
-            return features.vector(dataSource);
+            return features.convert(dataSource).getAsMap();
         }
     }
 

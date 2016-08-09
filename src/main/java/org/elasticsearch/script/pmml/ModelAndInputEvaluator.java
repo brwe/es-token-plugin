@@ -17,40 +17,30 @@
  * under the License.
  */
 
-package org.elasticsearch.script.modelinput;
+package org.elasticsearch.script.pmml;
 
-import org.elasticsearch.script.models.MapModelInput;
+import org.elasticsearch.script.models.EsModelEvaluator;
+import org.elasticsearch.script.models.ModelInput;
 import org.elasticsearch.script.models.ModelInputEvaluator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-/*
-* Maps a list of fields to a vector.
-* */
-
-public abstract class VectorRangesToVector implements ModelInputEvaluator<MapModelInput> {
-
-    public boolean isSparse() {
-        return sparse;
+/**
+ *
+ */
+public class ModelAndInputEvaluator<T extends ModelInput> {
+    public ModelAndInputEvaluator(ModelInputEvaluator<T> vectorRangesToVector, EsModelEvaluator<T> model) {
+        this.vectorRangesToVector = vectorRangesToVector;
+        this.model = model;
     }
 
-    boolean sparse;
-    List<VectorRange> vectorRangeList = new ArrayList<>();
-
-    public List<VectorRange> getEntries() {
-        return vectorRangeList;
+    public ModelInputEvaluator<T> getVectorRangesToVector() {
+        return vectorRangesToVector;
     }
 
-    protected abstract Object vector(DataSource dataSource);
+    final ModelInputEvaluator<T> vectorRangesToVector;
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public MapModelInput convert(DataSource dataSource) {
-        return new MapModelInput((Map<String, Object>)vector(dataSource));
+    public EsModelEvaluator<T> getModel() {
+        return model;
     }
 
-    protected int numEntries;
+    final EsModelEvaluator<T> model;
 }
-

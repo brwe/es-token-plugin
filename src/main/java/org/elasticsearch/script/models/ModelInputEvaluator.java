@@ -19,13 +19,11 @@
 
 package org.elasticsearch.script.models;
 
-import java.util.Map;
+import org.elasticsearch.script.modelinput.DataSource;
 
-
-public abstract class EsModelEvaluator<T extends ModelInput> {
-
-    public abstract Map<String, Object> evaluateDebug(T ModelInput);
-    public abstract Object evaluate(T ModelInput);
+/**
+ *
+ */
+public interface ModelInputEvaluator<T extends ModelInput> {
+    T convert(DataSource dataSource);
 }
-
-

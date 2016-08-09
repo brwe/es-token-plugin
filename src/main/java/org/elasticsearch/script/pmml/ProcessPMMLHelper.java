@@ -21,11 +21,13 @@ package org.elasticsearch.script.pmml;
 
 
 import org.dmg.pmml.Apply;
+import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.Expression;
 import org.dmg.pmml.FieldRef;
 import org.dmg.pmml.MiningField;
+import org.dmg.pmml.Model;
 import org.dmg.pmml.NormContinuous;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TransformationDictionary;
@@ -48,10 +50,10 @@ import java.util.List;
 
 public class ProcessPMMLHelper {
 
-    static DataField getRawDataField(PMML model, String rawFieldName) {
+    static DataField getRawDataField(DataDictionary dataDictionary, String rawFieldName) {
         // now find the actual dataField
         DataField rawField = null;
-        for (DataField dataField : model.getDataDictionary().getDataFields()) {
+        for (DataField dataField : dataDictionary.getDataFields()) {
             String rawDataFieldName = dataField.getName().getValue();
             if (rawDataFieldName.equals(rawFieldName)) {
                 rawField = dataField;
@@ -137,21 +139,21 @@ public class ProcessPMMLHelper {
         });
     }
 
-    protected static List<DerivedField> getAllDerivedFields(PMML model, int modelIndex) {
+    protected static List<DerivedField> getAllDerivedFields(Model model, TransformationDictionary transformationDictionary) {
         List<DerivedField> allDerivedFields = new ArrayList<>();
-        if (model.getTransformationDictionary() != null) {
-            allDerivedFields.addAll(model.getTransformationDictionary().getDerivedFields());
+        if (transformationDictionary != null) {
+            allDerivedFields.addAll(transformationDictionary.getDerivedFields());
         }
-        if (model.getModels().get(modelIndex).getLocalTransformations() != null) {
-            allDerivedFields.addAll(model.getModels().get(modelIndex).getLocalTransformations().getDerivedFields());
+        if (model.getLocalTransformations() != null) {
+            allDerivedFields.addAll(model.getLocalTransformations().getDerivedFields());
         }
         return allDerivedFields;
     }
 
-    protected static MiningField getMiningField(PMML model, int modelIndex, String rawFieldName) {
+    protected static MiningField getMiningField(Model model, String rawFieldName) {
         MiningField miningField = null;
         // also pass in the mining schema for additional parameters
-        for (MiningField aMiningField : model.getModels().get(modelIndex).getMiningSchema().getMiningFields()) {
+        for (MiningField aMiningField : model.getMiningSchema().getMiningFields()) {
             if (aMiningField.getKey().getValue().equals(rawFieldName)) {
                 miningField = aMiningField;
             }

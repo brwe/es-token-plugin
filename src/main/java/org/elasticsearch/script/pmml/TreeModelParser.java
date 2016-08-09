@@ -21,6 +21,7 @@ package org.elasticsearch.script.pmml;
 
 
 import org.dmg.pmml.CompoundPredicate;
+import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
 import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.MiningField;
@@ -29,11 +30,13 @@ import org.dmg.pmml.PMML;
 import org.dmg.pmml.Predicate;
 import org.dmg.pmml.SimplePredicate;
 import org.dmg.pmml.SimpleSetPredicate;
+import org.dmg.pmml.TransformationDictionary;
 import org.dmg.pmml.TreeModel;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.models.EsTreeModel;
+import org.elasticsearch.script.models.MapModelInput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,22 +45,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TreeModelHelper {
+public class TreeModelParser extends ModelParser<MapModelInput, TreeModel> {
 
+    public TreeModelParser() {
+        super(TreeModel.class);
+    }
 
-    public static PMMLModelScriptEngineService.FieldsToVectorAndModel getTreeModelFeaturesAndModel(PMML pmml, int modelNum) {
-        TreeModel treeModel = (TreeModel) pmml.getModels().get(modelNum);
+    @Override
+    public ModelAndInputEvaluator<MapModelInput> parse(TreeModel treeModel, DataDictionary dataDictionary,
+                                                       TransformationDictionary transformationDictionary) {
         if (treeModel.getFunctionName().value().equals("classification")
                 && treeModel.getSplitCharacteristic().value().equals("binarySplit")
                 && treeModel.getMissingValueStrategy().value().equals("defaultChild")
                 && treeModel.getNoTrueChildStrategy().value().equals("returnLastPrediction")) {
 
-            List<VectorRange> fields = getFieldValuesList(treeModel, pmml, modelNum);
+            List<VectorRange> fields = getFieldValuesList(treeModel, dataDictionary, transformationDictionary);
             VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel fieldsToVector =
                     new VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel(fields);
             Map<String, String> fieldToTypeMap = getFieldToTypeMap(fields);
             EsTreeModel esTreeModel = getEsTreeModel(treeModel, fieldToTypeMap);
-            return new PMMLModelScriptEngineService.FieldsToVectorAndModel(fieldsToVector, esTreeModel);
+            return new ModelAndInputEvaluator<>(fieldsToVector, esTreeModel);
         } else {
             throw new UnsupportedOperationException("TreeModel does not support the following parameters yet: "
                     + " splitCharacteristic:" + treeModel.getSplitCharacteristic().value()
@@ -66,19 +73,20 @@ public class TreeModelHelper {
         }
     }
 
-    protected static List<VectorRange> getFieldValuesList(TreeModel treeModel, PMML pmml, int modelNum) {
+    protected static List<VectorRange> getFieldValuesList(TreeModel treeModel, DataDictionary dataDictionary,
+                                                          TransformationDictionary transformationDictionary) {
         // walk the tree model and gather all the field name
         Set<String> fieldNames = new HashSet<>();
         Node startNode = treeModel.getNode();
         getFieldNamesFromNode(fieldNames, startNode);
         // create the actual VectorRange objects, copy paste much from GLMHelper
         List<VectorRange> fieldsToValues = new ArrayList<>();
-        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(pmml, modelNum);
+        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(treeModel, transformationDictionary);
         for(String fieldName : fieldNames) {
             List<DerivedField> derivedFields = new ArrayList<>();
             String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
-            DataField rawField = ProcessPMMLHelper.getRawDataField(pmml, rawFieldName);
-            MiningField miningField = ProcessPMMLHelper.getMiningField(pmml, 0, rawFieldName);
+            DataField rawField = ProcessPMMLHelper.getRawDataField(dataDictionary, rawFieldName);
+            MiningField miningField = ProcessPMMLHelper.getMiningField(treeModel, rawFieldName);
             fieldsToValues.add(new PMMLVectorRange.FieldToValue(rawField, miningField, derivedFields.toArray(new
                     DerivedField[derivedFields.size()])));
         }

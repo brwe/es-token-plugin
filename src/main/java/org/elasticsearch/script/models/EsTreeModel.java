@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class EsTreeModel extends EsModelEvaluator {
+public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
 
     EsTreeNode startNode;
 
@@ -46,13 +46,15 @@ public class EsTreeModel extends EsModelEvaluator {
     }
 
     @Override
-    public Map<String, Object> evaluateDebug(Map<String, Object> vector) {
+    public Map<String, Object> evaluateDebug(MapModelInput modelInput) {
+        Map<String, Object> vector = modelInput.getAsMap();
         assert startNode.predicate.match(vector);
         return startNode.evaluate(vector);
     }
 
     @Override
-    public Object evaluate(Map<String, Object> vector) {
+    public Object evaluate(MapModelInput modelInput) {
+        Map<String, Object> vector = modelInput.getAsMap();
         assert startNode.predicate.match(vector);
         return startNode.evaluate(vector).get("class");
     }

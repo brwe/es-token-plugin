@@ -20,8 +20,11 @@
 package org.elasticsearch.script;
 
 import org.dmg.pmml.PMML;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
+import org.elasticsearch.script.models.MapModelInput;
+import org.elasticsearch.script.pmml.ModelAndInputEvaluator;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.ProcessPMMLHelper;
 import org.elasticsearch.test.ESTestCase;
@@ -58,13 +61,14 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
     @SuppressWarnings("unchecked")
     public void testGLMOnActualLookup() throws Exception {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
-                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
+                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
@@ -72,7 +76,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
         // test missing values
         dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, null);
-        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
@@ -80,7 +84,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
         // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
         dataSource = createTestDataSource(null, null, 60);
-        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
         assertThat(((int[]) vector.get("indices")).length, equalTo(3));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
@@ -88,14 +92,15 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
     }
 
     public void testGLMOnActualLookupMultipleStringValues() throws Exception {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
-                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
+                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
         @SuppressWarnings("unchecked")
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(4));
         assertThat(((int[]) vector.get("indices")).length, equalTo(4));
         assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 1, 2, 5, });
@@ -105,13 +110,14 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
     @SuppressWarnings("unchecked")
     public void testTreeModelOnActualLookup() throws Exception {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel =
-                PMMLModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel =
+                pmmlModelScriptEngineService.getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        Map<String, Object> vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(1.5702107070685085, 0.0));
         assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("Prof-school"));
@@ -119,7 +125,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
 
         // test missing values
         dataSource = createTestDataSource(null, null, null);
-        vector = (Map<String, Object>) vectorEntries.vector(dataSource);
+        vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(-76.13993490863606, 0.0));
         assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("too-lazy-to-study"));

@@ -21,12 +21,9 @@ package org.elasticsearch.script.pmml;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
-import org.dmg.pmml.GeneralRegressionModel;
 import org.dmg.pmml.Model;
-import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
-import org.dmg.pmml.TreeModel;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
@@ -43,11 +40,12 @@ import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.EsDataSource;
-import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.script.models.EsLinearSVMModel;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.models.EsModelEvaluator;
+import org.elasticsearch.script.models.ModelInput;
+import org.elasticsearch.script.models.ModelInputEvaluator;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
@@ -64,6 +62,8 @@ import java.util.Map;
 public class PMMLModelScriptEngineService extends AbstractComponent implements ScriptEngineService {
 
     public static final String NAME = "pmml_model";
+
+    public static final PMMLParser parser = PMMLParser.createDefaultPMMLParser();
 
     @Inject
     public PMMLModelScriptEngineService(Settings settings) {
@@ -86,7 +86,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
     @Override
     public Object compile(String scriptName, String scriptSource, Map<String, String> params) {
-        return new Factory(scriptSource);
+        return new Factory<>(scriptSource);
     }
 
     @Override
@@ -94,40 +94,18 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         throw new UnsupportedOperationException("model script not supported in this context!");
     }
 
-    public static class FieldsToVectorAndModel {
-        public FieldsToVectorAndModel(VectorRangesToVector vectorRangesToVector, EsModelEvaluator model) {
-            this.vectorRangesToVector = vectorRangesToVector;
-            this.model = model;
-        }
-
-        public VectorRangesToVector getVectorRangesToVector() {
-            return vectorRangesToVector;
-        }
-
-        final VectorRangesToVector vectorRangesToVector;
-
-        public EsModelEvaluator getModel() {
-            return model;
-        }
-
-        final EsModelEvaluator model;
-    }
-
-    public static class Factory {
+    public class Factory<T extends ModelInput> {
         public static final String VECTOR_MODEL_DELIMITER = "dont know what to put here";
 
-        public VectorRangesToVector getFeatures() {
-            return features;
-        }
-
-        public EsModelEvaluator getModel() {
+        public EsModelEvaluator<T> getModel() {
             return model;
         }
 
-        VectorRangesToVector features = null;
+        ModelInputEvaluator<T> features = null;
 
-        private EsModelEvaluator model;
+        private EsModelEvaluator<T> model;
 
+        @SuppressWarnings("unchecked")
         public Factory(String spec) {
             if (spec.contains(VECTOR_MODEL_DELIMITER)) {
                 // In case someone pulled the vectors from elasticsearch the the vector spec is stored in the same script
@@ -146,7 +124,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 } catch (IOException e) {
                     throw new IllegalArgumentException("pmml prediction failed", e);
                 }
-                features = new VectorRangesToVectorJSON(parsedSource);
+                features = (ModelInputEvaluator<T>) new VectorRangesToVectorJSON(parsedSource);
                 if (model == null) {
                     try {
                         model = initModelWithoutPreProcessing(vectorAndModel[1]);
@@ -155,13 +133,13 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                     }
                 }
             } else {
-                FieldsToVectorAndModel fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
+                ModelAndInputEvaluator<T> fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
                 features = fieldsToVectorAndModel.vectorRangesToVector;
                 model = fieldsToVectorAndModel.model;
             }
         }
 
-        private static FieldsToVectorAndModel initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
+        private ModelAndInputEvaluator<T> initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
 
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {
@@ -171,7 +149,8 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         }
 
-        public static EsModelEvaluator initModelWithoutPreProcessing(final String pmmlString) throws IOException, SAXException,
+        public EsModelEvaluator<T> initModelWithoutPreProcessing(final String pmmlString) throws IOException,
+                SAXException,
                 JAXBException {
             // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
@@ -187,34 +166,24 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         }
 
-        protected static EsModelEvaluator initLogisticRegression(RegressionModel pmmlModel) {
-            return new EsLogisticRegressionModel(pmmlModel);
+        @SuppressWarnings("unchecked")
+        protected EsModelEvaluator<T> initLogisticRegression(RegressionModel pmmlModel) {
+            return (EsModelEvaluator<T>)new EsLogisticRegressionModel(pmmlModel);
         }
 
-        protected static EsModelEvaluator initLinearSVM(RegressionModel pmmlModel) {
-            return new EsLinearSVMModel(pmmlModel);
+        @SuppressWarnings("unchecked")
+        protected EsModelEvaluator<T> initLinearSVM(RegressionModel pmmlModel) {
+            return (EsModelEvaluator<T>)new EsLinearSVMModel(pmmlModel);
         }
 
 
-        public PMMLModel newScript(LeafSearchLookup lookup, boolean debug) {
-            return new PMMLModel(features, model, lookup, debug);
+        public PMMLModel<T> newScript(LeafSearchLookup lookup, boolean debug) {
+            return new PMMLModel<>(features, model, lookup, debug);
         }
     }
 
-    public static FieldsToVectorAndModel getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
-
-        Model model = pmml.getModels().get(modelNum);
-        if (model instanceof GeneralRegressionModel) {
-            return GeneralizedLinearRegressionHelper.getGeneralRegressionFeaturesAndModel(pmml, modelNum);
-
-        } else if (model instanceof TreeModel) {
-            return TreeModelHelper.getTreeModelFeaturesAndModel(pmml, modelNum);
-        } else if (model instanceof NaiveBayesModel) {
-            return NaiveBayesModelHelper.getNaiveBayesFeaturesAndModel(pmml, modelNum);
-        } else {
-            throw new UnsupportedOperationException("Only implemented general regression model so far.");
-        }
-
+    public <T extends ModelInput> ModelAndInputEvaluator<T> getFeaturesAndModelFromFullPMMLSpec(PMML pmml, int modelNum) {
+        return parser.parse(pmml, modelNum);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -229,7 +198,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 if (vars.containsKey("debug")) {
                     debug = (Boolean)vars.get("debug");
                 }
-                PMMLModel scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);
+                PMMLModel<? extends ModelInput> scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);
                 return scriptObject;
             }
 
@@ -241,10 +210,10 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         };
     }
 
-    public static class PMMLModel implements LeafSearchScript {
-        EsModelEvaluator model = null;
+    public static class PMMLModel<T extends ModelInput> implements LeafSearchScript {
+        EsModelEvaluator<T> model = null;
         private boolean debug;
-        private final VectorRangesToVector features;
+        private final ModelInputEvaluator<T> features;
         private LeafSearchLookup lookup;
         private DataSource dataSource;
 
@@ -254,7 +223,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
          * method when the plugin is loaded.
          */
 
-        private PMMLModel(VectorRangesToVector features, EsModelEvaluator model, LeafSearchLookup lookup, boolean debug) {
+        private PMMLModel(ModelInputEvaluator<T> features, EsModelEvaluator<T> model, LeafSearchLookup lookup, boolean debug) {
             this.dataSource = new EsDataSource() {
                 @Override
                 protected LeafDocLookup getDocLookup() {
@@ -279,12 +248,11 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         @SuppressWarnings("unchecked")
         @Override
         public Object run() {
-            Object vector = features.vector(dataSource);
-            assert vector instanceof Map;
+            T vector = features.convert(dataSource);
             if (debug) {
-                return model.evaluateDebug((Map<String, Object>) vector);
+                return model.evaluateDebug(vector);
             } else {
-                return model.evaluate((Map<String, Object>) vector);
+                return model.evaluate(vector);
             }
         }
 

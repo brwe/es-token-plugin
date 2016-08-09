@@ -21,8 +21,11 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TreeModel;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.script.modelinput.VectorRange;
+import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
+import org.elasticsearch.script.models.MapModelInput;
 import org.elasticsearch.test.ESTestCase;
 import org.hamcrest.Matchers;
 
@@ -43,18 +46,20 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 public class PMMLParsingTests extends ESTestCase {
 
     public void testSimplePipelineParsingGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/logistic_regression.xml");
         PMML pmml = parsePmml(pmmlString);
 
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
-        assertThat(fieldsToVectorAndModel.vectorRangesToVector.getEntries().size(), equalTo(15));
+        assertThat(((VectorRangesToVector)fieldsToVectorAndModel.vectorRangesToVector).getEntries().size(), equalTo(15));
     }
 
     public void testTwoStepPipelineParsing() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -63,9 +68,10 @@ public class PMMLParsingTests extends ESTestCase {
     }
 
     public void testTwoStepPipelineParsingReorderedGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_reordered.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -116,9 +122,10 @@ public class PMMLParsingTests extends ESTestCase {
     }
 
     public void testModelAndFeatureParsingGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -127,9 +134,10 @@ public class PMMLParsingTests extends ESTestCase {
     }
 
     public void testBigModelAndFeatureParsingGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -139,9 +147,10 @@ public class PMMLParsingTests extends ESTestCase {
     }
 
     public void testBigModelAndFeatureParsingFromRExportGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/glm-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -152,9 +161,10 @@ public class PMMLParsingTests extends ESTestCase {
     }
 
     public void testBigModelCorrectSingleValueGLM() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.vectorRangesToVector;
@@ -163,7 +173,7 @@ public class PMMLParsingTests extends ESTestCase {
                 "/org/elasticsearch/script/singleresultforintegtest.txt");
     }
 
-    private void assertModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel) throws IOException {
+    private void assertModelCorrect(ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel) throws IOException {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
         String testDataLines[] = testData.split("\\r?\\n");
@@ -187,14 +197,14 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(new MapModelInput(result));
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
 
-    private void assertBiggerModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel, String inputData,
-                                          String
-            resultData) throws IOException {
+    private void assertBiggerModelCorrect(ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel, String inputData,
+                                          String resultData) throws IOException {
         final String testData = copyToStringFromClasspath(inputData);
         final String expectedResults = copyToStringFromClasspath(resultData);
         String testDataLines[] = testData.split("\\r?\\n");
@@ -230,7 +240,8 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[2];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(new MapModelInput(result));
             @SuppressWarnings("unchecked")
             double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
             @SuppressWarnings("unchecked")
@@ -245,9 +256,10 @@ public class PMMLParsingTests extends ESTestCase {
 
     /*tests for tree model*/
     public void testBigModelAndFeatureParsingFromRExportTreeModel() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML.VectorRangesToVectorPMMLTreeModel vectorEntries = (VectorRangesToVectorPMML
                 .VectorRangesToVectorPMMLTreeModel) fieldsToVectorAndModel.vectorRangesToVector;
@@ -256,7 +268,7 @@ public class PMMLParsingTests extends ESTestCase {
                 "/org/elasticsearch/script/r_tree_adult_result.csv");
     }
 
-    private void assertTreeModelModelCorrect(PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel, String inputData,
+    private void assertTreeModelModelCorrect(ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel, String inputData,
                                              String resultData) throws IOException {
         assertThat(fieldsToVectorAndModel.getModel(), notNullValue());
 
@@ -295,7 +307,8 @@ public class PMMLParsingTests extends ESTestCase {
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(new MapModelInput(result));
             assertThat("result " + i + " has wrong prediction", expectedClass, equalTo(resultValues.get("class")));
         }
     }
@@ -308,7 +321,7 @@ public class PMMLParsingTests extends ESTestCase {
         expectedFieldNames.addAll(Arrays.asList(new String[]{"age_z", "relationship", "marital_status", "hours_per_week_z", "sex",
                 "occupation", "education", "education_num_z", "native_country", "race", "workclass"}));
         Set<String> fieldNames = new HashSet<>();
-        TreeModelHelper.getFieldNamesFromNode(fieldNames, treeModel.getNode());
+        TreeModelParser.getFieldNamesFromNode(fieldNames, treeModel.getNode());
         assertThat(expectedFieldNames.size(), equalTo(fieldNames.size()));
         for (String fieldName : expectedFieldNames) {
             assertTrue(fieldNames.contains(fieldName));
@@ -319,8 +332,9 @@ public class PMMLParsingTests extends ESTestCase {
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = parsePmml(pmmlString);
         TreeModel treeModel = (TreeModel) pmml.getModels().get(0);
-        List<VectorRange> fields = TreeModelHelper.getFieldValuesList(treeModel, pmml, 0);
-        Map<String, String> fieldToTypeMap = TreeModelHelper.getFieldToTypeMap(fields);
+        List<VectorRange> fields = TreeModelParser.getFieldValuesList(treeModel, pmml.getDataDictionary(),
+                pmml.getTransformationDictionary());
+        Map<String, String> fieldToTypeMap = TreeModelParser.getFieldToTypeMap(fields);
         assertTrue(fieldToTypeMap.containsKey("age_z"));
         assertThat(fieldToTypeMap.get("age_z"), equalTo("double"));
         assertTrue(fieldToTypeMap.containsKey("work"));
@@ -331,9 +345,10 @@ public class PMMLParsingTests extends ESTestCase {
     
     /*tests for naive bayes model*/
     public void testBigModelAndFeatureParsingFromRExportNaiveBayesModel() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.vectorRangesToVector;
         assertThat(vectorEntries.getEntries().size(), equalTo(10));
@@ -343,9 +358,10 @@ public class PMMLParsingTests extends ESTestCase {
 
     /*tests for naive bayes model*/
     public void testBigModelAndFeatureParsingFromRExportNaiveBayesModelReorderdParams() throws IOException {
+        PMMLModelScriptEngineService pmmlModelScriptEngineService = new PMMLModelScriptEngineService(Settings.EMPTY);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r-reordered.xml");
         PMML pmml = parsePmml(pmmlString);
-        PMMLModelScriptEngineService.FieldsToVectorAndModel fieldsToVectorAndModel = PMMLModelScriptEngineService
+        ModelAndInputEvaluator<MapModelInput> fieldsToVectorAndModel = pmmlModelScriptEngineService
                 .getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
         VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.vectorRangesToVector;
         assertThat(vectorEntries.getEntries().size(), equalTo(10));
