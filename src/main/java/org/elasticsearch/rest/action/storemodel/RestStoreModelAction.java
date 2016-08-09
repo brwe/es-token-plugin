@@ -76,25 +76,20 @@ public class RestStoreModelAction extends BaseRestHandler {
             throw new ElasticsearchException("cannot store model", e);
         }
 
-        if (sourceAsMap.get("spec") == null) {
-            throw new ElasticsearchException("spec is missing from _store_model request");
-        }
         if (sourceAsMap.get("model") == null) {
             throw new ElasticsearchException("spec is missing from _store_model request");
         }
 
         final String model = (String) sourceAsMap.get("model");
 
-        String spec = (String) sourceAsMap.get("spec");
-        storeModel(channel, client, id, spec, model);
+        storeModel(channel, client, id, model);
     }
 
-    public void storeModel(final RestChannel channel, Client client, String id, String spec, String model) {
-        String finalModel = spec + PMMLModelScriptEngineService.Factory.VECTOR_MODEL_DELIMITER + model;
+    public void storeModel(final RestChannel channel, Client client, String id, String model) {
         PutStoredScriptRequestBuilder storedScriptRequestBuilder;
         try {
             storedScriptRequestBuilder = client.admin().cluster().preparePutStoredScript().setScriptLang(PMMLModelScriptEngineService.NAME)
-                    .setSource(jsonBuilder().startObject().field("script", finalModel).endObject().bytes());
+                    .setSource(jsonBuilder().startObject().field("script", model).endObject().bytes());
         } catch (IOException e) {
             throw new ElasticsearchException("cannot store model", e);
         }

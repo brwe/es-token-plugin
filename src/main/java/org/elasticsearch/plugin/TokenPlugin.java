@@ -19,7 +19,6 @@
 
 package org.elasticsearch.plugin;
 
-import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.allterms.AllTermsAction;
@@ -27,12 +26,10 @@ import org.elasticsearch.action.allterms.TransportAllTermsAction;
 import org.elasticsearch.action.allterms.TransportAllTermsShardAction;
 import org.elasticsearch.action.preparespec.PrepareSpecAction;
 import org.elasticsearch.action.preparespec.TransportPrepareSpecAction;
-import org.elasticsearch.action.support.ActionFilter;
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesAction;
 import org.elasticsearch.action.trainnaivebayes.TransportTrainNaiveBayesAction;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.network.NetworkModule;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.plugins.ActionPlugin;
 import org.elasticsearch.plugins.Plugin;
@@ -41,19 +38,16 @@ import org.elasticsearch.plugins.SearchPlugin;
 import org.elasticsearch.rest.RestHandler;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.rest.action.preparespec.RestPrepareSpecAction;
-import org.elasticsearch.rest.action.storemodel.RestStoreModelAction;
 import org.elasticsearch.rest.action.trainnaivebayes.RestTrainNaiveBayesAction;
 import org.elasticsearch.script.NativeScriptFactory;
 import org.elasticsearch.script.ScriptEngineService;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.VectorScriptFactory;
-import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.fetch.FetchSubPhase;
 import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchSubPhase;
 import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -92,7 +86,7 @@ public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, S
 
     @Override
     public List<Class<? extends RestHandler>> getRestHandlers() {
-        return Arrays.asList(RestAllTermsAction.class, RestPrepareSpecAction.class, RestStoreModelAction.class,
+        return Arrays.asList(RestAllTermsAction.class, RestPrepareSpecAction.class,
                 RestTrainNaiveBayesAction.class);
     }
 

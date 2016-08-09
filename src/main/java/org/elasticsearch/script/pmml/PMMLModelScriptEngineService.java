@@ -21,16 +21,11 @@ package org.elasticsearch.script.pmml;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
-import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
-import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.CompiledScript;
 import org.elasticsearch.script.ExecutableScript;
@@ -40,9 +35,6 @@ import org.elasticsearch.script.ScriptModule;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.script.modelinput.DataSource;
 import org.elasticsearch.script.modelinput.EsDataSource;
-import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
-import org.elasticsearch.script.models.EsLinearSVMModel;
-import org.elasticsearch.script.models.EsLogisticRegressionModel;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.ModelInput;
 import org.elasticsearch.script.models.ModelInputEvaluator;
@@ -50,9 +42,7 @@ import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 import org.elasticsearch.search.lookup.LeafSearchLookup;
 import org.elasticsearch.search.lookup.SearchLookup;
-import org.xml.sax.SAXException;
 
-import javax.xml.bind.JAXBException;
 import java.io.IOException;
 import java.util.Map;
 
@@ -95,8 +85,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
     }
 
     public class Factory<T extends ModelInput> {
-        public static final String VECTOR_MODEL_DELIMITER = "dont know what to put here";
-
         public EsModelEvaluator<T> getModel() {
             return model;
         }
@@ -107,36 +95,9 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
 
         @SuppressWarnings("unchecked")
         public Factory(String spec) {
-            if (spec.contains(VECTOR_MODEL_DELIMITER)) {
-                // In case someone pulled the vectors from elasticsearch the the vector spec is stored in the same script
-                // as the model but as a json string
-                // this is a clumsy workaround which we probably should remove at some point.
-                // Would be much better if we figure out TextIndex in PMML:
-                // http://dmg.org/pmml/v4-2-1/Transformations.html#xsdElement_TextIndex
-                // or we remove the ability to pull vectors from elasticsearch via this plugin altogether...
-
-                // split into vector and model
-                String[] vectorAndModel = spec.split(VECTOR_MODEL_DELIMITER);
-                Map<String, Object> parsedSource = null;
-                try {
-                    XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(vectorAndModel[0]);
-                    parsedSource = parser.mapOrdered();
-                } catch (IOException e) {
-                    throw new IllegalArgumentException("pmml prediction failed", e);
-                }
-                features = (ModelInputEvaluator<T>) new VectorRangesToVectorJSON(parsedSource);
-                if (model == null) {
-                    try {
-                        model = initModelWithoutPreProcessing(vectorAndModel[1]);
-                    } catch (SAXException | JAXBException | IOException e) {
-                        throw new IllegalArgumentException("pmml prediction failed", e);
-                    }
-                }
-            } else {
-                ModelAndInputEvaluator<T> fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
-                features = fieldsToVectorAndModel.vectorRangesToVector;
-                model = fieldsToVectorAndModel.model;
-            }
+            ModelAndInputEvaluator<T> fieldsToVectorAndModel = initFeaturesAndModelFromFullPMMLSpec(spec);
+            features = fieldsToVectorAndModel.vectorRangesToVector;
+            model = fieldsToVectorAndModel.model;
         }
 
         private ModelAndInputEvaluator<T> initFeaturesAndModelFromFullPMMLSpec(final String pmmlString) {
@@ -148,34 +109,6 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             return getFeaturesAndModelFromFullPMMLSpec(pmml, 0);
 
         }
-
-        public EsModelEvaluator<T> initModelWithoutPreProcessing(final String pmmlString) throws IOException,
-                SAXException,
-                JAXBException {
-            // this is bad but I have not figured out yet how to avoid the permission for suppressAccessCheck
-            PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-            Model model = pmml.getModels().get(0);
-            if (model.getModelName().equals("logistic regression")) {
-                return initLogisticRegression((RegressionModel) model);
-            } else if (model.getModelName().equals("linear SVM")) {
-                return initLinearSVM((RegressionModel) model);
-            } else {
-                throw new UnsupportedOperationException("We only implemented logistic regression so far but your model is of type " +
-                        model.getModelName());
-            }
-
-        }
-
-        @SuppressWarnings("unchecked")
-        protected EsModelEvaluator<T> initLogisticRegression(RegressionModel pmmlModel) {
-            return (EsModelEvaluator<T>)new EsLogisticRegressionModel(pmmlModel);
-        }
-
-        @SuppressWarnings("unchecked")
-        protected EsModelEvaluator<T> initLinearSVM(RegressionModel pmmlModel) {
-            return (EsModelEvaluator<T>)new EsLinearSVMModel(pmmlModel);
-        }
-
 
         public PMMLModel<T> newScript(LeafSearchLookup lookup, boolean debug) {
             return new PMMLModel<>(features, model, lookup, debug);
