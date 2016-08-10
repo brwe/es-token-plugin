@@ -19,32 +19,33 @@
 
 package org.elasticsearch.script.models;
 
-import org.dmg.pmml.RegressionModel;
-import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.modelinput.VectorModelInput;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
+public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput> {
 
-    public EsLogisticRegressionModel(RegressionModel model) {
-        super(model);
-    }
+    private final double[] coefficients;
+    private final double intercept;
+    private final String[] classes;
 
     public EsLogisticRegressionModel(double[] coefficients,
                                      double intercept, String[] classes) {
-        super(coefficients, intercept, classes);
+        this.coefficients = coefficients;
+        this.intercept = intercept;
+        this.classes = classes;
     }
 
     @Override
-    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
+    public Map<String, Object> evaluateDebug(VectorModelInput modelInput) {
+        double val = linearFunction(modelInput, intercept, coefficients);
         return prepareResult(val);
     }
 
     @Override
-    Object evaluate(Tuple<int[], double[]> featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
+    public Object evaluate(VectorModelInput modelInput) {
+        double val = linearFunction(modelInput, intercept, coefficients);
         double prob = 1 / (1 + Math.exp(-1.0 * val));
         return prob > 0.5 ? classes[0] : classes[1];
     }
@@ -62,10 +63,13 @@ public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
         return result;
     }
 
-    public Map<String, Object> evaluateDebug(double[] featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
-        return prepareResult(val);
+    private double linearFunction(VectorModelInput modelInput, double intercept, double[] coefficients) {
+        double val = 0.0;
+        val += intercept;
+        for (int i = 0; i < modelInput.getSize(); i++) {
+            val += modelInput.getValue(i) * coefficients[modelInput.getIndex(i)];
+        }
+        return val;
     }
-
 
 }

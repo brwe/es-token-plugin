@@ -31,11 +31,11 @@ import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueStats;
 import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
+import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
+import org.elasticsearch.script.modelinput.VectorModelInput;
 import org.elasticsearch.script.modelinput.VectorRange;
-import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput;
-import org.elasticsearch.script.modelinput.MapModelInput;
 import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBayesModel> {
+public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, NaiveBayesModel> {
 
     public NaiveBayesModelFactory() {
         super(NaiveBayesModel.class);
@@ -52,7 +52,7 @@ public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBay
 
 
     @Override
-    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
+    public ModelAndModelInputEvaluator<VectorModelInput> buildFromPMML(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
                                                                     TransformationDictionary transformationDictionary) {
         if (naiveBayesModel.getFunctionName().value().equals("classification")) {
             // for each Bayes input
@@ -72,9 +72,9 @@ public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBay
                 indexCounter += vectorRange.size();
                 targetValueStats.add(bayesInput.getTargetValueStats());
             }
-            VectorRangesToVectorPMML vectorPMML = new VectorRangesToVectorPMML(vectorRanges, indexCounter);
+            VectorModelInputEvaluator vectorPMML = new VectorModelInputEvaluator(vectorRanges);
 
-            EsModelEvaluator<MapModelInput> model = new EsNaiveBayesModelWithMixedInput(naiveBayesModel, types);
+            EsModelEvaluator<VectorModelInput> model = new EsNaiveBayesModelWithMixedInput(naiveBayesModel, types);
             return new ModelAndModelInputEvaluator<>(vectorPMML, model);
         } else {
             throw new UnsupportedOperationException("Naive does not support the following parameters yet: "
@@ -82,7 +82,7 @@ public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBay
         }
     }
 
-    static PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(NaiveBayesModel model,
+    private PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(NaiveBayesModel model,
                                                                DataDictionary dataDictionary,
                                                                TransformationDictionary transformationDictionary,
                                                                String fieldName,
@@ -97,7 +97,7 @@ public class NaiveBayesModelFactory extends ModelFactory<MapModelInput, NaiveBay
         return featureEntries;
     }
 
-    static PMMLVectorRange getFieldVector(int indexCounter, List<DerivedField> derivedFields, DataField rawField,
+    private PMMLVectorRange getFieldVector(int indexCounter, List<DerivedField> derivedFields, DataField rawField,
                                           MiningField miningField, BayesInput bayesInput, Map<String, OpType> types) {
         PMMLVectorRange featureEntries;
         OpType opType;

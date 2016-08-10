@@ -34,10 +34,11 @@ import org.dmg.pmml.TransformationDictionary;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
+import org.elasticsearch.script.modelinput.VectorModelInput;
+import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
-import org.elasticsearch.script.modelinput.MapModelInput;
 import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 
-public class GeneralizedLinearRegressionModelFactory extends ModelFactory<MapModelInput, GeneralRegressionModel> {
+public class GeneralizedLinearRegressionModelFactory extends ModelFactory<VectorModelInput, GeneralRegressionModel> {
 
     public GeneralizedLinearRegressionModelFactory() {
         super(GeneralRegressionModel.class);
@@ -179,7 +180,7 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<MapMod
 
     @SuppressWarnings("unchecked")
     @Override
-    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(GeneralRegressionModel grModel, DataDictionary dataDictionary,
+    public ModelAndModelInputEvaluator<VectorModelInput> buildFromPMML(GeneralRegressionModel grModel, DataDictionary dataDictionary,
                                                                     TransformationDictionary transformationDictionary) {
         if (grModel.getFunctionName().value().equals("classification") && (grModel.getModelType().value().equals
                 ("multinomialLogistic") || (grModel.getModelType().value().equals
@@ -195,9 +196,7 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<MapMod
             addIntercept(grModel, vectorRangeList, fieldToPPCellMap, orderedParameterList);
 
             assert orderedParameterList.size() == grModel.getParameterList().getParameters().size();
-            VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries =
-                    createGeneralizedRegressionModelVectorEntries(vectorRangeList, orderedParameterList
-                    .toArray(new String[orderedParameterList.size()]));
+            VectorModelInputEvaluator vectorEntries = new VectorModelInputEvaluator(vectorRangeList);
 
             // now finally create the model!
             // find all the coefficients for each class
@@ -302,16 +301,5 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<MapMod
             }
         }
         return coefficients;
-    }
-
-    private VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression createGeneralizedRegressionModelVectorEntries(
-            List<VectorRange> vectorRangeList, String[] orderedParameterList) {
-        int numEntries = 0;
-        for (VectorRange entry : vectorRangeList) {
-
-            numEntries += entry.size();
-        }
-        return new VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression(vectorRangeList, numEntries,
-                orderedParameterList);
     }
 }

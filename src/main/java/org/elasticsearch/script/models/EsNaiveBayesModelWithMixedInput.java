@@ -28,21 +28,20 @@ import org.dmg.pmml.PairCounts;
 import org.dmg.pmml.TargetValueCount;
 import org.dmg.pmml.TargetValueCounts;
 import org.dmg.pmml.TargetValueStat;
-import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.modelinput.VectorModelInput;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
-public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluator {
+public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorModelInput> {
 
     private Function[][] functions;
     private double[] classPriors;
     private String[] classLabels;
-    Map<String, Integer> classIndexMap;
+    private Map<String, Integer> classIndexMap;
 
     public EsNaiveBayesModelWithMixedInput(NaiveBayesModel naiveBayesModel, Map<String, OpType> types) {
         double[] classCounts = initClassPriorsAndLabels(naiveBayesModel);
@@ -127,25 +126,24 @@ public class EsNaiveBayesModelWithMixedInput extends EsNumericInputModelEvaluato
     }
 
     @Override
-    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
-        double[] classProbs = getClassProbs(featureValues);
+    public Map<String, Object> evaluateDebug(VectorModelInput modelInput) {
+        double[] classProbs = getClassProbs(modelInput);
         return prepareResult(classProbs);
     }
 
-    private double[] getClassProbs(Tuple<int[], double[]> featureValues) {
+    private double[] getClassProbs(VectorModelInput modelInput) {
         double[] classProbs = new double[classLabels.length];
         System.arraycopy(classPriors, 0, classProbs, 0, classProbs.length);
-        for (int i = 0; i < featureValues.v1().length; i++) {
+        for (int i = 0; i < modelInput.getSize(); i++) {
             for (int j = 0; j < classProbs.length; j++) {
-                classProbs[j] += functions[j][featureValues.v1()[i]].eval(featureValues.v2()[i]);
+                classProbs[j] += functions[j][modelInput.getIndex(i)].eval(modelInput.getValue(i));
             }
         }
         return classProbs;
     }
 
-    @Override
-    Object evaluate(Tuple<int[], double[]> featureValues) {
-        double[] classProbs = getClassProbs(featureValues);
+    public Object evaluate(VectorModelInput modelInput) {
+        double[] classProbs = getClassProbs(modelInput);
         int bestClass = 0;
         // sum the values to get the actual probs
         double bestProb = Double.NEGATIVE_INFINITY;

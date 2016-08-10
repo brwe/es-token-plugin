@@ -21,8 +21,10 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TreeModel;
+import org.elasticsearch.script.MockDataSource;
+import org.elasticsearch.script.modelinput.VectorModelInput;
+import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.script.modelinput.VectorRange;
-import org.elasticsearch.script.modelinput.VectorRangesToVector;
 import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.modelinput.MapModelInput;
 import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
@@ -49,18 +51,18 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/logistic_regression.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        assertThat(((VectorRangesToVector)fieldsToVectorAndModel.getVectorRangesToVector()).getEntries().size(), equalTo(15));
+        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        assertThat(((VectorModelInputEvaluator)fieldsToVectorAndModel.getVectorRangesToVector()).getVectorRangeList().size(), equalTo(15));
     }
 
     public void testTwoStepPipelineParsing() throws IOException {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries =
+                (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(3));
         assertVectorsCorrect(vectorEntries);
     }
 
@@ -68,14 +70,13 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_reordered.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(3));
         assertVectorsCorrect(vectorEntries);
     }
 
-    public void assertVectorsCorrect(VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries) throws
+    public void assertVectorsCorrect(VectorModelInputEvaluator vectorEntries) throws
             IOException {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
@@ -94,7 +95,7 @@ public class PMMLParsingTests extends ESTestCase {
             Map<String, List<Object>> input = new HashMap<>();
             input.put("age", ageInput);
             input.put("work", workInput);
-            @SuppressWarnings("unchecked") Map<String, Object> result = (Map<String, Object>) vectorEntries.vector(input);
+            Map<String, Object> result = vectorEntries.convert(new MockDataSource(input)).getAsMap();
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             double expectedAgeValue = Double.parseDouble(expectedResult[0]);
             // assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
@@ -121,10 +122,9 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(3));
+        ModelAndModelInputEvaluator<VectorModelInput>  fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(3));
         assertModelCorrect(fieldsToVectorAndModel);
     }
 
@@ -132,10 +132,9 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(15));
+        ModelAndModelInputEvaluator<VectorModelInput>  fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(15));
         assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/adult.data",
                 "/org/elasticsearch/script/knime_glm_adult_result.csv");
     }
@@ -144,10 +143,9 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/glm-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(12));
+        ModelAndModelInputEvaluator<VectorModelInput>  fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(12));
         assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/adult.data",
                 "/org/elasticsearch/script/r_glm_adult_result" +
                 ".csv");
@@ -157,15 +155,14 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/lr_model_adult_full.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML.VectorRangesToVectorPMMLGeneralizedRegression vectorEntries = (VectorRangesToVectorPMML
-                .VectorRangesToVectorPMMLGeneralizedRegression) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(15));
+        ModelAndModelInputEvaluator<VectorModelInput>  fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(15));
         assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/singlevalueforintegtest.txt",
                 "/org/elasticsearch/script/singleresultforintegtest.txt");
     }
 
-    private void assertModelCorrect(ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel) throws IOException {
+    private void assertModelCorrect(ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel) throws IOException {
         final String testData = copyToStringFromClasspath("/org/elasticsearch/script/test.data");
         final String expectedResults = copyToStringFromClasspath("/org/elasticsearch/script/lr_result.txt");
         String testDataLines[] = testData.split("\\r?\\n");
@@ -184,18 +181,17 @@ public class PMMLParsingTests extends ESTestCase {
             input.put("age", ageInput);
             input.put("work", workInput);
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = (Map<String, Object>) ((VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector())
-                    .vector(input);
+            VectorModelInput result = fieldsToVectorAndModel.getVectorRangesToVector().convert(new MockDataSource(input));
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             String expectedClass = expectedResult[expectedResult.length - 1];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
             @SuppressWarnings("unchecked")
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(new MapModelInput(result));
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(result);
             assertThat(expectedClass, equalTo(resultValues.get("class")));
         }
     }
 
-    private void assertBiggerModelCorrect(ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel, String inputData,
+    private void assertBiggerModelCorrect(ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel, String inputData,
                                           String resultData) throws IOException {
         final String testData = copyToStringFromClasspath(inputData);
         final String expectedResults = copyToStringFromClasspath(resultData);
@@ -226,14 +222,12 @@ public class PMMLParsingTests extends ESTestCase {
                     }
                 }
             }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> result = (Map<String, Object>) ((VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector())
-                    .vector(input);
+            VectorModelInput vectorModelInput = fieldsToVectorAndModel.getVectorRangesToVector().convert(new MockDataSource(input));
             String[] expectedResult = expectedResultsLines[i].split(",");
             String expectedClass = expectedResult[2];
             expectedClass = expectedClass.substring(1, expectedClass.length() - 1);
             @SuppressWarnings("unchecked")
-            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(new MapModelInput(result));
+            Map<String, Object> resultValues = fieldsToVectorAndModel.getModel().evaluateDebug(vectorModelInput);
             @SuppressWarnings("unchecked")
             double prob0 = (Double) ((Map<String, Object>) resultValues.get("probs")).get("<=50K");
             @SuppressWarnings("unchecked")
@@ -339,9 +333,9 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(10));
+        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(10));
         assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/naive_bayes_full_single_value.txt",
                 "/org/elasticsearch/script/naive_bayes_full_single_result.txt");
     }
@@ -351,9 +345,9 @@ public class PMMLParsingTests extends ESTestCase {
         ModelFactories factories = ModelFactories.createDefaultModelFactories();
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/naive-bayes-adult-full-r-reordered.xml");
         PMML pmml = parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
-        VectorRangesToVectorPMML vectorEntries = (VectorRangesToVectorPMML) fieldsToVectorAndModel.getVectorRangesToVector();
-        assertThat(vectorEntries.getEntries().size(), equalTo(10));
+        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = factories.buildFromPMML(pmml, 0);
+        VectorModelInputEvaluator vectorEntries = (VectorModelInputEvaluator) fieldsToVectorAndModel.getVectorRangesToVector();
+        assertThat(vectorEntries.getVectorRangeList().size(), equalTo(10));
         assertBiggerModelCorrect(fieldsToVectorAndModel, "/org/elasticsearch/script/naive_bayes_full_single_value.txt",
                 "/org/elasticsearch/script/naive_bayes_full_single_result.txt");
     }

@@ -17,17 +17,17 @@
  * under the License.
  */
 
-package org.elasticsearch.script.models;
+package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.script.modelinput.ModelInput;
+/**
+ * A model input that can be represented as sparse or dense vector
+ */
+public abstract class VectorModelInput implements ModelInput  {
 
-import java.util.Map;
+    public abstract int getSize();
 
+    public abstract double getValue(int i);
 
-public abstract class EsModelEvaluator<T extends ModelInput> {
+    public abstract int getIndex(int i);
 
-    public abstract Map<String, Object> evaluateDebug(T modelInput);
-    public abstract Object evaluate(T modelInput);
 }
-
-
