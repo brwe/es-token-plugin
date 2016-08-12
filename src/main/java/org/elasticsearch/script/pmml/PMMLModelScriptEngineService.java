@@ -121,7 +121,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             public LeafSearchScript getLeafSearchScript(LeafReaderContext context) throws IOException {
                 final LeafSearchLookup leafLookup = lookup.getLeafSearchLookup(context);
                 boolean debug = true;
-                if (vars.containsKey("debug")) {
+                if (vars != null && vars.containsKey("debug")) {
                     debug = (Boolean)vars.get("debug");
                 }
                 PMMLModel<? extends ModelInput> scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);

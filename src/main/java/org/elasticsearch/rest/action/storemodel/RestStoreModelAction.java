@@ -19,6 +19,7 @@
 
 package org.elasticsearch.rest.action.storemodel;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptRequestBuilder;
 import org.elasticsearch.action.admin.cluster.storedscripts.PutStoredScriptResponse;
@@ -56,6 +57,7 @@ public class RestStoreModelAction extends BaseRestHandler {
     public RestStoreModelAction(Settings settings, RestController controller) {
         super(settings);
         controller.registerHandler(POST, "/_store_model", this);
+        controller.registerHandler(POST, "/_store_model/{id}", this);
     }
 
     @Override
@@ -69,19 +71,23 @@ public class RestStoreModelAction extends BaseRestHandler {
         if (request.content() == null) {
             throw new ElasticsearchException("_store_model request must have a body");
         }
-        Map<String, Object> sourceAsMap;
+
+        String model;
         try {
-            sourceAsMap = SharedMethods.getSourceAsMap(new String(BytesReference.toBytes(request.content()), Charset.defaultCharset()));
+            try {
+                Map<String, Object> sourceAsMap = SharedMethods.getSourceAsMap(new String(BytesReference.toBytes(request.content()),
+                        Charset.defaultCharset()));
+                if (sourceAsMap.get("model") == null) {
+                    throw new ElasticsearchException("spec is missing from _store_model request");
+                }
+                model = (String) sourceAsMap.get("model");
+            } catch (JsonParseException ex) {
+                // it wasn't json let's try parsing it as is
+                model = request.content().utf8ToString();
+            }
         } catch (IOException e) {
             throw new ElasticsearchException("cannot store model", e);
         }
-
-        if (sourceAsMap.get("model") == null) {
-            throw new ElasticsearchException("spec is missing from _store_model request");
-        }
-
-        final String model = (String) sourceAsMap.get("model");
-
         storeModel(channel, client, id, model);
     }
 

@@ -38,6 +38,7 @@ import org.elasticsearch.plugins.SearchPlugin;
 import org.elasticsearch.rest.RestHandler;
 import org.elasticsearch.rest.action.allterms.RestAllTermsAction;
 import org.elasticsearch.rest.action.preparespec.RestPrepareSpecAction;
+import org.elasticsearch.rest.action.storemodel.RestStoreModelAction;
 import org.elasticsearch.rest.action.trainnaivebayes.RestTrainNaiveBayesAction;
 import org.elasticsearch.script.NativeScriptFactory;
 import org.elasticsearch.script.ScriptEngineService;
@@ -86,7 +87,7 @@ public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, S
 
     @Override
     public List<Class<? extends RestHandler>> getRestHandlers() {
-        return Arrays.asList(RestAllTermsAction.class, RestPrepareSpecAction.class,
+        return Arrays.asList(RestAllTermsAction.class, RestPrepareSpecAction.class, RestStoreModelAction.class,
                 RestTrainNaiveBayesAction.class);
     }
 
