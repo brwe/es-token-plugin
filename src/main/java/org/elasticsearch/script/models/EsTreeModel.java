@@ -19,15 +19,6 @@
 
 package org.elasticsearch.script.models;
 
-import org.dmg.pmml.Array;
-import org.dmg.pmml.CompoundPredicate;
-import org.dmg.pmml.False;
-import org.dmg.pmml.Node;
-import org.dmg.pmml.Predicate;
-import org.dmg.pmml.SimplePredicate;
-import org.dmg.pmml.SimpleSetPredicate;
-import org.dmg.pmml.TreeModel;
-import org.dmg.pmml.True;
 import org.elasticsearch.script.modelinput.MapModelInput;
 
 import java.util.ArrayList;
@@ -39,11 +30,10 @@ import java.util.Set;
 
 public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
 
-    EsTreeNode startNode;
+    private final EsTreeNode startNode;
 
-    public EsTreeModel(TreeModel treeModel, Map<String, String> fieldTypeMap) {
-
-        startNode = new EsTreeNode(treeModel.getNode(), fieldTypeMap);
+    public EsTreeModel(EsTreeNode startNode) {
+        this.startNode = startNode;
     }
 
     @Override
@@ -60,20 +50,19 @@ public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
         return startNode.evaluate(vector).get("class");
     }
 
-    static class EsTreeNode {
+    public static class EsTreeNode {
         EsPredicate predicate;
         java.util.List<EsTreeNode> childNodes = new ArrayList<>();
         String score;
 
-        public EsTreeNode(Node node, Map<String, String> fieldTypeMap) {
-            predicate = createPredicate(node.getPredicate(), fieldTypeMap);
-            for (Node childNode : node.getNodes()) {
-                childNodes.add(new EsTreeNode(childNode, fieldTypeMap));
-            }
-            score = node.getScore();
+        public EsTreeNode(List<EsTreeNode> childNodes, EsPredicate predicate, String score) {
+            this.predicate = predicate;
+            this.childNodes = childNodes;
+            this.score = score;
         }
 
-        public Map<String, Object> evaluate(Map<String, Object> vector) {
+
+        private Map<String, Object> evaluate(Map<String, Object> vector) {
             for (EsTreeNode childNode : childNodes) {
                 if (childNode.predicate.match(vector)) {
                     return childNode.evaluate(vector);
@@ -85,282 +74,18 @@ public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
         }
     }
 
-    protected static EsPredicate createPredicate(final Predicate predicate, Map<String, String> fieldTypeMap) {
-        if (predicate instanceof SimplePredicate) {
-            SimplePredicate simplePredicate = (SimplePredicate) predicate;
-            String field = simplePredicate.getField().getValue();
-            String type = fieldTypeMap.get(field);
-            String value = simplePredicate.getValue();
-            if (type == "string") {
-                return getSimplePredicate(value, field, simplePredicate.getOperator().value());
-            }
-            if (type == "double") {
-                return getSimplePredicate(Double.parseDouble(value), field, simplePredicate.getOperator().value());
-            }
-            if (type == "float") {
-                return getSimplePredicate(Float.parseFloat(value), field, simplePredicate.getOperator().value());
-            }
-            if (type == "int") {
-                return getSimplePredicate(Integer.parseInt(value), field, simplePredicate.getOperator().value());
-            }
-            if (type == "boolean") {
-                return getSimplePredicate(Boolean.parseBoolean(value), field, simplePredicate.getOperator().value());
-            }
-            throw new UnsupportedOperationException("Data type " + type + " for TreeModel not implemented yet.");
-        }
-        if (predicate instanceof True) {
-            return new EsPredicate() {
-                @Override
-                public boolean match(Map<String, Object> vector) {
-                    return true;
-                }
+    public interface EsPredicate {
+        boolean match(Map<String, Object> vector);
 
-                @Override
-                public boolean notEnoughValues(Map<String, Object> vector) {
-                    return false;
-                }
-            };
-
-        }
-        if (predicate instanceof False) {
-            return new EsPredicate() {
-                @Override
-                public boolean match(Map<String, Object> vector) {
-                    return false;
-                }
-
-                @Override
-                public boolean notEnoughValues(Map<String, Object> vector) {
-                    return false;
-                }
-            };
-        }
-        if (predicate instanceof CompoundPredicate) {
-            CompoundPredicate compoundPredicate = (CompoundPredicate) predicate;
-            List<EsPredicate> predicates = new ArrayList<>();
-            for (Predicate childPredicate : ((CompoundPredicate) predicate).getPredicates()) {
-                predicates.add(createPredicate(childPredicate, fieldTypeMap));
-            }
-            if (compoundPredicate.getBooleanOperator().value().equals("and")) {
-                return new EsCompoundPredicate(predicates) {
-
-                    @Override
-                    protected boolean matchList(Map<String, Object> vector) {
-                        boolean result = true;
-                        for (EsPredicate childPredicate : predicates) {
-                            result = result && childPredicate.match(vector);
-                        }
-                        return result;
-                    }
-                };
-            }
-            if (compoundPredicate.getBooleanOperator().value().equals("or")) {
-                return new EsCompoundPredicate(predicates) {
-
-                    @Override
-                    protected boolean matchList(Map<String, Object> vector) {
-                        boolean result = false;
-                        for (EsPredicate childPredicate : predicates) {
-                            result = result || childPredicate.match(vector);
-                        }
-                        return result;
-                    }
-                };
-            }
-            if (compoundPredicate.getBooleanOperator().value().equals("xor")) {
-                return new EsCompoundPredicate(predicates) {
-
-                    @Override
-                    protected boolean matchList(Map<String, Object> vector) {
-                        boolean result = false;
-                        for (EsPredicate childPredicate : predicates) {
-                            if (result == false) {
-                                result = result || childPredicate.match(vector);
-                            } else {
-                                if (childPredicate.match(vector)) {
-                                    // we had true already, xor must return false
-                                    return false;
-                                }
-                            }
-                        }
-                        return result;
-                    }
-                };
-            }
-            if (compoundPredicate.getBooleanOperator().value().equals("surrogate")) {
-                return new EsCompoundPredicate(predicates) {
-
-                    @Override
-                    protected boolean matchList(Map<String, Object> vector) {
-                        for (EsPredicate childPredicate : predicates) {
-                            if (childPredicate.notEnoughValues(vector) == false) {
-                                return childPredicate.match(vector);
-
-                            }
-                        }
-                        return false;
-                    }
-
-                    @Override
-                    public boolean notEnoughValues(Map<String, Object> vector) {
-                        boolean notEnoughValues = true;
-                        for (EsPredicate predicate : predicates) {
-                            // only one needs to have enough values and then the predicate is defined
-                            notEnoughValues = predicate.notEnoughValues(vector) && notEnoughValues;
-                        }
-                        return notEnoughValues;
-                    }
-                };
-
-            }
-        }
-        if (predicate instanceof SimpleSetPredicate) {
-            SimpleSetPredicate simpleSetPredicate = (SimpleSetPredicate) predicate;
-            Array setArray = simpleSetPredicate.getArray();
-            String field = simpleSetPredicate.getField().getValue();
-            if (setArray.getType().equals(Array.Type.STRING)) {
-                HashSet<String> valuesSet = new HashSet<>();
-                String[] values = setArray.getValue().split("\" \"");
-                // trimm beginning and end quotes
-                values[0] = values[0].substring(1, values[0].length());
-                values[values.length - 1] = values[values.length - 1].substring(0, values[values.length - 1].length() - 1);
-                if (values.length != setArray.getN()) {
-                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
-                }
-                for (String value : values) {
-                    valuesSet.add(value);
-                }
-                return new EsSimpleSetPredicate<>(valuesSet, field);
-            }
-
-            if (setArray.getType().equals(Array.Type.STRING)) {
-                HashSet<Double> valuesSet = new HashSet<>();
-                String[] values = setArray.getValue().split(" ");
-                if (values.length != setArray.getN()) {
-                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
-                }
-                for (String value : values) {
-                    valuesSet.add(Double.parseDouble(value));
-                }
-                return new EsSimpleSetPredicate<>(valuesSet, field);
-            }
-            if (setArray.getType().equals(Array.Type.INT)) {
-                HashSet<Integer> valuesSet = new HashSet<>();
-                String[] values = setArray.getValue().split(" ");
-                if (values.length != setArray.getN()) {
-                    throw new UnsupportedOperationException("Could not infer values from array value " + setArray.getValue());
-                }
-                for (String value : values) {
-                    valuesSet.add(Integer.parseInt(value));
-                }
-                return new EsSimpleSetPredicate<>(valuesSet, field);
-            }
-        }
-        throw new UnsupportedOperationException("Predicate Type " + predicate.getClass().getName() + " for TreeModel not implemented yet.");
+        boolean notEnoughValues(Map<String, Object> vector);
     }
 
-    protected static <T extends Comparable<T>> EsSimplePredicate<T> getSimplePredicate(T value, String field, String operator) {
-        if (operator.equals("equal")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return value.equals(fieldValue);
-                }
-            };
-        }
-        if (operator.equals("notEqual")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return value.equals(fieldValue) == false;
-                }
-            };
-        }
-        if (operator.equals("lessThan")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return fieldValue.compareTo(value) < 0;
-                }
-            };
-        }
-        if (operator.equals("lessOrEqual")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return fieldValue.compareTo(value) <= 0;
-                }
-            };
-        }
-        if (operator.equals("greaterThan")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return fieldValue.compareTo(value) > 0;
-                }
-            };
-        }
-        if (operator.equals("greaterOrEqual")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    return fieldValue.compareTo(value) >= 0;
-                }
-            };
-        }
-        if (operator.equals("isMissing")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    throw new UnsupportedOperationException("We should never get here!");
-                }
-
-                @Override
-                public boolean match(Map<String, Object> vector) {
-                    Object fieldValue = vector.get(field);
-                    if (fieldValue == null) {
-                        return true;
-                    }
-                    return false;
-                }
-            };
-        }
-        if (operator.equals("isNotMissing")) {
-            return new EsSimplePredicate<T>(value, field) {
-                @Override
-                public boolean match(T fieldValue) {
-                    throw new UnsupportedOperationException("We should never get here!");
-                }
-
-                @Override
-                public boolean match(Map<String, Object> vector) {
-                    Object fieldValue = vector.get(field);
-                    if (fieldValue == null) {
-                        return false;
-                    }
-                    return true;
-                }
-            };
-        }
-        throw new UnsupportedOperationException("OOperator " + operator + "  not supported for Predicate in TreeModel.");
-    }
-
-    abstract static class EsPredicate {
-        public EsPredicate() {
-
-        }
-
-        public abstract boolean match(Map<String, Object> vector);
-
-        public abstract boolean notEnoughValues(Map<String, Object> vector);
-    }
-
-    abstract static class EsSimplePredicate<T extends Comparable<T>> extends EsPredicate {
+    public abstract static class EsSimplePredicate<T extends Comparable<T>> implements EsPredicate {
 
         protected final T value;
         protected String field;
 
-        public EsSimplePredicate(T value, String field) {
+        protected EsSimplePredicate(T value, String field) {
 
             this.value = value;
             this.field = field;
@@ -386,11 +111,11 @@ public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
         }
     }
 
-    abstract static class EsCompoundPredicate extends EsPredicate {
+    public abstract static class EsCompoundPredicate implements EsPredicate {
 
         protected List<EsPredicate> predicates;
 
-        public EsCompoundPredicate(List<EsPredicate> predicates) {
+        protected EsCompoundPredicate(List<EsPredicate> predicates) {
             this.predicates = predicates;
         }
 
@@ -410,7 +135,7 @@ public class EsTreeModel extends EsModelEvaluator<MapModelInput> {
         }
     }
 
-    static class EsSimpleSetPredicate<T> extends EsPredicate {
+    public static class EsSimpleSetPredicate<T> implements EsPredicate {
 
         protected HashSet<T> values;
         private String field;
