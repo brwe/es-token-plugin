@@ -20,8 +20,6 @@
 package org.elasticsearch.script.models;
 
 import org.elasticsearch.common.collect.Tuple;
-import org.elasticsearch.script.modelinput.MapModelInput;
-import org.elasticsearch.script.modelinput.SparseVectorModelInput;
 import org.elasticsearch.script.modelinput.VectorModelInput;
 
 import java.util.Map;
