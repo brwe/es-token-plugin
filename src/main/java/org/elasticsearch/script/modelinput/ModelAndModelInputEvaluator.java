@@ -19,28 +19,26 @@
 
 package org.elasticsearch.script.modelinput;
 
-import org.elasticsearch.script.modelinput.ModelInput;
-import org.elasticsearch.script.modelinput.ModelInputEvaluator;
 import org.elasticsearch.script.models.EsModelEvaluator;
 
 /**
  *
  */
-public class ModelAndModelInputEvaluator<T extends ModelInput> {
-    private final ModelInputEvaluator<T> vectorRangesToVector;
+public class ModelAndModelInputEvaluator<Input extends ModelInput, Output> {
+    private final ModelInputEvaluator<Input> vectorRangesToVector;
 
-    private final EsModelEvaluator<T> model;
+    private final EsModelEvaluator<Input, Output> model;
 
-    public ModelAndModelInputEvaluator(ModelInputEvaluator<T> vectorRangesToVector, EsModelEvaluator<T> model) {
+    public ModelAndModelInputEvaluator(ModelInputEvaluator<Input> vectorRangesToVector, EsModelEvaluator<Input, Output> model) {
         this.vectorRangesToVector = vectorRangesToVector;
         this.model = model;
     }
 
-    public ModelInputEvaluator<T> getVectorRangesToVector() {
+    public ModelInputEvaluator<Input> getVectorRangesToVector() {
         return vectorRangesToVector;
     }
 
-    public EsModelEvaluator<T> getModel() {
+    public EsModelEvaluator<Input, Output> getModel() {
         return model;
     }
 }

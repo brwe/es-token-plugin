@@ -83,23 +83,23 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         throw new UnsupportedOperationException("model script not supported in this context!");
     }
 
-    public class Factory<T extends ModelInput> {
-        public EsModelEvaluator<T> getModel() {
+    public class Factory<Input extends ModelInput, Output> {
+        public EsModelEvaluator<Input, Output> getModel() {
             return model;
         }
 
-        ModelInputEvaluator<T> features = null;
+        ModelInputEvaluator<Input> features = null;
 
-        private EsModelEvaluator<T> model;
+        private EsModelEvaluator<Input, Output> model;
 
         @SuppressWarnings("unchecked")
         public Factory(String spec) {
-            ModelAndModelInputEvaluator<T> fieldsToVectorAndModel = parsePMML(spec);
+            ModelAndModelInputEvaluator<Input, Output> fieldsToVectorAndModel = parsePMML(spec);
             features = fieldsToVectorAndModel.getVectorRangesToVector();
             model = fieldsToVectorAndModel.getModel();
         }
 
-        private ModelAndModelInputEvaluator<T> parsePMML(final String pmmlString) {
+        private ModelAndModelInputEvaluator<Input, Output> parsePMML(final String pmmlString) {
             PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
             if (pmml.getModels().size() > 1) {
                 throw new UnsupportedOperationException("Only implemented PMML for one model so far.");
@@ -107,7 +107,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
             return factories.buildFromPMML(pmml, 0);
         }
 
-        public PMMLModel<T> newScript(LeafSearchLookup lookup, boolean debug) {
+        public PMMLModel<Input, Output> newScript(LeafSearchLookup lookup, boolean debug) {
             return new PMMLModel<>(features, model, lookup, debug);
         }
     }
@@ -124,8 +124,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
                 if (vars != null && vars.containsKey("debug")) {
                     debug = (Boolean)vars.get("debug");
                 }
-                PMMLModel<? extends ModelInput> scriptObject = ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);
-                return scriptObject;
+                return ((Factory) compiledScript.compiled()).newScript(leafLookup, debug);
             }
 
             @Override
@@ -136,14 +135,15 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         };
     }
 
-    public static class PMMLModel<T extends ModelInput> implements LeafSearchScript {
-        EsModelEvaluator<T> model = null;
+    public static class PMMLModel<Input extends ModelInput, Output> implements LeafSearchScript {
+        EsModelEvaluator<Input, Output> model = null;
         private boolean debug;
-        private final ModelInputEvaluator<T> features;
+        private final ModelInputEvaluator<Input> features;
         private LeafSearchLookup lookup;
         private DataSource dataSource;
 
-        private PMMLModel(ModelInputEvaluator<T> features, EsModelEvaluator<T> model, LeafSearchLookup lookup, boolean debug) {
+        private PMMLModel(ModelInputEvaluator<Input> features, EsModelEvaluator<Input, Output> model,
+                          LeafSearchLookup lookup, boolean debug) {
             this.dataSource = new EsDataSource() {
                 @Override
                 protected LeafDocLookup getDocLookup() {
@@ -168,7 +168,7 @@ public class PMMLModelScriptEngineService extends AbstractComponent implements S
         @SuppressWarnings("unchecked")
         @Override
         public Object run() {
-            T vector = features.convert(dataSource);
+            Input vector = features.convert(dataSource);
             if (debug) {
                 return model.evaluateDebug(vector);
             } else {

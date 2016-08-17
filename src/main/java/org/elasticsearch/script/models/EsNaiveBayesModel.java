@@ -50,7 +50,7 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
     }
 
     @Override
-    Map<String, Object> evaluate(Tuple<int[], double[]> featureValues) {
+    String evaluate(Tuple<int[], double[]> featureValues) {
         throw new UnsupportedOperationException("can only run with parameter debug: true");
     }
 

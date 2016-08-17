@@ -48,14 +48,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class TreeModelFactory extends ModelFactory<MapModelInput, TreeModel> {
+public class TreeModelFactory extends ModelFactory<MapModelInput, String, TreeModel> {
 
     public TreeModelFactory() {
         super(TreeModel.class);
     }
 
     @Override
-    public ModelAndModelInputEvaluator<MapModelInput> buildFromPMML(TreeModel treeModel, DataDictionary dataDictionary,
+    public ModelAndModelInputEvaluator<MapModelInput, String> buildFromPMML(TreeModel treeModel, DataDictionary dataDictionary,
                                                                     TransformationDictionary transformationDictionary) {
         if (treeModel.getFunctionName().value().equals("classification")
                 && treeModel.getSplitCharacteristic().value().equals("binarySplit")

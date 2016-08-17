@@ -24,10 +24,10 @@ import org.elasticsearch.script.modelinput.ModelInput;
 import java.util.Map;
 
 
-public abstract class EsModelEvaluator<T extends ModelInput> {
+public abstract class EsModelEvaluator<Input extends ModelInput, Output> {
 
-    public abstract Map<String, Object> evaluateDebug(T modelInput);
-    public abstract Object evaluate(T modelInput);
+    public abstract Map<String, Object> evaluateDebug(Input modelInput);
+    public abstract Output evaluate(Input modelInput);
 }
 
 

@@ -25,11 +25,11 @@ import org.elasticsearch.script.modelinput.VectorModelInput;
 import java.util.Map;
 
 
-public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator<VectorModelInput> {
+public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator<VectorModelInput, String> {
 
     abstract Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues);
 
-    abstract Object evaluate(Tuple<int[], double[]> featureValues);
+    abstract String evaluate(Tuple<int[], double[]> featureValues);
 
     abstract Map<String, Object> evaluateDebug(double[] featureValues);
 
@@ -51,7 +51,7 @@ public abstract class EsNumericInputModelEvaluator extends EsModelEvaluator<Vect
     }
 
     @Override
-    public Object evaluate(VectorModelInput modelInput) {
+    public String evaluate(VectorModelInput modelInput) {
         Map<String, Object> vector = modelInput.getAsMap();
         if (vector.containsKey("indices") == false) {
          throw new UnsupportedOperationException("cannot evaluate dense vector without param debug: true");

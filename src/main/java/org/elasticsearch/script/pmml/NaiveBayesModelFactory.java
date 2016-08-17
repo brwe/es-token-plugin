@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, NaiveBayesModel> {
+public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, String, NaiveBayesModel> {
 
     public NaiveBayesModelFactory() {
         super(NaiveBayesModel.class);
@@ -59,8 +59,9 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
 
 
     @Override
-    public ModelAndModelInputEvaluator<VectorModelInput> buildFromPMML(NaiveBayesModel naiveBayesModel, DataDictionary dataDictionary,
-                                                                    TransformationDictionary transformationDictionary) {
+    public ModelAndModelInputEvaluator<VectorModelInput, String> buildFromPMML(NaiveBayesModel naiveBayesModel,
+                                                                               DataDictionary dataDictionary,
+                                                                               TransformationDictionary transformationDictionary) {
         if (naiveBayesModel.getFunctionName().value().equals("classification")) {
             // for each Bayes input
             // find the whole tranform pipeline (cp glm)
@@ -81,7 +82,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
             }
             VectorModelInputEvaluator vectorPMML = new VectorModelInputEvaluator(vectorRanges);
 
-            EsModelEvaluator<VectorModelInput> model = buildEsNaiveBayesModel(naiveBayesModel, types);
+            EsModelEvaluator<VectorModelInput, String> model = buildEsNaiveBayesModel(naiveBayesModel, types);
             return new ModelAndModelInputEvaluator<>(vectorPMML, model);
         } else {
             throw new UnsupportedOperationException("Naive does not support the following parameters yet: "
@@ -89,7 +90,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
         }
     }
 
-    private EsModelEvaluator<VectorModelInput> buildEsNaiveBayesModel(NaiveBayesModel naiveBayesModel, Map<String, OpType> types) {
+    private EsModelEvaluator<VectorModelInput, String> buildEsNaiveBayesModel(NaiveBayesModel naiveBayesModel, Map<String, OpType> types) {
         Map<String, Integer> classIndexMap = new HashMap<>();
         // get class priors
         int numClasses = naiveBayesModel.getBayesOutput().getTargetValueCounts().getTargetValueCounts().size();
@@ -126,7 +127,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
     }
 
     private List<List<Function>> initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts,
-                               Map<String, Integer> classIndexMap, String[] classLabels) {
+                                               Map<String, Integer> classIndexMap, String[] classLabels) {
         List<List<Function>> functionLists = new ArrayList<>();
         for (int i = 0; i < classLabels.length; i++) {
             functionLists.add(new ArrayList<>());
@@ -155,7 +156,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
                 for (PairCounts pairCount : bayesInput.getPairCounts()) {
                     sortedValues.put(pairCount.getValue(), pairCount.getTargetValueCounts());
                 }
-                for (Map.Entry<String, TargetValueCounts> counts: sortedValues.entrySet()) {
+                for (Map.Entry<String, TargetValueCounts> counts : sortedValues.entrySet()) {
                     for (TargetValueCount targetValueCount : counts.getValue()) {
                         Integer classIndex = classIndexMap.get(targetValueCount.getValue());
                         double prob = targetValueCount.getCount() / classCounts[classIndex];
@@ -170,10 +171,10 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
     }
 
     private PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(NaiveBayesModel model,
-                                                               DataDictionary dataDictionary,
-                                                               TransformationDictionary transformationDictionary,
-                                                               String fieldName,
-                                                               int indexCounter, BayesInput bayesInput, Map<String, OpType> types) {
+                                                                DataDictionary dataDictionary,
+                                                                TransformationDictionary transformationDictionary,
+                                                                String fieldName,
+                                                                int indexCounter, BayesInput bayesInput, Map<String, OpType> types) {
 
         List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, transformationDictionary);
         List<DerivedField> derivedFields = new ArrayList<>();
@@ -185,7 +186,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Naive
     }
 
     private PMMLVectorRange getFieldVector(int indexCounter, List<DerivedField> derivedFields, DataField rawField,
-                                          MiningField miningField, BayesInput bayesInput, Map<String, OpType> types) {
+                                           MiningField miningField, BayesInput bayesInput, Map<String, OpType> types) {
         PMMLVectorRange featureEntries;
         OpType opType;
         if (derivedFields.size() == 0) {

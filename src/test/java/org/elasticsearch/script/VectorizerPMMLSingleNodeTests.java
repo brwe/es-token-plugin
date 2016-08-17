@@ -67,7 +67,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
+        ModelAndModelInputEvaluator<VectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         ModelInputEvaluator<VectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(((double[]) vector.get("values")).length, equalTo(3));
@@ -97,7 +97,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<VectorModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
+        ModelAndModelInputEvaluator<VectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         ModelInputEvaluator<VectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
         @SuppressWarnings("unchecked")
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
@@ -114,7 +114,7 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, "Prof-school", 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/tree-small-r.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<MapModelInput> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
+        ModelAndModelInputEvaluator<MapModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
         ModelInputEvaluator<MapModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));

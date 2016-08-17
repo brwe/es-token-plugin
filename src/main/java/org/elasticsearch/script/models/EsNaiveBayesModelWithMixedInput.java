@@ -24,7 +24,7 @@ import org.elasticsearch.script.modelinput.VectorModelInput;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorModelInput> {
+public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorModelInput, String> {
 
     private final Function[][] functions;
     private final double[] classPriors;
@@ -53,7 +53,8 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
         return classProbs;
     }
 
-    public Object evaluate(VectorModelInput modelInput) {
+    @Override
+    public String evaluate(VectorModelInput modelInput) {
         double[] classProbs = getClassProbs(modelInput);
         int bestClass = 0;
         // sum the values to get the actual probs
@@ -68,7 +69,7 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
 
     }
 
-    protected Map<String, Object> prepareResult(double... val) {
+    private Map<String, Object> prepareResult(double... val) {
         int bestClass = 0;
         // sum the values to get the actual probs
         double sumProb = 0;

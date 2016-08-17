@@ -51,14 +51,14 @@ import java.util.Set;
 import java.util.TreeMap;
 
 
-public class GeneralizedLinearRegressionModelFactory extends ModelFactory<VectorModelInput, GeneralRegressionModel> {
+public class GeneralizedLinearRegressionModelFactory extends ModelFactory<VectorModelInput, String, GeneralRegressionModel> {
 
     public GeneralizedLinearRegressionModelFactory() {
         super(GeneralRegressionModel.class);
     }
 
     private PMMLVectorRange getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField,
-                                          MiningField miningField) {
+                                           MiningField miningField) {
         PMMLVectorRange featureEntries;
         OpType opType;
         if (derivedFields.size() == 0) {
@@ -87,10 +87,10 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<Vector
     }
 
     private PMMLVectorRange getFeatureEntryFromGeneralRegressionModel(GeneralRegressionModel grModel,
-                                                                     TransformationDictionary transformationDictionary,
-                                                                     DataDictionary dataDictionary,
-                                                                     String fieldName, List<PPCell> cells,
-                                                                     int indexCounter) {
+                                                                      TransformationDictionary transformationDictionary,
+                                                                      DataDictionary dataDictionary,
+                                                                      String fieldName, List<PPCell> cells,
+                                                                      int indexCounter) {
         List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(grModel, transformationDictionary);
         List<DerivedField> derivedFields = new ArrayList<>();
         String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
@@ -102,9 +102,9 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<Vector
     }
 
     private List<VectorRange> convertToFeatureEntries(GeneralRegressionModel grModel,
-                                                     TransformationDictionary transformationDictionary,
-                                                     DataDictionary dataDictionary, TreeMap<String, List<PPCell>> fieldToPPCellMap,
-                                                     List<String> orderedParameterList) {
+                                                      TransformationDictionary transformationDictionary,
+                                                      DataDictionary dataDictionary, TreeMap<String, List<PPCell>> fieldToPPCellMap,
+                                                      List<String> orderedParameterList) {
         // for each predictor: get vector entries?
         List<VectorRange> vectorRangeList = new ArrayList<>();
         int indexCounter = 0;
@@ -180,8 +180,9 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<Vector
 
     @SuppressWarnings("unchecked")
     @Override
-    public ModelAndModelInputEvaluator<VectorModelInput> buildFromPMML(GeneralRegressionModel grModel, DataDictionary dataDictionary,
-                                                                    TransformationDictionary transformationDictionary) {
+    public ModelAndModelInputEvaluator<VectorModelInput, String> buildFromPMML(GeneralRegressionModel grModel,
+                                                                               DataDictionary dataDictionary,
+                                                                               TransformationDictionary transformationDictionary) {
         if (grModel.getFunctionName().value().equals("classification") && (grModel.getModelType().value().equals
                 ("multinomialLogistic") || (grModel.getModelType().value().equals
                 ("generalizedLinear") && grModel.getDistribution().value().equals("binomial") && grModel.getLinkFunction().value().equals
@@ -236,7 +237,7 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<Vector
     }
 
     private String[] findTargetCategories(DataDictionary dataDictionary, Map<String, List<PCell>> targetClassPCellMap,
-                                                 String targetVariable) {
+                                          String targetVariable) {
         String[] targetCategories = new String[2];
         String class1 = targetClassPCellMap.keySet().iterator().next();
         targetCategories[0] = class1;

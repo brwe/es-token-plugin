@@ -24,7 +24,7 @@ import org.elasticsearch.script.modelinput.VectorModelInput;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput> {
+public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput, String> {
 
     private final double[] coefficients;
     private final double intercept;
@@ -44,13 +44,13 @@ public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput
     }
 
     @Override
-    public Object evaluate(VectorModelInput modelInput) {
+    public String evaluate(VectorModelInput modelInput) {
         double val = linearFunction(modelInput, intercept, coefficients);
         double prob = 1 / (1 + Math.exp(-1.0 * val));
         return prob > 0.5 ? classes[0] : classes[1];
     }
 
-    protected Map<String, Object> prepareResult(double val) {
+    private Map<String, Object> prepareResult(double val) {
         // TODO: this should be several classes really...
         double prob = 1 / (1 + Math.exp(-1.0 * val));
         String classValue = prob > 0.5 ? classes[0] : classes[1];

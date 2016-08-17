@@ -35,20 +35,20 @@ import java.util.Map;
  */
 public class ModelFactories {
 
-    private final Map<Class<? extends Model>, ModelFactory<? extends ModelInput, ? extends Model>> modelFactories;
+    private final Map<Class<? extends Model>, ModelFactory<? extends ModelInput, ?, ? extends Model>> modelFactories;
 
     public static ModelFactories createDefaultModelFactories() {
-        List<ModelFactory<? extends ModelInput, ? extends Model>> parsers = new ArrayList<>();
+        List<ModelFactory<? extends ModelInput, ?, ? extends Model>> parsers = new ArrayList<>();
         parsers.add(new GeneralizedLinearRegressionModelFactory());
         parsers.add(new NaiveBayesModelFactory());
         parsers.add(new TreeModelFactory());
         return new ModelFactories(parsers);
     }
 
-    public ModelFactories(List<ModelFactory<? extends ModelInput, ? extends Model>> modelFactories) {
-        Map<Class<? extends Model>, ModelFactory<? extends ModelInput, ? extends Model>> modelParserMap = new HashMap<>();
-        for (ModelFactory<? extends ModelInput, ? extends Model> modelFactory : modelFactories) {
-            @SuppressWarnings("unchecked") ModelFactory<? extends ModelInput, ? extends Model> prev =
+    public ModelFactories(List<ModelFactory<? extends ModelInput, ?, ? extends Model>> modelFactories) {
+        Map<Class<? extends Model>, ModelFactory<? extends ModelInput, ?, ? extends Model>> modelParserMap = new HashMap<>();
+        for (ModelFactory<? extends ModelInput, ?, ? extends Model> modelFactory : modelFactories) {
+            @SuppressWarnings("unchecked") ModelFactory<? extends ModelInput, ?, ? extends Model> prev =
                     modelParserMap.put(modelFactory.getSupportedClass(), modelFactory);
             if (prev != null) {
                 throw new IllegalStateException("Added more than one factories for class " + modelFactory.getSupportedClass());
@@ -58,9 +58,9 @@ public class ModelFactories {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends ModelInput> ModelAndModelInputEvaluator<T> buildFromPMML(PMML pmml, int modelNum) {
+    public <Input extends ModelInput, Output> ModelAndModelInputEvaluator<Input, Output> buildFromPMML(PMML pmml, int modelNum) {
         Model model = pmml.getModels().get(modelNum);
-        ModelFactory<T, Model> modelFactory = (ModelFactory<T, Model>) modelFactories.get(model.getClass());
+        ModelFactory<Input, Output, Model> modelFactory = (ModelFactory<Input, Output, Model>) modelFactories.get(model.getClass());
         if (modelFactory != null) {
             return modelFactory.buildFromPMML(model, pmml.getDataDictionary(), pmml.getTransformationDictionary());
         } else {
