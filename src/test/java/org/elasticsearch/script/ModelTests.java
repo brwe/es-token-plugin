@@ -44,7 +44,6 @@ import static org.hamcrest.Matchers.instanceOf;
  */
 public class ModelTests extends ESTestCase {
 
-//    @AwaitsFix(bugUrl = "security manager issues")
     public void testGenerateLRPMML() throws JAXBException, IOException, SAXException {
 
         double[] weights = new double[]{randomDouble(), randomDouble(), randomDouble(), randomDouble()};
@@ -93,7 +92,6 @@ public class ModelTests extends ESTestCase {
     }
 
 
-    @AwaitsFix(bugUrl = "security manager issues")
     public void testGenerateSVMPMML() throws JAXBException, IOException, SAXException {
 
         double[] weights = new double[]{randomDouble(), randomDouble(), randomDouble(), randomDouble()};
