@@ -23,10 +23,7 @@ package org.elasticsearch.script.pmml;
 import org.dmg.pmml.BayesInput;
 import org.dmg.pmml.ContinuousDistribution;
 import org.dmg.pmml.DataDictionary;
-import org.dmg.pmml.DataField;
-import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.GaussianDistribution;
-import org.dmg.pmml.MiningField;
 import org.dmg.pmml.NaiveBayesModel;
 import org.dmg.pmml.OpType;
 import org.dmg.pmml.PairCounts;
@@ -42,7 +39,7 @@ import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput;
-import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput.Function;
+import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput.DoubleFunction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,10 +69,15 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
             int indexCounter = 0;
             Map<String, OpType> types = new HashMap<>();
             for (BayesInput bayesInput : naiveBayesModel.getBayesInputs()) {
-                String finalFieldName = bayesInput.getFieldName().getValue();
-                PMMLVectorRange vectorRange = getFeatureEntryFromNaiveBayesMModel(naiveBayesModel, dataDictionary,
-                        transformationDictionary,
-                        finalFieldName, indexCounter, bayesInput, types);
+                PMMLVectorRange vectorRange = ProcessPMMLHelper.extractVectorRange(naiveBayesModel, dataDictionary,
+                        transformationDictionary, bayesInput.getFieldName().getValue(), () -> {
+                            // sort values first
+                            TreeSet<String> sortedValues = new TreeSet<>();
+                            for (PairCounts pairCount : bayesInput.getPairCounts()) {
+                                sortedValues.add(pairCount.getValue());
+                            }
+                            return sortedValues;
+                        }, indexCounter, types);
                 vectorRanges.add(vectorRange);
                 indexCounter += vectorRange.size();
                 targetValueStats.add(bayesInput.getTargetValueStats());
@@ -112,12 +114,12 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
             classIndexMap.put(classCount.getKey(), classCounter);
             classCounter++;
         }
-        List<List<Function>> functionLists = initFunctions(naiveBayesModel, types, classCounts, classIndexMap, classLabels);
-        Function[][] functions = new Function[functionLists.size()][functionLists.get(0).size()];
+        List<List<DoubleFunction>> functionLists = initFunctions(naiveBayesModel, types, classCounts, classIndexMap, classLabels);
+        DoubleFunction[][] functions = new DoubleFunction[functionLists.size()][functionLists.get(0).size()];
         classCounter = 0;
-        for (List<Function> classFunctions : functionLists) {
+        for (List<DoubleFunction> classFunctions : functionLists) {
             int functionCounter = 0;
-            for (Function classFunction : classFunctions) {
+            for (DoubleFunction classFunction : classFunctions) {
                 functions[classCounter][functionCounter] = classFunction;
                 functionCounter++;
             }
@@ -126,9 +128,9 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
         return new EsNaiveBayesModelWithMixedInput(classLabels, functions, classPriors);
     }
 
-    private List<List<Function>> initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts,
-                                               Map<String, Integer> classIndexMap, String[] classLabels) {
-        List<List<Function>> functionLists = new ArrayList<>();
+    private List<List<DoubleFunction>> initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts,
+                                                     Map<String, Integer> classIndexMap, String[] classLabels) {
+        List<List<DoubleFunction>> functionLists = new ArrayList<>();
         for (int i = 0; i < classLabels.length; i++) {
             functionLists.add(new ArrayList<>());
         }
@@ -148,8 +150,8 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
                     }
                     GaussianDistribution gaussianDistribution = (GaussianDistribution) continuousDistribution;
                     String classAssignment = targetValueStat.getValue();
-                    functionLists.get(classIndexMap.get(classAssignment)).add(new Function.GaussFunction(gaussianDistribution.getVariance(),
-                            gaussianDistribution.getMean()));
+                    functionLists.get(classIndexMap.get(classAssignment)).add(
+                            new DoubleFunction.GaussFunction(gaussianDistribution.getVariance(), gaussianDistribution.getMean()));
                 }
             } else if (types.get(fieldName).equals(OpType.CATEGORICAL)) {
                 TreeMap<String, TargetValueCounts> sortedValues = new TreeMap<>();
@@ -160,7 +162,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
                     for (TargetValueCount targetValueCount : counts.getValue()) {
                         Integer classIndex = classIndexMap.get(targetValueCount.getValue());
                         double prob = targetValueCount.getCount() / classCounts[classIndex];
-                        functionLists.get(classIndex).add(new Function.ProbFunction(prob, threshold));
+                        functionLists.get(classIndex).add(new DoubleFunction.ProbFunction(prob, threshold));
                     }
                 }
             } else {
@@ -168,63 +170,6 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
             }
         }
         return functionLists;
-    }
-
-    private PMMLVectorRange getFeatureEntryFromNaiveBayesMModel(NaiveBayesModel model,
-                                                                DataDictionary dataDictionary,
-                                                                TransformationDictionary transformationDictionary,
-                                                                String fieldName,
-                                                                int indexCounter, BayesInput bayesInput, Map<String, OpType> types) {
-
-        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, transformationDictionary);
-        List<DerivedField> derivedFields = new ArrayList<>();
-        String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
-        DataField rawField = ProcessPMMLHelper.getRawDataField(dataDictionary, rawFieldName);
-        MiningField miningField = ProcessPMMLHelper.getMiningField(model, rawFieldName);
-        PMMLVectorRange featureEntries = getFieldVector(indexCounter, derivedFields, rawField, miningField, bayesInput, types);
-        return featureEntries;
-    }
-
-    private PMMLVectorRange getFieldVector(int indexCounter, List<DerivedField> derivedFields, DataField rawField,
-                                           MiningField miningField, BayesInput bayesInput, Map<String, OpType> types) {
-        PMMLVectorRange featureEntries;
-        OpType opType;
-        if (derivedFields.size() == 0) {
-            opType = rawField.getOpType();
-        } else {
-            opType = derivedFields.get(0).getOpType();
-        }
-
-        if (opType.value().equals("continuous")) {
-            featureEntries = new PMMLVectorRange.ContinousSingleEntryVectorRange(rawField, miningField, derivedFields.toArray(new
-                    DerivedField[derivedFields
-                    .size()]));
-        } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLVectorRange.SparseCategoricalVectorRange(rawField, miningField, derivedFields.toArray(new
-                    DerivedField[derivedFields
-                    .size()]));
-        } else {
-            throw new UnsupportedOperationException("Only implemented continuous and categorical variables so far.");
-        }
-
-        if (opType.equals(OpType.CATEGORICAL)) {
-            // sort values first
-            TreeSet<String> sortedValues = new TreeSet<>();
-            for (PairCounts pairCount : bayesInput.getPairCounts()) {
-                sortedValues.add(pairCount.getValue());
-            }
-            for (String value : sortedValues) {
-                featureEntries.addVectorEntry(indexCounter, value);
-                indexCounter++;
-            }
-        } else if (opType.equals(OpType.CONTINUOUS)) {
-            featureEntries.addVectorEntry(indexCounter, "dummyValue");
-        } else {
-            throw new UnsupportedOperationException("only supporting categorical and continuous input for naive bayes so far");
-        }
-        types.put(featureEntries.getLastDerivedFieldName(), opType);
-
-        return featureEntries;
     }
 
 }

@@ -21,11 +21,9 @@ package org.elasticsearch.script.pmml;
 
 import org.dmg.pmml.DataDictionary;
 import org.dmg.pmml.DataField;
-import org.dmg.pmml.DerivedField;
 import org.dmg.pmml.FieldUsageType;
 import org.dmg.pmml.GeneralRegressionModel;
 import org.dmg.pmml.MiningField;
-import org.dmg.pmml.OpType;
 import org.dmg.pmml.PCell;
 import org.dmg.pmml.PPCell;
 import org.dmg.pmml.Parameter;
@@ -33,13 +31,12 @@ import org.dmg.pmml.Predictor;
 import org.dmg.pmml.TransformationDictionary;
 import org.dmg.pmml.Value;
 import org.elasticsearch.ElasticsearchParseException;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.elasticsearch.script.modelinput.VectorModelInput;
 import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.script.modelinput.VectorRange;
-import org.elasticsearch.script.modelinput.VectorRangesToVectorPMML;
 import org.elasticsearch.script.models.EsLogisticRegressionModel;
-import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,56 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 
 public class GeneralizedLinearRegressionModelFactory extends ModelFactory<VectorModelInput, String, GeneralRegressionModel> {
 
     public GeneralizedLinearRegressionModelFactory() {
         super(GeneralRegressionModel.class);
-    }
-
-    private PMMLVectorRange getFieldVector(List<PPCell> cells, int indexCounter, List<DerivedField> derivedFields, DataField rawField,
-                                           MiningField miningField) {
-        PMMLVectorRange featureEntries;
-        OpType opType;
-        if (derivedFields.size() == 0) {
-            opType = rawField.getOpType();
-        } else {
-            opType = derivedFields.get(0).getOpType();
-        }
-
-        if (opType.value().equals("continuous")) {
-            featureEntries = new PMMLVectorRange.ContinousSingleEntryVectorRange(rawField, miningField, derivedFields.toArray(new
-                    DerivedField[derivedFields
-                    .size()]));
-        } else if (opType.value().equals("categorical")) {
-            featureEntries = new PMMLVectorRange.SparseCategoricalVectorRange(rawField, miningField, derivedFields.toArray(new
-                    DerivedField[derivedFields
-                    .size()]));
-        } else {
-            throw new UnsupportedOperationException("Only implemented continuous and categorical variables so far.");
-        }
-
-        for (PPCell cell : cells) {
-            featureEntries.addVectorEntry(indexCounter, cell.getValue());
-            indexCounter++;
-        }
-        return featureEntries;
-    }
-
-    private PMMLVectorRange getFeatureEntryFromGeneralRegressionModel(GeneralRegressionModel grModel,
-                                                                      TransformationDictionary transformationDictionary,
-                                                                      DataDictionary dataDictionary,
-                                                                      String fieldName, List<PPCell> cells,
-                                                                      int indexCounter) {
-        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(grModel, transformationDictionary);
-        List<DerivedField> derivedFields = new ArrayList<>();
-        String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
-        DataField rawField = ProcessPMMLHelper.getRawDataField(dataDictionary, rawFieldName);
-        MiningField miningField = ProcessPMMLHelper.getMiningField(grModel, rawFieldName);
-
-        PMMLVectorRange featureEntries = getFieldVector(cells, indexCounter, derivedFields, rawField, miningField);
-        return featureEntries;
     }
 
     private List<VectorRange> convertToFeatureEntries(GeneralRegressionModel grModel,
@@ -110,8 +64,12 @@ public class GeneralizedLinearRegressionModelFactory extends ModelFactory<Vector
         int indexCounter = 0;
         // for each of the fields create the feature entries
         for (String fieldname : fieldToPPCellMap.keySet()) {
-            PMMLVectorRange featureEntries = getFeatureEntryFromGeneralRegressionModel(grModel, transformationDictionary,
-                    dataDictionary, fieldname, fieldToPPCellMap.get(fieldname), indexCounter);
+            PMMLVectorRange featureEntries = ProcessPMMLHelper.extractVectorRange(grModel, dataDictionary,
+                    transformationDictionary, fieldname, () -> {
+                        // sort values first
+                        return fieldToPPCellMap.get(fieldname).stream().map(PPCell::getValue).collect(Collectors.toList());
+                    }, indexCounter, null);
+
             for (PPCell cell : fieldToPPCellMap.get(fieldname)) {
                 orderedParameterList.add(cell.getParameterName());
             }

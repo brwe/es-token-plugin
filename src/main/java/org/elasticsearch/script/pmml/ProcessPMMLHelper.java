@@ -29,9 +29,12 @@ import org.dmg.pmml.FieldRef;
 import org.dmg.pmml.MiningField;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.NormContinuous;
+import org.dmg.pmml.OpType;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.common.inject.Provider;
+import org.elasticsearch.script.modelinput.PMMLVectorRange;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.xml.sax.InputSource;
@@ -46,7 +49,9 @@ import java.nio.charset.Charset;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public class ProcessPMMLHelper {
 
@@ -159,5 +164,52 @@ public class ProcessPMMLHelper {
             }
         }
         return miningField;
+    }
+
+    public static PMMLVectorRange extractVectorRange(Model model, DataDictionary dataDictionary,
+                                               TransformationDictionary transformationDictionary,
+                                               String fieldName, Provider<Collection<String>> categories,
+                                               int position, Map<String, OpType> types) {
+        List<DerivedField> allDerivedFields = ProcessPMMLHelper.getAllDerivedFields(model, transformationDictionary);
+        List<DerivedField> derivedFields = new ArrayList<>();
+        String rawFieldName = ProcessPMMLHelper.getDerivedFields(fieldName, allDerivedFields, derivedFields);
+        DataField rawField = ProcessPMMLHelper.getRawDataField(dataDictionary, rawFieldName);
+        MiningField miningField = ProcessPMMLHelper.getMiningField(model, rawFieldName);
+        PMMLVectorRange featureEntries = getFieldVector(position, derivedFields, rawField, miningField, categories, types);
+        return featureEntries;
+    }
+
+
+
+    public static PMMLVectorRange getFieldVector(int indexCounter, List<DerivedField> derivedFields,
+                                           DataField rawField, MiningField miningField,
+                                           Provider<Collection<String>> categories,
+                                           Map<String, OpType> types) {
+        PMMLVectorRange featureEntries;
+        OpType opType;
+        if (derivedFields.size() == 0) {
+            opType = rawField.getOpType();
+        } else {
+            opType = derivedFields.get(0).getOpType();
+        }
+
+        if (opType.equals(OpType.CONTINUOUS)) {
+            featureEntries = new PMMLVectorRange.ContinousSingleEntryVectorRange(rawField, miningField,
+                    derivedFields.toArray(new DerivedField[derivedFields.size()]));
+            featureEntries.addVectorEntry(indexCounter, "dummyValue");
+        } else if (opType.equals(OpType.CATEGORICAL)) {
+            featureEntries = new PMMLVectorRange.SparseCategoricalVectorRange(rawField, miningField,
+                    derivedFields.toArray(new DerivedField[derivedFields.size()]));
+            for (String value : categories.get()) {
+                featureEntries.addVectorEntry(indexCounter, value);
+                indexCounter++;
+            }
+        } else {
+            throw new UnsupportedOperationException("Only implemented continuous and categorical variables so far.");
+        }
+        if(types != null) {
+            types.put(featureEntries.getLastDerivedFieldName(), opType);
+        }
+        return featureEntries;
     }
 }

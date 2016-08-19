@@ -26,11 +26,11 @@ import java.util.Map;
 
 public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorModelInput, String> {
 
-    private final Function[][] functions;
+    private final DoubleFunction[][] functions;
     private final double[] classPriors;
     private final String[] classLabels;
 
-    public EsNaiveBayesModelWithMixedInput(String[] classLabels, Function[][] functions, double[] classPriors) {
+    public EsNaiveBayesModelWithMixedInput(String[] classLabels, DoubleFunction[][] functions, double[] classPriors) {
         this.functions = functions;
         this.classPriors = classPriors;
         this.classLabels = classLabels;
@@ -92,11 +92,11 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
         return results;
     }
 
-    public interface Function {
+    public interface DoubleFunction {
         double eval(double value);
 
 
-        class GaussFunction implements Function {
+        class GaussFunction implements DoubleFunction {
             double variance;
             double mean;
             double varianceFactor;
@@ -113,7 +113,7 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
             }
         }
 
-        class ProbFunction implements Function {
+        class ProbFunction implements DoubleFunction {
             double prob;
 
             public ProbFunction(double prob, double threshold) {
