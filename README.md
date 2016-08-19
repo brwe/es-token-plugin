@@ -53,10 +53,12 @@ Example:
 ```
  GET movie-reviews/_search
  {
-   "fields": [],
-   "analyzed_text": {
-     "analyzer": "standard",
-     "field": "text"
+   "stored_fields": [],
+   "ext": {
+     "analyzed_text": {
+       "analyzer": "standard",
+       "field": "text"
+     }
    }
  }
 
@@ -103,94 +105,6 @@ would return
 The request takes the same parameters as the [_analyze api](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html).
 
 
-Analyzed text mapper
-==========
-
-A mapper that analyzes the given text and stores the tokes in a field.
-
-For example: 
-
-"This plugin is completely untested. USE IT AT YOUR OWN RISK!" 
-
-would become
-
-["this","plugin","is","completely","untested","use","it", "at","your", "own","risk"]
-
-
-Full example:
-
-```
-POST test
-{
-  "mappings": {
-    "doc": {
-      "properties": {
-        "text": {
-          "type": "string",
-          "fields": {
-            "analyzed": {
-              "type":"analyzed_text",
-              "store": true
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-PUT test/doc/1
-{
-    "text": "This plugin is completely untested. USE IT AT YOUR OWN RISK!"
-}
-
-GET test/_search
-{
-  "fields": ["text.analyzed"]
-}
-```
-
-Result:
-
-```
-{
-   "took": 7,
-   "timed_out": false,
-   "_shards": {
-      "total": 5,
-      "successful": 5,
-      "failed": 0
-   },
-   "hits": {
-      "total": 1,
-      "max_score": 1,
-      "hits": [
-         {
-            "_index": "test",
-            "_type": "doc",
-            "_id": "1",
-            "_score": 1,
-            "fields": {
-               "text.analyzed": [
-                  "this",
-                  "plugin",
-                  "is",
-                  "completely",
-                  "untested",
-                  "use",
-                  "it",
-                  "at",
-                  "your",
-                  "own",
-                  "risk"
-               ]
-            }
-         }
-      ]
-   }
-}
-```
-
 Term vectors within search and scroll
 =====================================
 
@@ -200,9 +114,11 @@ To use the term vector api per docuemnt as returned with search per document, us
 ```
 GET test/_search
 {
-  "termvectors": {
-    //term vector parameters as described here: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-termvectors.html
-    ...
+  "ext": {
+    "termvectors": {
+      //term vector parameters as described here: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-termvectors.html
+      ...
+    }
   },
   "query": ...
 }
@@ -222,7 +138,7 @@ PUT test
       "properties": {
         "text": {
           "term_vector": "yes",
-          "type": "string"
+          "type": "text"
         }
       }
     }
@@ -236,12 +152,16 @@ POST test/doc/1
 
 GET test/_search
 {
-  "termvectors": {
-    "per_field_analyzer": {
-      "text": "whitespace"
+  "ext": {
+    "termvectors": {
+      "per_field_analyzer": {
+        "text": "whitespace"
+      }
     }
   },
-  "query": ...
+  "query": {
+      "match_all": {}
+  }
 }
 
 ```
@@ -506,9 +426,9 @@ in which case the result will be :
 
 ```
 {
-  "index": ".scripts",
-  "type": "pmml_vector",
-  "id": "my_custom_id",
+  "spec": {
+     ...
+  },
   "length": 32528
 }
 ```
@@ -516,7 +436,7 @@ in which case the result will be :
 Vector scripts
 ==============
 
-The script that is created with the _prepare_spec can be used in any place where scripts are used, like for example so:
+The spec that is created with the `_prepare_spec` can be used in any place where scripts are used, like for example so:
 
 ```
 GET sentiment140/_search
@@ -524,14 +444,19 @@ GET sentiment140/_search
   "script_fields": {
     "vector": {
       "script": {
-        "id": "my_custom_id",
-        "lang": "pmml_vector"
+        "lang": "native",
+        "inline": "doc_to_vector",
+        "params": {
+          "spec": {
+           ...
+          }
+        }
       }
     }
   }
 }
 ```
-where the id is what  _prepare_spec returned.
+where the spec is the spec that `_prepare_spec` returned.
 
 
 Result looks like this for sparse vectors:
