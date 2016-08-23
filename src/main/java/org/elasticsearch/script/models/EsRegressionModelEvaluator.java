@@ -19,34 +19,14 @@
 
 package org.elasticsearch.script.models;
 
-import org.dmg.pmml.NumericPredictor;
-import org.dmg.pmml.RegressionModel;
-import org.dmg.pmml.RegressionTable;
-import org.elasticsearch.common.collect.Tuple;
-
-import java.util.List;
-import java.util.Map;
+import org.elasticsearch.script.modelinput.VectorModelInput;
 
 
-public abstract class EsRegressionModelEvaluator extends EsNumericInputModelEvaluator {
-    double[] coefficients;
-    double intercept;
-    String[] classes;
+public abstract class EsRegressionModelEvaluator extends EsModelEvaluator<VectorModelInput, String> {
 
-    public EsRegressionModelEvaluator(RegressionModel regressionModel) {
-        RegressionTable regressionTable = regressionModel.getRegressionTables().get(0);
-        List<NumericPredictor> numericPredictors = regressionTable.getNumericPredictors();
-        double[] coefficients = new double[numericPredictors.size()];
-        int i = 0;
-        for (NumericPredictor numericPredictor : numericPredictors) {
-            coefficients[i] = numericPredictor.getCoefficient();
-            i++;
-        }
-        this.coefficients = coefficients;
-        this.intercept = regressionTable.getIntercept();
-        this.classes = new String[]{regressionModel.getRegressionTables().get(0).getTargetCategory(), regressionModel.getRegressionTables()
-                .get(1).getTargetCategory()};
-    }
+    protected final double[] coefficients;
+    protected final double intercept;
+    protected final String[] classes;
 
     public EsRegressionModelEvaluator(double[] coefficients, double intercept, String[] classes) {
         this.coefficients = coefficients;
@@ -54,27 +34,14 @@ public abstract class EsRegressionModelEvaluator extends EsNumericInputModelEval
         this.classes = classes;
     }
 
-    public abstract Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues);
-
-    protected static double linearFunction(Tuple<int[], double[]> featureValues, double intercept, double[] coefficients) {
+    protected double linearFunction(VectorModelInput modelInput) {
         double val = 0.0;
         val += intercept;
-        for (int i = 0; i < featureValues.v1().length; i++) {
-            val += featureValues.v2()[i] * coefficients[featureValues.v1()[i]];
+        for (int i = 0; i < modelInput.getSize(); i++) {
+            val += modelInput.getValue(i) * coefficients[modelInput.getIndex(i)];
         }
         return val;
     }
-
-    protected static double linearFunction(double[] featureValues, double intercept, double[] coefficients) {
-        double val = 0.0;
-        val += intercept;
-        for (int i = 0; i < featureValues.length; i++) {
-            val += featureValues[i] * coefficients[i];
-        }
-        return val;
-    }
-
-
 }
 
 

@@ -21,14 +21,12 @@ package org.elasticsearch.script;
 
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -89,8 +87,8 @@ public class FullPMMLIT extends ESIntegTestCase {
         SearchResponse searchResponse = client().prepareSearch("test").addScriptField("pmml", new Script("1", ScriptService.ScriptType
                 .STORED, PMMLModelScriptEngineService.NAME, params)).addStoredField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
-        assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), instanceOf(String.class));
-        assertThat((String)searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), equalTo(">50K"));
+        assertThat(searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), instanceOf(String.class));
+        assertThat(searchResponse.getHits().getAt(0).fields().get("pmml").getValue(), equalTo(">50K"));
     }
 
     private void checkClassificationCorrect(String resultFile) throws IOException {

@@ -44,8 +44,8 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
     @Override
     public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
 
-        double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
-        double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
+        double valClass0 = linearFunction(featureValues, pis[0], thetas[0]);
+        double valClass1 = linearFunction(featureValues, pis[1], thetas[1]);
         return prepareResult(valClass0, valClass1);
     }
 
@@ -62,10 +62,27 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
     }
 
     public Map<String, Object> evaluateDebug(double[] featureValues) {
-        double valClass0 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[0], thetas[0]);
-        double valClass1 = EsRegressionModelEvaluator.linearFunction(featureValues, pis[1], thetas[1]);
+        double valClass0 = linearFunction(featureValues, pis[0], thetas[0]);
+        double valClass1 = linearFunction(featureValues, pis[1], thetas[1]);
         return prepareResult(valClass0, valClass1);
     }
 
+    protected static double linearFunction(Tuple<int[], double[]> featureValues, double intercept, double[] coefficients) {
+        double val = 0.0;
+        val += intercept;
+        for (int i = 0; i < featureValues.v1().length; i++) {
+            val += featureValues.v2()[i] * coefficients[featureValues.v1()[i]];
+        }
+        return val;
+    }
+
+    protected static double linearFunction(double[] featureValues, double intercept, double[] coefficients) {
+        double val = 0.0;
+        val += intercept;
+        for (int i = 0; i < featureValues.length; i++) {
+            val += featureValues[i] * coefficients[i];
+        }
+        return val;
+    }
 
 }

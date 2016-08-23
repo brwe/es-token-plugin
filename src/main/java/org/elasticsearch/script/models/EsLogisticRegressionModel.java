@@ -24,30 +24,23 @@ import org.elasticsearch.script.modelinput.VectorModelInput;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput, String> {
-
-    private final double[] coefficients;
-    private final double intercept;
-    private final String[] classes;
+public class EsLogisticRegressionModel extends EsRegressionModelEvaluator {
 
     public EsLogisticRegressionModel(double[] coefficients,
                                      double intercept, String[] classes) {
-        this.coefficients = coefficients;
-        this.intercept = intercept;
-        this.classes = classes;
+        super(coefficients, intercept, classes);
     }
 
     @Override
     public Map<String, Object> evaluateDebug(VectorModelInput modelInput) {
-        double val = linearFunction(modelInput, intercept, coefficients);
+        double val = linearFunction(modelInput);
         return prepareResult(val);
     }
 
     @Override
     public String evaluate(VectorModelInput modelInput) {
-        double val = linearFunction(modelInput, intercept, coefficients);
-        double prob = 1 / (1 + Math.exp(-1.0 * val));
-        return prob > 0.5 ? classes[0] : classes[1];
+        double val = linearFunction(modelInput);
+        return val > 0 ? classes[0] : classes[1];
     }
 
     private Map<String, Object> prepareResult(double val) {
@@ -61,15 +54,6 @@ public class EsLogisticRegressionModel extends EsModelEvaluator<VectorModelInput
         probs.put(classes[1], 1.0 - prob);
         result.put("probs", probs);
         return result;
-    }
-
-    private double linearFunction(VectorModelInput modelInput, double intercept, double[] coefficients) {
-        double val = 0.0;
-        val += intercept;
-        for (int i = 0; i < modelInput.getSize(); i++) {
-            val += modelInput.getValue(i) * coefficients[modelInput.getIndex(i)];
-        }
-        return val;
     }
 
 }

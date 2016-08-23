@@ -42,6 +42,7 @@ public class ModelFactories {
         parsers.add(new GeneralizedLinearRegressionModelFactory());
         parsers.add(new NaiveBayesModelFactory());
         parsers.add(new TreeModelFactory());
+        parsers.add(new RegressionModelFactory());
         return new ModelFactories(parsers);
     }
 

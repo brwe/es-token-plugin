@@ -24,6 +24,14 @@ import org.dmg.pmml.MiningField;
 import org.dmg.pmml.Model;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.RegressionModel;
+import org.elasticsearch.script.modelinput.ModelAndModelInputEvaluator;
+import org.elasticsearch.script.modelinput.ModelInputEvaluator;
+import org.elasticsearch.script.modelinput.VectorModelInput;
+import org.elasticsearch.script.models.EsLinearSVMModel;
+import org.elasticsearch.script.models.EsLogisticRegressionModel;
+import org.elasticsearch.script.models.EsModelEvaluator;
+import org.elasticsearch.script.pmml.ModelFactories;
+import org.elasticsearch.script.pmml.ProcessPMMLHelper;
 import org.elasticsearch.test.ESTestCase;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
@@ -36,13 +44,66 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 
 /**
  */
 public class ModelTests extends ESTestCase {
+
+    public void testEsLogisticRegressionModels() throws IOException, JAXBException, SAXException {
+        ModelFactories factories = ModelFactories.createDefaultModelFactories();
+        for (int i = 0; i < 100; i++) {
+
+            double[] modelParams = new double[]{
+                    randomFloat() * randomIntBetween(-100, +100),
+                    randomFloat() * randomIntBetween(-100, +100),
+                    randomFloat() * randomIntBetween(-100, +100),
+                    randomFloat() * randomIntBetween(-100, +100)
+            };
+            String pmmlString;
+            boolean lrModel = randomBoolean();
+            if (lrModel) {
+                pmmlString = PMMLGenerator.generateLRPMMLModel(0.1, modelParams, new double[]{1, 0});
+            } else {
+                pmmlString = PMMLGenerator.generateSVMPMMLModel(0.1, modelParams, new double[]{1, 0});
+            }
+            PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
+            assertEquals(1, pmml.getModels().size());
+            ModelAndModelInputEvaluator<VectorModelInput, String> modelAndInput = factories.buildFromPMML(pmml, 0);
+            EsModelEvaluator<VectorModelInput, String> modelEvaluator = modelAndInput.getModel();
+            ModelInputEvaluator<VectorModelInput> inputEvaluator = modelAndInput.getVectorRangesToVector();
+
+            if (lrModel) {
+                assertThat(modelEvaluator, instanceOf(EsLogisticRegressionModel.class));
+            } else {
+                assertThat(modelEvaluator, instanceOf(EsLinearSVMModel.class));
+            }
+
+            Map<String, List<Object>> vector = new HashMap<>();
+            vector.put("field_0", Collections.singletonList(1));
+            vector.put("field_1", Collections.singletonList(1));
+            vector.put("field_2", Collections.singletonList(1));
+            vector.put("field_3", Collections.singletonList(0));
+            MockDataSource dataSource = new MockDataSource(vector);
+            VectorModelInput vectorModelInput = inputEvaluator.convert(dataSource);
+            String result = modelEvaluator.evaluate(vectorModelInput);
+            logger.info("model = {}, result = {}", lrModel ? "lr" : "svm", result);
+            assertThat(result, anyOf(equalTo("0.0"), equalTo("1.0")));
+            double val = modelParams[0] + modelParams[1] + modelParams[2] + 0.1;
+            if (val > 0) {
+                assertThat(result, equalTo("1.0"));
+            } else {
+                assertThat(result, equalTo("0.0"));
+            }
+        }
+    }
 
     public void testGenerateLRPMML() throws JAXBException, IOException, SAXException {
 

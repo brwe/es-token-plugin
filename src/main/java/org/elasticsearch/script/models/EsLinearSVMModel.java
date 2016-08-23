@@ -21,36 +21,16 @@ package org.elasticsearch.script.models;
 
 import org.dmg.pmml.RegressionModel;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.script.modelinput.VectorModelInput;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class EsLinearSVMModel extends EsRegressionModelEvaluator {
 
-    public EsLinearSVMModel(RegressionModel regressionModel) {
-        super(regressionModel);
-    }
-
     public EsLinearSVMModel(double[] coefficients,
                             double intercept, String[] classes) {
         super(coefficients, intercept, classes);
-    }
-
-    @Override
-    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
-        return prepareResult(val);
-    }
-
-    @Override
-    String evaluate(Tuple<int[], double[]> featureValues) {
-        throw new UnsupportedOperationException("can only run with parameter debug: true");
-    }
-
-    @Override
-    public Map<String, Object> evaluateDebug(double[] featureValues) {
-        double val = linearFunction(featureValues, intercept, coefficients);
-        return prepareResult(val);
     }
 
     protected Map<String, Object> prepareResult(double val) {
@@ -58,5 +38,17 @@ public class EsLinearSVMModel extends EsRegressionModelEvaluator {
         Map<String, Object> result = new HashMap<>();
         result.put("class", classValue);
         return result;
+    }
+
+    @Override
+    public Map<String, Object> evaluateDebug(VectorModelInput modelInput) {
+        double val = linearFunction(modelInput);
+        return prepareResult(val);
+    }
+
+    @Override
+    public String evaluate(VectorModelInput modelInput) {
+        double val = linearFunction(modelInput);
+        return val > 0 ? classes[0] : classes[1];
     }
 }
