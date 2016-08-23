@@ -28,7 +28,7 @@ buildscript {
     }
     dependencies {
         // Version of elasticsearch
-        classpath "org.elasticsearch.gradle:build-tools:5.0.0-alpha5"
+        classpath "org.elasticsearch.gradle:build-tools:${elasticsearchVersion}"
     }
 }
 
@@ -50,9 +50,9 @@ ext.compactProfile = 'full'
 
 dependencies {
     // Not really used at the moment - just to show how to include dependencies
-    compile "org.jpmml:pmml-agent:1.2.8"
-    compile "org.jpmml:pmml-model:1.2.8"
-    compile "org.jpmml:pmml-schema:1.2.8"
+    compile "org.jpmml:pmml-agent:${jpmmlVersion}"
+    compile "org.jpmml:pmml-model:${jpmmlVersion}"
+    compile "org.jpmml:pmml-schema:${jpmmlVersion}"
 }
 
 test {
@@ -69,6 +69,10 @@ forbiddenPatterns.enabled = false
 
 integTest {
     cluster {
-        setting 'script.engine.pmml_model.stored.search', 'true'
+        setting 'script.engine.pmml_model.stored', 'true'
     }
+}
+
+run {
+    setting 'script.engine.pmml_model.stored', 'true'
 }
