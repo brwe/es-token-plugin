@@ -39,7 +39,8 @@ import org.elasticsearch.script.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.script.modelinput.VectorRange;
 import org.elasticsearch.script.models.EsModelEvaluator;
 import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput;
-import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput.DoubleFunction;
+import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput.GaussFunction;
+import org.elasticsearch.script.models.EsNaiveBayesModelWithMixedInput.ProbFunction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.DoubleUnaryOperator;
 
 public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, String, NaiveBayesModel> {
 
@@ -114,12 +116,12 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
             classIndexMap.put(classCount.getKey(), classCounter);
             classCounter++;
         }
-        List<List<DoubleFunction>> functionLists = initFunctions(naiveBayesModel, types, classCounts, classIndexMap, classLabels);
-        DoubleFunction[][] functions = new DoubleFunction[functionLists.size()][functionLists.get(0).size()];
+        List<List<DoubleUnaryOperator>> functionLists = initFunctions(naiveBayesModel, types, classCounts, classIndexMap, classLabels);
+        DoubleUnaryOperator[][] functions = new DoubleUnaryOperator[functionLists.size()][functionLists.get(0).size()];
         classCounter = 0;
-        for (List<DoubleFunction> classFunctions : functionLists) {
+        for (List<DoubleUnaryOperator> classFunctions : functionLists) {
             int functionCounter = 0;
-            for (DoubleFunction classFunction : classFunctions) {
+            for (DoubleUnaryOperator classFunction : classFunctions) {
                 functions[classCounter][functionCounter] = classFunction;
                 functionCounter++;
             }
@@ -128,9 +130,9 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
         return new EsNaiveBayesModelWithMixedInput(classLabels, functions, classPriors);
     }
 
-    private List<List<DoubleFunction>> initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts,
+    private List<List<DoubleUnaryOperator>> initFunctions(NaiveBayesModel naiveBayesModel, Map<String, OpType> types, double[] classCounts,
                                                      Map<String, Integer> classIndexMap, String[] classLabels) {
-        List<List<DoubleFunction>> functionLists = new ArrayList<>();
+        List<List<DoubleUnaryOperator>> functionLists = new ArrayList<>();
         for (int i = 0; i < classLabels.length; i++) {
             functionLists.add(new ArrayList<>());
         }
@@ -151,7 +153,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
                     GaussianDistribution gaussianDistribution = (GaussianDistribution) continuousDistribution;
                     String classAssignment = targetValueStat.getValue();
                     functionLists.get(classIndexMap.get(classAssignment)).add(
-                            new DoubleFunction.GaussFunction(gaussianDistribution.getVariance(), gaussianDistribution.getMean()));
+                            new GaussFunction(gaussianDistribution.getVariance(), gaussianDistribution.getMean()));
                 }
             } else if (types.get(fieldName).equals(OpType.CATEGORICAL)) {
                 TreeMap<String, TargetValueCounts> sortedValues = new TreeMap<>();
@@ -162,7 +164,7 @@ public class NaiveBayesModelFactory extends ModelFactory<VectorModelInput, Strin
                     for (TargetValueCount targetValueCount : counts.getValue()) {
                         Integer classIndex = classIndexMap.get(targetValueCount.getValue());
                         double prob = targetValueCount.getCount() / classCounts[classIndex];
-                        functionLists.get(classIndex).add(new DoubleFunction.ProbFunction(prob, threshold));
+                        functionLists.get(classIndex).add(new ProbFunction(prob, threshold));
                     }
                 }
             } else {

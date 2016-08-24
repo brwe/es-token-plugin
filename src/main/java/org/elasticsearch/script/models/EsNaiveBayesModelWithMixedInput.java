@@ -23,14 +23,15 @@ import org.elasticsearch.script.modelinput.VectorModelInput;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.DoubleUnaryOperator;
 
 public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorModelInput, String> {
 
-    private final DoubleFunction[][] functions;
+    private final DoubleUnaryOperator[][] functions;
     private final double[] classPriors;
     private final String[] classLabels;
 
-    public EsNaiveBayesModelWithMixedInput(String[] classLabels, DoubleFunction[][] functions, double[] classPriors) {
+    public EsNaiveBayesModelWithMixedInput(String[] classLabels, DoubleUnaryOperator[][] functions, double[] classPriors) {
         this.functions = functions;
         this.classPriors = classPriors;
         this.classLabels = classLabels;
@@ -47,7 +48,7 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
         System.arraycopy(classPriors, 0, classProbs, 0, classProbs.length);
         for (int i = 0; i < modelInput.getSize(); i++) {
             for (int j = 0; j < classProbs.length; j++) {
-                classProbs[j] += functions[j][modelInput.getIndex(i)].eval(modelInput.getValue(i));
+                classProbs[j] += functions[j][modelInput.getIndex(i)].applyAsDouble(modelInput.getValue(i));
             }
         }
         return classProbs;
@@ -92,43 +93,40 @@ public class EsNaiveBayesModelWithMixedInput extends EsModelEvaluator<VectorMode
         return results;
     }
 
-    public interface DoubleFunction {
-        double eval(double value);
+    public static class GaussFunction implements DoubleUnaryOperator {
+        double variance;
+        double mean;
+        double varianceFactor;
 
+        public GaussFunction(double variance, double mean) {
 
-        class GaussFunction implements DoubleFunction {
-            double variance;
-            double mean;
-            double varianceFactor;
-
-            public GaussFunction(double variance, double mean) {
-
-                this.variance = variance;
-                this.mean = mean;
-                varianceFactor = Math.log(Math.sqrt(2 * Math.PI * variance));
-            }
-
-            public double eval(double value) {
-                return -Math.pow((value - mean), 2) / (2 * variance) - varianceFactor;
-            }
+            this.variance = variance;
+            this.mean = mean;
+            varianceFactor = Math.log(Math.sqrt(2 * Math.PI * variance));
         }
 
-        class ProbFunction implements DoubleFunction {
-            double prob;
-
-            public ProbFunction(double prob, double threshold) {
-
-                if (prob == 0.0) {
-                    this.prob = Math.log(threshold);
-                } else {
-                    this.prob = Math.log(prob);
-                }
-            }
-
-            public double eval(double value) {
-                return prob;
-            }
+        @Override
+        public double applyAsDouble(double value) {
+            return -Math.pow((value - mean), 2) / (2 * variance) - varianceFactor;
         }
-
     }
+
+    public static class ProbFunction implements DoubleUnaryOperator {
+        double prob;
+
+        public ProbFunction(double prob, double threshold) {
+
+            if (prob == 0.0) {
+                this.prob = Math.log(threshold);
+            } else {
+                this.prob = Math.log(prob);
+            }
+        }
+
+        @Override
+        public double applyAsDouble(double value) {
+            return prob;
+        }
+    }
+
 }
