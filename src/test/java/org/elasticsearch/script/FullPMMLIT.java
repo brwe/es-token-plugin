@@ -30,7 +30,9 @@ import org.elasticsearch.test.ESIntegTestCase;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +52,12 @@ import static org.hamcrest.Matchers.instanceOf;
 public class FullPMMLIT extends ESIntegTestCase {
 
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
 

@@ -21,7 +21,6 @@ package org.elasticsearch.rest.action.trainnaivebayes;
 
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesRequestBuilder;
 import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
@@ -33,7 +32,7 @@ import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestResponse;
-import org.elasticsearch.rest.action.support.RestBuilderListener;
+import org.elasticsearch.rest.action.RestBuilderListener;
 
 import java.nio.charset.Charset;
 

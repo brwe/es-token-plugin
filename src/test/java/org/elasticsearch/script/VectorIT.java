@@ -37,7 +37,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -54,12 +56,12 @@ import static org.hamcrest.Matchers.lessThan;
 public class VectorIT extends ESIntegTestCase {
 
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     public void testVectorScript() throws IOException, ExecutionException, InterruptedException {

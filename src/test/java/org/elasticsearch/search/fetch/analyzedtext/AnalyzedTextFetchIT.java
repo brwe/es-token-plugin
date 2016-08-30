@@ -29,7 +29,9 @@ import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static org.elasticsearch.client.Requests.indexRequest;
@@ -40,12 +42,12 @@ import static org.elasticsearch.test.hamcrest.ElasticsearchAssertions.assertSear
 public class AnalyzedTextFetchIT extends ESIntegTestCase {
 
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     public void testSimpleFetchAnalyzedText() throws IOException {

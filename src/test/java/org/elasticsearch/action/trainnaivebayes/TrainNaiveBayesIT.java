@@ -38,7 +38,9 @@ import org.elasticsearch.test.ESIntegTestCase;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,11 +57,11 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
 
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     protected Collection<Class<? extends Plugin>> transportClientPlugins() {
-        return pluginList(TokenPlugin.class);
+        return Collections.singletonList(TokenPlugin.class);
     }
 
     public void testNaiveBayesTraining() throws Exception {

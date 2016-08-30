@@ -35,6 +35,7 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.script.SharedMethods;
+import org.elasticsearch.search.SearchRequestParsers;
 import org.elasticsearch.search.aggregations.AggregatorParsers;
 import org.elasticsearch.search.suggest.Suggesters;
 import org.elasticsearch.threadpool.ThreadPool;
@@ -58,15 +59,15 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
 
     @Inject
     public TransportPrepareSpecAction(Settings settings, ThreadPool threadPool, TransportService transportService,
-                                      ActionFilters actionFilters, IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
-                                      Suggesters suggesters,
+                                      ActionFilters actionFilters, IndicesQueriesRegistry queryRegistry,
+                                      SearchRequestParsers searchRequestParsers,
                                       IndexNameExpressionResolver indexNameExpressionResolver, Client client) {
         super(settings, PrepareSpecAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
                 PrepareSpecRequest::new);
         this.client = client;
         this.queryRegistry = queryRegistry;
-        this.aggParsers = aggParsers;
-        this.suggesters = suggesters;
+        this.aggParsers = searchRequestParsers.aggParsers;
+        this.suggesters = searchRequestParsers.suggesters;
         this.parseFieldMatcher = new ParseFieldMatcher(settings);
     }
 

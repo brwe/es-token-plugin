@@ -65,9 +65,9 @@ public class PrepareSpecTests extends ESTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        aggregationParserRegistry.register(new TermsParser(), TermsAggregationBuilder.AGGREGATION_NAME_FIELD);
+        aggregationParserRegistry.register(new TermsParser(), TermsAggregationBuilder.NAME);
         aggregationParserRegistry.register(new SignificantTermsParser(significanceHeuristicParserRegistry, queryRegistry),
-                SignificantTermsAggregationBuilder.AGGREGATION_NAME_FIELD);
+                SignificantTermsAggregationBuilder.NAME);
     }
 
     public void testParseFieldSpecRequestsWithSignificantTemrs() throws IOException {

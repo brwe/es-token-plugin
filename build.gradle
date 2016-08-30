@@ -19,6 +19,11 @@
 
 buildscript {
     repositories {
+        if (System.getProperty("repos.mavenlocal") != null) {
+            // with -Drepos.mavenlocal=true we can force checking the local .m2 repo which is useful for building against
+            // elasticsearch snapshots
+            mavenLocal()
+        }
         mavenCentral()
         maven {
             name 'sonatype-snapshots'
