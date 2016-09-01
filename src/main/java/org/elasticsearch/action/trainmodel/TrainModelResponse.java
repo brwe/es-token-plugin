@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.elasticsearch.action.trainnaivebayes;
+package org.elasticsearch.action.trainmodel;
 
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -27,7 +27,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class TrainNaiveBayesResponse extends ActionResponse implements ToXContent {
+public class TrainModelResponse extends ActionResponse implements ToXContent {
 
     public String getId() {
         return id;
@@ -35,11 +35,11 @@ public class TrainNaiveBayesResponse extends ActionResponse implements ToXConten
 
     String id;
 
-    public TrainNaiveBayesResponse() {
+    public TrainModelResponse() {
 
     }
 
-    public TrainNaiveBayesResponse(String id) {
+    public TrainModelResponse(String id) {
         this.id = id;
     }
 

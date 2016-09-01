@@ -36,9 +36,13 @@ setup:
 ---
 "Basic trainnaivebayes request":
   - do:
-      trainnaivebayes:
+      trainmodel:
           id : "abc"
-          "body" : {index:  "test", fields:  ["text"], target_field: "label", type: "test"}
+          body:
+              type: "naive_bayes"
+              training_set: {index: "test", type: "test"}
+              fields: ["text"]
+              target_field: "label"
 
   - match:  { id:  "abc" }
 

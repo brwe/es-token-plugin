@@ -17,11 +17,11 @@
  * under the License.
  */
 
-package org.elasticsearch.action.trainnaivebayes;
+package org.elasticsearch.ml.training;
 
-import org.elasticsearch.action.admin.cluster.storedscripts.GetStoredScriptResponse;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.trainmodel.TrainModelRequestBuilder;
+import org.elasticsearch.action.trainmodel.TrainModelResponse;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -35,10 +35,8 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,10 +49,8 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
 
-
-@ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE, transportClientRatio = 0)
-public class TrainNaiveBayesIT extends ESIntegTestCase {
-
+@ESIntegTestCase.ClusterScope(scope = ESIntegTestCase.Scope.SUITE)
+public class NaiveBayesModelTrainerIT extends ESIntegTestCase {
     @Override
     protected Collection<Class<? extends Plugin>> nodePlugins() {
         return Collections.singletonList(TokenPlugin.class);
@@ -64,23 +60,23 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         return Collections.singletonList(TokenPlugin.class);
     }
 
+
     public void testNaiveBayesTraining() throws Exception {
         indexDocs();
         refresh();
-        TrainNaiveBayesRequestBuilder builder = new TrainNaiveBayesRequestBuilder(client());
-        XContentBuilder sourceBuilder = jsonBuilder();
-        sourceBuilder.startObject()
-                .field("fields", new String[]{"text", "num"})
-                .field("target_field", "label")
-                .field("index", "index")
-                .field("type", "type")
-                .field("id", "abcd")
-                .endObject();
-        builder.source(sourceBuilder.string());
-        TrainNaiveBayesResponse response = builder.get();
+        TrainModelRequestBuilder builder = new TrainModelRequestBuilder(client())
+                .setModelId("abcd")
+                .setModelType("naive_bayes")
+                .addFields("text", "num")
+                .setTargetField(new ModelTargetField("label"))
+                .setTrainingSet(new DataSet("index", "type"));
+        TrainModelResponse response = builder.get();
+
+        assertThat(response.getId(), equalTo("abcd"));
+
         SearchResponse searchResponse = client().prepareSearch("index").addScriptField("pmml", new Script(response.getId(), ScriptService
                 .ScriptType
-                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000).get();
+                .STORED, PMMLModelScriptEngineService.NAME, new HashMap<>())).addStoredField("_source").setSize(10000).get();
         assertSearchResponse(searchResponse);
         for (SearchHit hit : searchResponse.getHits().getHits()) {
             @SuppressWarnings("unchecked") String label = (String) ((Map<String, Object>) (hit.field("pmml").values().get(0))).get("class");
@@ -96,36 +92,28 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         refresh();
 
         SearchResponse aggResponse = client().prepareSearch("test").addAggregation(terms("class").field("class").size(Integer.MAX_VALUE)
-                .shardMinDocCount(1)
-                .minDocCount(1).order(Terms.Order.term(true))).get();
+                .shardMinDocCount(1).minDocCount(1).order(Terms.Order.term(true))).get();
         assertThat(((Terms) aggResponse.getAggregations().getAsMap().get("class")).getBuckets().size(), equalTo(2));
-        TrainNaiveBayesRequestBuilder builder = new TrainNaiveBayesRequestBuilder(client());
-        XContentBuilder sourceBuilder = jsonBuilder();
 
-        sourceBuilder.startObject()
-                .field("fields", new String[]{"age", "fnlwgt", "education", "education_num", "marital_status",
-                        "relationship", "race", "sex", "capital_gain", "capital_loss", "hours_per_week"})
-                .field("target_field", "class")
-                .field("index", "test")
-                .field("type", "type")
-                .field("id", "abcd")
-                .endObject();
-        builder.source(sourceBuilder.string());
-        TrainNaiveBayesResponse response = builder.get();
+        TrainModelRequestBuilder builder = new TrainModelRequestBuilder(client())
+                .setModelId("abcd")
+                .setModelType("naive_bayes")
+                .addFields("age", "fnlwgt", "education", "education_num", "marital_status",
+                        "relationship", "race", "sex", "capital_gain", "capital_loss", "hours_per_week")
+                .setTargetField("class")
+                .setTrainingSet(new DataSet("test", "type"));
+        TrainModelResponse response = builder.get();
         client().admin().cluster().prepareGetStoredScript(PMMLModelScriptEngineService.NAME, response.getId()).get();
-        SearchResponse searchResponseEsModel = client().prepareSearch("test").addScriptField("pmml", new Script(response.getId(),
-                ScriptService
-                        .ScriptType
-                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000)
-                .addSort
-                ("_uid", SortOrder.ASC).get();
+        SearchResponse searchResponseEsModel = client().prepareSearch("test")
+                .addScriptField("pmml", new Script(response.getId(), ScriptService.ScriptType.STORED,
+                        PMMLModelScriptEngineService.NAME, new HashMap<>()))
+                .addStoredField("_source").setSize(10000).addSort("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseEsModel);
-        SearchResponse searchResponseRModel = client().prepareSearch("test").addScriptField("pmml", new Script("1",
-                ScriptService
-                        .ScriptType
-                        .STORED, PMMLModelScriptEngineService.NAME, new HashMap<String, Object>())).addStoredField("_source").setSize(10000)
-                .addSort
-                ("_uid", SortOrder.ASC).get();
+        SearchResponse searchResponseRModel = client().prepareSearch("test")
+                .addScriptField("pmml", new Script("1", ScriptService.ScriptType.STORED,
+                        PMMLModelScriptEngineService.NAME, new HashMap<>()))
+                .addStoredField("_source").setSize(10000)
+                .addSort("_uid", SortOrder.ASC).get();
         assertSearchResponse(searchResponseRModel);
 
         int hitCounter = 0;
@@ -138,14 +126,13 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
             Map<String, Double> esProbs = (Map<String, Double>) ((Map<String, Object>) (searchResponseEsModel.getHits().getHits()
                     [hitCounter].field
                     ("pmml").values().get(0))).get("probs");
-            assertThat("result " + hitCounter +" has wrong prob:", esProbs.get(">50K"), closeTo(RProbs.get(">50K"), 1.e-5));
-            assertThat("result " + hitCounter +" has wrong prob:",esProbs.get("<=50K"), closeTo(RProbs.get("<=50K"), 1.e-5));
-            assertThat("result " + hitCounter +" has wrong class:",esLabel, equalTo(Rlabel));
+            assertThat("result " + hitCounter + " has wrong prob:", esProbs.get(">50K"), closeTo(RProbs.get(">50K"), 1.e-5));
+            assertThat("result " + hitCounter + " has wrong prob:", esProbs.get("<=50K"), closeTo(RProbs.get("<=50K"), 1.e-5));
+            assertThat("result " + hitCounter + " has wrong class:", esLabel, equalTo(Rlabel));
             hitCounter++;
         }
 
     }
-
 
     private void indexDocs() throws IOException {
         XContentBuilder mapping = jsonBuilder();
@@ -182,13 +169,11 @@ public class TrainNaiveBayesIT extends ESIntegTestCase {
         client().prepareIndex("index", "type", "5").setSource("text", "everyone loves xml", "label", "good", "num", 5).execute()
                 .actionGet();
         client().prepareIndex("index", "type", "6").setSource("text", "seriously, xml is sooo much better than json", "label", "good",
-                "num", 6)
-                .execute().actionGet();
+                "num", 6).execute().actionGet();
         client().prepareIndex("index", "type", "7").setSource("text", "if any of my fellow developers reads this, they will tar and " +
                         "feather me and hang my mutilated body above the entrace to amsterdam headquaters as a warning to others", "label",
                 "good", "num", 7).execute().actionGet();
         client().prepareIndex("index", "type", "8").setSource("text", "obviously I am joking", "label", "good", "num", 8).execute()
                 .actionGet();
     }
-
 }

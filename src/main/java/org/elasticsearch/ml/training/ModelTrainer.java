@@ -17,29 +17,29 @@
  * under the License.
  */
 
-package org.elasticsearch.action.trainnaivebayes;
+package org.elasticsearch.ml.training;
 
-import org.elasticsearch.action.Action;
-import org.elasticsearch.client.ElasticsearchClient;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+
+import java.util.List;
 
 /**
+ *
  */
-public class TrainNaiveBayesAction extends Action<TrainNaiveBayesRequest, TrainNaiveBayesResponse, TrainNaiveBayesRequestBuilder> {
+public interface ModelTrainer {
 
-    public static final TrainNaiveBayesAction INSTANCE = new TrainNaiveBayesAction();
-    public static final String NAME = "indices:data/trainnaivebayes";
+    String modelType();
 
-    private TrainNaiveBayesAction() {
-        super(NAME);
+    TrainingSession createTrainingSession(MappingMetaData mappingMetaData, List<ModelInputField> inputs,
+                                          ModelTargetField output, Settings settings);
+
+    interface TrainingSession {
+        AggregationBuilder trainingRequest();
+        String model(SearchResponse response);
     }
 
-    @Override
-    public TrainNaiveBayesResponse newResponse() {
-        return new TrainNaiveBayesResponse();
-    }
-
-    @Override
-    public TrainNaiveBayesRequestBuilder newRequestBuilder(ElasticsearchClient client) {
-        return new TrainNaiveBayesRequestBuilder(client);
-    }
 }
+

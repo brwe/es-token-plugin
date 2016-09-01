@@ -17,31 +17,30 @@
  * under the License.
  */
 
-package org.elasticsearch.action.trainnaivebayes;
+package org.elasticsearch.action.trainmodel;
 
-import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.ActionRequestBuilder;
+import org.elasticsearch.action.Action;
 import org.elasticsearch.client.ElasticsearchClient;
 
-public class TrainNaiveBayesRequestBuilder extends ActionRequestBuilder<TrainNaiveBayesRequest, TrainNaiveBayesResponse,
-        TrainNaiveBayesRequestBuilder> {
+/**
+ */
+public class TrainModelAction extends Action<TrainModelRequest, TrainModelResponse, TrainModelRequestBuilder> {
 
-    public TrainNaiveBayesRequestBuilder(ElasticsearchClient client) {
-        super(client, TrainNaiveBayesAction.INSTANCE, new TrainNaiveBayesRequest());
-    }
+    public static final TrainModelAction INSTANCE = new TrainModelAction();
+    // TODO: Is this a good name?
+    public static final String NAME = "cluster:admin/script/trainmodel";
 
-    public TrainNaiveBayesRequestBuilder source(String source) {
-        request.source(source);
-        return this;
+    private TrainModelAction() {
+        super(NAME);
     }
 
     @Override
-    public void execute(ActionListener<TrainNaiveBayesResponse> listener) {
-        client.execute(TrainNaiveBayesAction.INSTANCE, request, listener);
+    public TrainModelResponse newResponse() {
+        return new TrainModelResponse();
     }
 
-    public TrainNaiveBayesRequestBuilder setId(String id) {
-        request.id(id);
-        return this;
+    @Override
+    public TrainModelRequestBuilder newRequestBuilder(ElasticsearchClient client) {
+        return new TrainModelRequestBuilder(client);
     }
 }

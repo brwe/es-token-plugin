@@ -1,21 +1,19 @@
 {
-  "trainnaivebayes": {
-    "documentation": "no doc yet :(",
+  "trainmodel": {
+    "documentation": "trains ml model",
     "methods": [
       "POST"
     ],
     "url": {
-      "path": "/_trainnaivebayes",
+      "path": "/_train_model",
       "paths": [
-        "/_trainnaivebayes"
+        "/_train_model"
       ],
       "params": {
         "id": {
           "type": "string",
           "description": "Id for the model script."
         }
-      },
-      "parts" : {
       }
     },
     "body": {

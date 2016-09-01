@@ -17,12 +17,11 @@
  * under the License.
  */
 
-package org.elasticsearch.rest.action.trainnaivebayes;
+package org.elasticsearch.rest.action.trainmodel;
 
-import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesRequestBuilder;
-import org.elasticsearch.action.trainnaivebayes.TrainNaiveBayesResponse;
+import org.elasticsearch.action.trainmodel.TrainModelRequestBuilder;
+import org.elasticsearch.action.trainmodel.TrainModelResponse;
 import org.elasticsearch.client.node.NodeClient;
-import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -34,7 +33,7 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.action.RestBuilderListener;
 
-import java.nio.charset.Charset;
+import java.io.IOException;
 
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestStatus.OK;
@@ -42,23 +41,27 @@ import static org.elasticsearch.rest.RestStatus.OK;
 /**
  *
  */
-public class RestTrainNaiveBayesAction extends BaseRestHandler {
+public class RestTrainModelAction extends BaseRestHandler {
 
     @Inject
-    public RestTrainNaiveBayesAction(Settings settings, RestController controller) {
+    public RestTrainModelAction(Settings settings, RestController controller) {
         super(settings);
-        controller.registerHandler(POST, "_trainnaivebayes", this);
+        controller.registerHandler(POST, "_train_model", this);
     }
 
     @Override
     public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
-        TrainNaiveBayesRequestBuilder trainNaiveBayesRequestBuilder = new TrainNaiveBayesRequestBuilder(client);
-        trainNaiveBayesRequestBuilder.setId(request.param("id"));
-        trainNaiveBayesRequestBuilder.source(new String(BytesReference.toBytes(request.content()), Charset.defaultCharset()));
+        TrainModelRequestBuilder trainModelRequestBuilder = new TrainModelRequestBuilder(client);
+        trainModelRequestBuilder.setModelId(request.param("id"));
+        try {
+            trainModelRequestBuilder.source(request.content());
+        } catch (IOException ex) {
+            throw new IllegalArgumentException(ex);
+        }
 
-        trainNaiveBayesRequestBuilder.execute(new RestBuilderListener<TrainNaiveBayesResponse>(channel) {
+        trainModelRequestBuilder.execute(new RestBuilderListener<TrainModelResponse>(channel) {
             @Override
-            public RestResponse buildResponse(TrainNaiveBayesResponse response, XContentBuilder builder) throws Exception {
+            public RestResponse buildResponse(TrainModelResponse response, XContentBuilder builder) throws Exception {
                 builder.startObject();
                 response.toXContent(builder, request);
                 builder.endObject();
