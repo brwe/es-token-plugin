@@ -25,14 +25,13 @@ import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.script.AbstractSearchScript;
 import org.elasticsearch.script.ExecutableScript;
 import org.elasticsearch.script.NativeScriptFactory;
-import org.elasticsearch.script.modelinput.DataSource;
-import org.elasticsearch.script.modelinput.EsDataSource;
-import org.elasticsearch.script.modelinput.VectorRangesToVector;
-import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
+import org.elasticsearch.ml.modelinput.DataSource;
+import org.elasticsearch.ml.modelinput.EsDataSource;
+import org.elasticsearch.ml.modelinput.VectorRangesToVector;
+import org.elasticsearch.ml.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.search.lookup.LeafDocLookup;
 import org.elasticsearch.search.lookup.LeafIndexLookup;
 
-import java.util.List;
 import java.util.Map;
 
 /**

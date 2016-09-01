@@ -34,7 +34,7 @@ import org.dmg.pmml.PMML;
 import org.dmg.pmml.TransformationDictionary;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.inject.Provider;
-import org.elasticsearch.script.modelinput.PMMLVectorRange;
+import org.elasticsearch.ml.modelinput.PMMLVectorRange;
 import org.jpmml.model.ImportFilter;
 import org.jpmml.model.JAXBUtil;
 import org.xml.sax.InputSource;
@@ -55,7 +55,7 @@ import java.util.Map;
 
 public class ProcessPMMLHelper {
 
-    static DataField getRawDataField(DataDictionary dataDictionary, String rawFieldName) {
+    public static DataField getRawDataField(DataDictionary dataDictionary, String rawFieldName) {
         // now find the actual dataField
         DataField rawField = null;
         for (DataField dataField : dataDictionary.getDataFields()) {
@@ -144,7 +144,7 @@ public class ProcessPMMLHelper {
         });
     }
 
-    protected static List<DerivedField> getAllDerivedFields(Model model, TransformationDictionary transformationDictionary) {
+    public static List<DerivedField> getAllDerivedFields(Model model, TransformationDictionary transformationDictionary) {
         List<DerivedField> allDerivedFields = new ArrayList<>();
         if (transformationDictionary != null) {
             allDerivedFields.addAll(transformationDictionary.getDerivedFields());
@@ -155,7 +155,7 @@ public class ProcessPMMLHelper {
         return allDerivedFields;
     }
 
-    protected static MiningField getMiningField(Model model, String rawFieldName) {
+    public static MiningField getMiningField(Model model, String rawFieldName) {
         MiningField miningField = null;
         // also pass in the mining schema for additional parameters
         for (MiningField aMiningField : model.getMiningSchema().getMiningFields()) {

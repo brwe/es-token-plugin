@@ -24,12 +24,11 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.modelinput.VectorRangesToVector;
-import org.elasticsearch.script.modelinput.VectorRangesToVectorJSON;
+import org.elasticsearch.ml.modelinput.VectorRangesToVector;
+import org.elasticsearch.ml.modelinput.VectorRangesToVectorJSON;
 import org.elasticsearch.test.ESIntegTestCase;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
