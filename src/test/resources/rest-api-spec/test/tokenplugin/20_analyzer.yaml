@@ -1,0 +1,154 @@
+---
+teardown:
+  - do:
+      ingest.delete_pipeline:
+        id: "my_pipeline"
+        ignore: 404
+
+  - do:
+      cluster.put_settings:
+        body:
+          transient:
+            ingest.analysis.analyzer.my_analyzer.type: null
+            ingest.analysis.analyzer.my_analyzer.tokenizer: null
+            ingest.analysis.analyzer.my_analyzer.filter: null
+
+---
+"Test Analyzer Pipeline":
+  - do:
+      ingest.put_pipeline:
+        id: "my_pipeline"
+        body:  >
+          {
+            "description": "_description",
+            "processors": [
+              {
+                "analyzer" : {
+                  "field" : "field1",
+                  "analyzer" : "standard"
+                }
+              }
+            ]
+          }
+  - match: { acknowledged: true }
+
+  - do:
+      index:
+        index: test
+        type: test
+        id: 1
+        pipeline: "my_pipeline"
+        body: {field1: "Foo, bar and baz!"}
+
+  - do:
+      get:
+        index: test
+        type: test
+        id: 1
+  - match: { _source.field1: ["foo", "bar", "and", "baz"] }
+
+---
+"Test Analyzer Pipeline With Custom Analyzer":
+  - do:
+      cluster.put_settings:
+        body:
+          transient:
+            ingest:
+              analysis:
+                analyzer:
+                  my_analyzer:
+                    type: "custom"
+                    tokenizer: "keyword"
+                    filter: "lowercase"
+        flat_settings: false
+
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.type: "custom"}
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.tokenizer: "keyword"}
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.filter: "lowercase"}
+
+  - do:
+      ingest.put_pipeline:
+        id: "my_pipeline"
+        body:  >
+          {
+            "description": "_description",
+            "processors": [
+              {
+                "analyzer" : {
+                  "field" : "field1",
+                  "analyzer" : "my_analyzer"
+                }
+              }
+            ]
+          }
+  - match: { acknowledged: true }
+
+  - do:
+      index:
+        index: test
+        type: test
+        id: 1
+        pipeline: "my_pipeline"
+        body: {field1: "Foo, bar and baz!"}
+
+  - do:
+      get:
+        index: test
+        type: test
+        id: 1
+  - match: { _source.field1: ["foo, bar and baz!"] }
+
+  - do:
+      cluster.put_settings:
+        body:
+          transient:
+            ingest:
+              analysis:
+                analyzer:
+                  my_analyzer:
+                    type: "custom"
+                    tokenizer: "whitespace"
+                    filter: "lowercase"
+        flat_settings: false
+
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.type: "custom"}
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.tokenizer: "whitespace"}
+  - match: {transient.ingest.analysis.analyzer.my_analyzer.filter: "lowercase"}
+
+  - do:
+      index:
+        index: test
+        type: test
+        id: 2
+        pipeline: "my_pipeline"
+        body: {field1: "Foo, bar and baz!"}
+
+  - do:
+      get:
+        index: test
+        type: test
+        id: 2
+  - match: { _source.field1: ["foo,", "bar", "and", "baz!"] }
+
+---
+"Test putting analyzer pipeline with invalid analyzer":
+  - do:
+      catch: request
+      ingest.put_pipeline:
+        id: "bad_pipeline"
+        body:  >
+          {
+            "description": "_description",
+            "processors": [
+              {
+                "analyzer" : {
+                  "field" : "field1",
+                  "analyzer" : "unknown_analyzer"
+                }
+              }
+            ]
+          }
+  - match: { error.root_cause.0.type: "exception" }
+  - match: { error.root_cause.0.header.processor_type: "analyzer" }
+  - match: { error.caused_by.type: "illegal_argument_exception" }
+  - match: { error.caused_by.reason: "Unknown analyzer [unknown_analyzer]" }

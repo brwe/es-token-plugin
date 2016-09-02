@@ -31,11 +31,17 @@ import org.elasticsearch.action.trainmodel.TransportTrainModelAction;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.service.ClusterService;
+import org.elasticsearch.common.settings.ClusterSettings;
+import org.elasticsearch.common.settings.Setting;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.ingest.AnalyzerProcessor;
+import org.elasticsearch.ingest.IngestAnalysisService;
+import org.elasticsearch.ingest.Processor;
 import org.elasticsearch.ml.training.ModelTrainers;
 import org.elasticsearch.ml.training.NaiveBayesModelTrainer;
 import org.elasticsearch.ml.training.TrainingService;
 import org.elasticsearch.plugins.ActionPlugin;
+import org.elasticsearch.plugins.IngestPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.ScriptPlugin;
 import org.elasticsearch.plugins.SearchPlugin;
@@ -59,20 +65,23 @@ import org.elasticsearch.watcher.ResourceWatcherService;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
  */
-public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, SearchPlugin {
+public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, SearchPlugin, IngestPlugin {
 
     private final Settings settings;
     private final boolean transportClientMode;
+    private final IngestAnalysisService ingestAnalysisService;
 
     public TokenPlugin(Settings settings) {
         this.settings = settings;
         this.transportClientMode = TransportClient.CLIENT_TYPE.equals(settings.get(Client.CLIENT_TYPE_SETTING_S.getKey()));
-        ;
+        ingestAnalysisService = new IngestAnalysisService(settings);
     }
 
     @Override
@@ -81,7 +90,13 @@ public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, S
                                                SearchRequestParsers searchRequestParsers) {
         ModelTrainers modelTrainers = new ModelTrainers(Arrays.asList(new NaiveBayesModelTrainer()));
         TrainingService trainingService = new TrainingService(settings, clusterService, client, modelTrainers, searchRequestParsers);
-        return Collections.singletonList(trainingService);
+
+        final ClusterSettings clusterSettings = clusterService.getClusterSettings();
+        Setting<Settings> ingestAnalysisGroupSetting = ingestAnalysisService.getIngestAnalysisGroupSetting();
+        clusterSettings.addSettingsUpdateConsumer(ingestAnalysisGroupSetting, ingestAnalysisService::setAnalysisSettings);
+        ingestAnalysisService.setAnalysisSettings(ingestAnalysisGroupSetting.get(settings));
+
+        return Arrays.asList(trainingService, ingestAnalysisService);
     }
 
     @Override
@@ -119,5 +134,16 @@ public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, S
                 new TermVectorsFetchSubPhase(),
                 new AnalyzedTextFetchSubPhase()
         );
+    }
+
+    @Override
+    public Map<String, Processor.Factory> getProcessors(Processor.Parameters parameters) {
+        ingestAnalysisService.setAnalysisRegistry(parameters.analysisRegistry);
+        return Collections.singletonMap(AnalyzerProcessor.TYPE, new AnalyzerProcessor.Factory(ingestAnalysisService));
+    }
+
+    @Override
+    public List<Setting<?>> getSettings() {
+        return Collections.singletonList(ingestAnalysisService.getIngestAnalysisGroupSetting());
     }
 }

@@ -602,6 +602,66 @@ GET sentiment140/_search
 ```
 
 
+Analyzer Processor
+=============
+
+Splits a field into an array of tokens using an analyzer. Only works on string fields. The analyzer processor supports the following options:
+
+Parameters:
+
+- `field`: the field to be analyzed
+
+- `target_field` the field to assign the analyzed tokens, by default `field` is updated in-place
+
+- `analyzer`: the name of the analyzer to use
+
+
+```
+{
+  "analyzer": {
+    "field": "my_field",
+    "analyzer": "standard"
+  }
+}
+```
+
+Custom analyzers can be specified using `ingest.analysis` setting. It is using standard <<analysis,analysis>> format for
+defining custom named analyzers. The `ingest.analysis` setting can be changed dynamically and will have an immediate effect on all
+currently registered analyzer processor.
+
+
+```
+PUT _cluster/settings
+{
+  "persistent": {
+    "ingest": {
+      "analysis": {
+        "analyzer": {
+          "my_lowercase_analyzer": {
+             "tokenizer": "keyword",
+             "filter": "lowercase"
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT _ingest/pipeline/lowercase_title
+{
+  "description": "lower-casing analysis processor",
+  "processors" : [
+    {
+      "analyzer" : {
+        "field" : "title",
+        "target_field": "title_lower",
+        "analyzer" : "my_lowercase_analyzer"
+      }
+    }
+  ]
+}
+```
+
 
 License
 -------

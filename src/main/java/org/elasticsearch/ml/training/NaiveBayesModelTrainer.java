@@ -102,8 +102,7 @@ public class NaiveBayesModelTrainer implements ModelTrainer {
                     throw new IllegalArgumentException("input field [" + field.getName() + "] not found");
                 }
                 if (fieldType.equals("text") || fieldType.equals("keyword")) {
-                    topLevelClassAgg
-                            .subAggregation(terms(field.getName()).field(field.getName())
+                    topLevelClassAgg.subAggregation(terms(field.getName()).field(field.getName())
                                     .size(Integer.MAX_VALUE).shardMinDocCount(1).minDocCount(1)
                                     .order(Terms.Order.term(true)));
                 } else if (fieldType.equals("double") || fieldType.equals("float") || fieldType.equals("integer") ||
@@ -187,7 +186,7 @@ public class NaiveBayesModelTrainer implements ModelTrainer {
                         }
                     } else if (aggregation instanceof ExtendedStats) {
                         ExtendedStats extendedStats = (ExtendedStats) aggregation;
-                        if (numericFieldStats.get(fieldName) == null) {
+                        if (numericFieldStats.containsKey(fieldName) == false) {
                             numericFieldStats.put(fieldName, new TreeMap<>());
                         }
 
