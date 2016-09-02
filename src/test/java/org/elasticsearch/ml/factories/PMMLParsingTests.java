@@ -22,6 +22,7 @@ package org.elasticsearch.ml.factories;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.TreeModel;
 import org.elasticsearch.ml.modelinput.MockDataSource;
+import org.elasticsearch.ml.modelinput.SparseVectorModelInput;
 import org.elasticsearch.ml.modelinput.VectorModelInput;
 import org.elasticsearch.ml.modelinput.VectorModelInputEvaluator;
 import org.elasticsearch.ml.modelinput.VectorRange;
@@ -95,23 +96,23 @@ public class PMMLParsingTests extends ESTestCase {
             Map<String, List<Object>> input = new HashMap<>();
             input.put("age", ageInput);
             input.put("work", workInput);
-            Map<String, Object> result = vectorEntries.convert(new MockDataSource(input)).getAsMap();
+            SparseVectorModelInput result = vectorEntries.convert(new MockDataSource(input));
             String[] expectedResult = expectedResultsLines[i + 1].split(",");
             double expectedAgeValue = Double.parseDouble(expectedResult[0]);
             // assertThat(Double.parseDouble(expectedResult[0]), Matchers.closeTo(((double[]) result.get("values"))[0], 1.e-7));
             if (workInput.size() == 0) {
                 // this might be a problem with the model. not sure. the "other" value does not appear in it.
-                assertArrayEquals(((double[]) result.get("values")), new double[]{expectedAgeValue, 1.0d}, 1.e-7);
-                assertArrayEquals(((int[]) result.get("indices")), new int[]{0, 4});
+                assertArrayEquals(result.getValues(), new double[]{expectedAgeValue, 1.0d}, 1.e-7);
+                assertArrayEquals(result.getIndices(), new int[]{0, 4});
             } else if ("Private".equals(workInput.get(0))) {
-                assertArrayEquals(((double[]) result.get("values")), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
-                assertArrayEquals(((int[]) result.get("indices")), new int[]{0, 1, 4});
+                assertArrayEquals(result.getValues(), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
+                assertArrayEquals(result.getIndices(), new int[]{0, 1, 4});
             } else if ("Self-emp-inc".equals(workInput.get(0))) {
-                assertArrayEquals(((double[]) result.get("values")), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
-                assertArrayEquals(((int[]) result.get("indices")), new int[]{0, 2, 4});
+                assertArrayEquals(result.getValues(), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
+                assertArrayEquals(result.getIndices(), new int[]{0, 2, 4});
             } else if ("State-gov".equals(workInput.get(0))) {
-                assertArrayEquals(((double[]) result.get("values")), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
-                assertArrayEquals(((int[]) result.get("indices")), new int[]{0, 3, 4});
+                assertArrayEquals(result.getValues(), new double[]{expectedAgeValue, 1.0d, 1.0d}, 1.e-7);
+                assertArrayEquals(result.getIndices(), new int[]{0, 3, 4});
             } else {
                 fail("work input was " + workInput);
             }

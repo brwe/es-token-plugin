@@ -19,13 +19,9 @@
 
 package org.elasticsearch.ml.modelinput;
 
-import java.util.Map;
-
 /**
  * Data converted into a format easily processed by Model Evaluator
  */
 public interface ModelInput {
-
-    Map<String, Object> getAsMap();
 
 }

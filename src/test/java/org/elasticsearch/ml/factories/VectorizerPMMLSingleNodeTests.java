@@ -23,6 +23,7 @@ import org.dmg.pmml.PMML;
 import org.elasticsearch.ml.modelinput.DataSource;
 import org.elasticsearch.ml.modelinput.MockDataSource;
 import org.elasticsearch.ml.modelinput.ModelInputEvaluator;
+import org.elasticsearch.ml.modelinput.SparseVectorModelInput;
 import org.elasticsearch.ml.modelinput.VectorModelInput;
 import org.elasticsearch.ml.modelinput.MapModelInput;
 import org.elasticsearch.ml.modelinput.ModelAndModelInputEvaluator;
@@ -65,29 +66,29 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<VectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
-        ModelInputEvaluator<VectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
-        Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
+        ModelAndModelInputEvaluator<SparseVectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
+        ModelInputEvaluator<SparseVectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
+        SparseVectorModelInput vector = vectorEntries.convert(dataSource);
+        assertThat(vector.getValues().length, equalTo(3));
+        assertThat(vector.getIndices().length, equalTo(3));
+        assertArrayEquals(vector.getIndices(), new int[]{0, 2, 5});
+        assertArrayEquals(vector.getValues(), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
 
         // test missing values
         dataSource = createTestDataSource(new String[]{"Self-emp-inc"}, null, null);
-        vector = vectorEntries.convert(dataSource).getAsMap();
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 2, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
+        vector = vectorEntries.convert(dataSource);
+        assertThat((vector.getValues()).length, equalTo(3));
+        assertThat(vector.getIndices().length, equalTo(3));
+        assertArrayEquals(vector.getIndices(), new int[]{0, 2, 5});
+        assertArrayEquals(vector.getValues(), new double[]{-48.20951464010758, 1.0, 1.0}, 1.e-7);
 
         // test missing string field - we expect in this case nothing to be in the vector although that might be a problem with the model...
         dataSource = createTestDataSource(null, null, 60);
-        vector = vectorEntries.convert(dataSource).getAsMap();
-        assertThat(((double[]) vector.get("values")).length, equalTo(3));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(3));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 4, 5});
-        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
+        vector = vectorEntries.convert(dataSource);
+        assertThat((vector.getValues()).length, equalTo(3));
+        assertThat(vector.getIndices().length, equalTo(3));
+        assertArrayEquals(vector.getIndices(), new int[]{0, 4, 5});
+        assertArrayEquals(vector.getValues(), new double[]{1.1724330344107299, 1.0, 1.0}, 1.e-7);
     }
 
     public void testGLMOnActualLookupMultipleStringValues() throws Exception {
@@ -95,14 +96,13 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         DataSource dataSource = createTestDataSource(new String[]{"Self-emp-inc", "Private"}, null, 60);
         final String pmmlString = copyToStringFromClasspath("/org/elasticsearch/script/fake_lr_model_with_missing.xml");
         PMML pmml = ProcessPMMLHelper.parsePmml(pmmlString);
-        ModelAndModelInputEvaluator<VectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
-        ModelInputEvaluator<VectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
-        @SuppressWarnings("unchecked")
-        Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
-        assertThat(((double[]) vector.get("values")).length, equalTo(4));
-        assertThat(((int[]) vector.get("indices")).length, equalTo(4));
-        assertArrayEquals((int[]) vector.get("indices"), new int[]{0, 1, 2, 5, });
-        assertArrayEquals((double[]) vector.get("values"), new double[]{1.1724330344107299, 1.0, 1.0, 1.0}, 1.e-7);
+        ModelAndModelInputEvaluator<SparseVectorModelInput, String> fieldsToVectorAndModel = parser.buildFromPMML(pmml, 0);
+        ModelInputEvaluator<SparseVectorModelInput> vectorEntries = fieldsToVectorAndModel.getVectorRangesToVector();
+        SparseVectorModelInput vector = vectorEntries.convert(dataSource);
+        assertThat((vector.getValues()).length, equalTo(4));
+        assertThat(vector.getIndices().length, equalTo(4));
+        assertArrayEquals(vector.getIndices(), new int[]{0, 1, 2, 5, });
+        assertArrayEquals(vector.getValues(), new double[]{1.1724330344107299, 1.0, 1.0, 1.0}, 1.e-7);
     }
 
 
@@ -117,16 +117,16 @@ public class VectorizerPMMLSingleNodeTests extends ESTestCase {
         Map<String, Object> vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(1.5702107070685085, 0.0));
-        assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("Prof-school"));
-        assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("Self-emp-inc"));
+        assertThat(((Set) vector.get("education")).iterator().next(), equalTo("Prof-school"));
+        assertThat(((Set) vector.get("work")).iterator().next(), equalTo("Self-emp-inc"));
 
         // test missing values
         dataSource = createTestDataSource(null, null, null);
         vector = vectorEntries.convert(dataSource).getAsMap();
         assertThat(vector.size(), equalTo(3));
         assertThat(((Number)((Set) vector.get("age_z")).iterator().next()).doubleValue(), closeTo(-76.13993490863606, 0.0));
-        assertThat(((String)((Set) vector.get("education")).iterator().next()), equalTo("too-lazy-to-study"));
-        assertThat(((String)((Set) vector.get("work")).iterator().next()), equalTo("other"));
+        assertThat(((Set) vector.get("education")).iterator().next(), equalTo("too-lazy-to-study"));
+        assertThat(((Set) vector.get("work")).iterator().next(), equalTo("other"));
     }
 
 }

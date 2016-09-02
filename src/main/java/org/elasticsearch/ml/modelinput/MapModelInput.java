@@ -32,7 +32,6 @@ public class MapModelInput implements ModelInput {
         this.map = map;
     }
 
-    @Override
     public Map<String, Object> getAsMap() {
         return map;
     }

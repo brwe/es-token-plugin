@@ -51,14 +51,11 @@ public class SparseVectorModelInput extends VectorModelInput {
         return indices[i];
     }
 
+    public double[] getValues() {
+        return values;
+    }
 
-    @Override
-    public Map<String, Object> getAsMap() {
-        if (map == null) {
-            map = new HashMap<>();
-            map.put("values", values);
-            map.put("indices", indices);
-        }
-        return map;
+    public int[] getIndices() {
+        return indices;
     }
 }

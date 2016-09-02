@@ -21,11 +21,12 @@ package org.elasticsearch.ml.models;
 
 import org.dmg.pmml.NaiveBayesModel;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.ml.modelinput.VectorModelInput;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
+public class EsNaiveBayesModel extends EsModelEvaluator<VectorModelInput, String> {
 
     private double[][] thetas;
     private double[] pis;
@@ -42,47 +43,32 @@ public class EsNaiveBayesModel extends EsNumericInputModelEvaluator {
     }
 
     @Override
-    public Map<String, Object> evaluateDebug(Tuple<int[], double[]> featureValues) {
-
-        double valClass0 = linearFunction(featureValues, pis[0], thetas[0]);
-        double valClass1 = linearFunction(featureValues, pis[1], thetas[1]);
-        return prepareResult(valClass0, valClass1);
+    public String evaluate(VectorModelInput modelInput) {
+        double valClass0 = linearFunction(modelInput, pis[0], thetas[0]);
+        double valClass1 = linearFunction(modelInput, pis[1], thetas[1]);
+        return valClass0 > valClass1 ? labels[0] : labels[1];
     }
 
-    @Override
-    String evaluate(Tuple<int[], double[]> featureValues) {
-        throw new UnsupportedOperationException("can only run with parameter debug: true");
-    }
-
-    protected Map<String, Object> prepareResult(double valClass0, double valClass1) {
+    private Map<String, Object> prepareResult(double valClass0, double valClass1) {
         Map<String, Object> results = new HashMap<>();
         String classValue = valClass0 > valClass1 ? labels[0] : labels[1];
         results.put("class", classValue);
         return results;
     }
 
-    public Map<String, Object> evaluateDebug(double[] featureValues) {
-        double valClass0 = linearFunction(featureValues, pis[0], thetas[0]);
-        double valClass1 = linearFunction(featureValues, pis[1], thetas[1]);
+    @Override
+    public Map<String, Object> evaluateDebug(VectorModelInput modelInput) {
+        double valClass0 = linearFunction(modelInput, pis[0], thetas[0]);
+        double valClass1 = linearFunction(modelInput, pis[1], thetas[1]);
         return prepareResult(valClass0, valClass1);
     }
 
-    protected static double linearFunction(Tuple<int[], double[]> featureValues, double intercept, double[] coefficients) {
+    private static double linearFunction(VectorModelInput modelInput, double intercept, double[] coefficients) {
         double val = 0.0;
         val += intercept;
-        for (int i = 0; i < featureValues.v1().length; i++) {
-            val += featureValues.v2()[i] * coefficients[featureValues.v1()[i]];
+        for (int i = 0; i < modelInput.getSize(); i++) {
+            val += modelInput.getValue(i) * coefficients[modelInput.getIndex(i)];
         }
         return val;
     }
-
-    protected static double linearFunction(double[] featureValues, double intercept, double[] coefficients) {
-        double val = 0.0;
-        val += intercept;
-        for (int i = 0; i < featureValues.length; i++) {
-            val += featureValues[i] * coefficients[i];
-        }
-        return val;
-    }
-
 }
