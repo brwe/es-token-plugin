@@ -69,8 +69,10 @@ compileJava.options.compilerArgs << "-Xlint:-deprecation"
 // TODO: temporary workaround until it's fixed in elasticsearch
 thirdPartyAudit.enabled = false
 
-// TODO: it really don't like knime workspace and log files, we might be able to re-enable it after cleanup
-forbiddenPatterns.enabled = false
+forbiddenPatterns {
+    // it really doesn't like tabs in knime workspace and log files
+    exclude 'knime/knime_workspace/**/*'
+}
 
 integTest {
     cluster {
