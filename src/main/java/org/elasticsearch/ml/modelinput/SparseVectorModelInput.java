@@ -29,7 +29,6 @@ public class SparseVectorModelInput extends VectorModelInput {
 
     private final double[] values;
     private final int[] indices;
-    private Map<String, Object> map;
 
     public SparseVectorModelInput(double[] values, int[] indices) {
         this.values = values;

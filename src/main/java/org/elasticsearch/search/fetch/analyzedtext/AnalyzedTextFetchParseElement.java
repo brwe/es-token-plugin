@@ -22,8 +22,7 @@ package org.elasticsearch.search.fetch.analyzedtext;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.search.fetch.FetchSubPhase;
-import org.elasticsearch.search.fetch.FetchSubPhaseParseElement;
+import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.util.Map;
@@ -31,10 +30,13 @@ import java.util.Map;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
-public class AnalyzedTextFetchParseElement extends FetchSubPhaseParseElement<AnalyzedTextFetchContext> {
+public class AnalyzedTextFetchParseElement implements SearchParseElement {
+
     @Override
-    protected void innerParse(XContentParser parser, AnalyzedTextFetchContext analyzedTextFetchContext, SearchContext searchContext)
-            throws Exception {
+    public void parse(XContentParser parser, SearchContext context) throws Exception {
+
+        AnalyzedTextFetchContext analyzedTextFetchContext = context.getFetchSubPhaseContext(AnalyzedTextFetchSubPhase.CONTEXT_FACTORY);
+        analyzedTextFetchContext.setHitExecutionNeeded(true);
 
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
@@ -60,8 +62,4 @@ public class AnalyzedTextFetchParseElement extends FetchSubPhaseParseElement<Ana
 
     }
 
-    @Override
-    protected FetchSubPhase.ContextFactory<AnalyzedTextFetchContext> getContextFactory() {
-        return AnalyzedTextFetchSubPhase.CONTEXT_FACTORY;
-    }
 }
