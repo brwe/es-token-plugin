@@ -42,14 +42,13 @@ apply plugin: 'eclipse'
 apply plugin: 'elasticsearch.esplugin'
 apply plugin: 'com.bmuschko.nexus'
 
-// Version of the plugin
-version = '5.0.0-alpha6-SNAPSHOT'
-
 esplugin {
-    description 'Experimental plugin for access to low level index properties of documents.'
+    description 'PMML Plugin'
     classname 'org.elasticsearch.plugin.TokenPlugin'
-    name 'es-token-plugin'
 }
+
+// Version of the plugin
+version = "${pluginVersion}"
 
 ext.compactProfile = 'full'
 
