@@ -46,3 +46,14 @@ setup:
 
   - match:  { id:  "abc" }
 
+---
+"Basic trainnaivebayes request without model id":
+  - do:
+      trainmodel:
+          body:
+              type: "naive_bayes"
+              training_set: {index: "test", type: "test"}
+              fields: ["text"]
+              target_field: "label"
+
+  - match:  { model: /^<.xml/ }

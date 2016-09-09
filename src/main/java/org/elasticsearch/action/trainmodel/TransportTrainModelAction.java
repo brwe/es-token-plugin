@@ -64,7 +64,7 @@ public class TransportTrainModelAction extends HandledTransportAction<TrainModel
                     @Override
                     public void onResponse(String s) {
                         try {
-                            storeModel(request.getModelId(), s, listener);
+                            storeOrReturnModel(request.getModelId(), s, listener);
                         } catch (Exception e) {
                             listener.onFailure(e);
                         }
@@ -77,7 +77,7 @@ public class TransportTrainModelAction extends HandledTransportAction<TrainModel
                 });
     }
 
-    private void storeModel(String id, String model, ActionListener<TrainModelResponse> listener) {
+    private void storeOrReturnModel(String id, String model, ActionListener<TrainModelResponse> listener) {
         PutStoredScriptRequestBuilder storedScriptRequestBuilder;
         try {
             storedScriptRequestBuilder = client.admin().cluster().preparePutStoredScript().setScriptLang(PMMLModelScriptEngineService.NAME)
@@ -85,24 +85,26 @@ public class TransportTrainModelAction extends HandledTransportAction<TrainModel
         } catch (IOException e) {
             throw new ElasticsearchException("cannot store model", e);
         }
-        final String scriptId;
         if (id == null) {
-            scriptId = UUIDs.randomBase64UUID();
+            TrainModelResponse modelResponse = new TrainModelResponse();
+            modelResponse.setModel(model);
+            listener.onResponse(modelResponse);
         } else {
-            scriptId = id;
-        }
-        storedScriptRequestBuilder.setId(scriptId);
-        storedScriptRequestBuilder.execute(new ActionListener<PutStoredScriptResponse>() {
-            @Override
-            public void onResponse(PutStoredScriptResponse putStoredScriptResponse) {
-                listener.onResponse(new TrainModelResponse(scriptId));
-            }
+            storedScriptRequestBuilder.setId(id);
+            storedScriptRequestBuilder.execute(new ActionListener<PutStoredScriptResponse>() {
+                @Override
+                public void onResponse(PutStoredScriptResponse putStoredScriptResponse) {
+                    TrainModelResponse modelResponse = new TrainModelResponse();
+                    modelResponse.setId(id);
+                    listener.onResponse(modelResponse);
+                }
 
-            @Override
-            public void onFailure(Exception e) {
-                listener.onFailure(e);
-            }
-        });
+                @Override
+                public void onFailure(Exception e) {
+                    listener.onFailure(e);
+                }
+            });
+        }
     }
 
 }

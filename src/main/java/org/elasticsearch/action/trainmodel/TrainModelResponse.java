@@ -20,6 +20,7 @@
 package org.elasticsearch.action.trainmodel;
 
 import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -29,39 +30,55 @@ import java.io.IOException;
 
 public class TrainModelResponse extends ActionResponse implements ToXContent {
 
-    public String getId() {
-        return id;
-    }
+    @Nullable
+    private String id;
 
-    String id;
+    @Nullable
+    private String model;
 
     public TrainModelResponse() {
 
     }
 
-    public TrainModelResponse(String id) {
+    public String getId() {
+        return id;
+    }
+
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setId(String id) {
         this.id = id;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        builder.field(Fields.ID, id);
+        if (id != null) {
+            builder.field("id", id);
+        }
+        if (model != null) {
+            builder.field("model", model);
+        }
         return builder;
-    }
-
-    static final class Fields {
-        static final String ID = "id";
     }
 
     @Override
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
-        id = in.readString();
+        id = in.readOptionalString();
+        model = in.readOptionalString();
     }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         super.writeTo(out);
-        out.writeString(id);
+        out.writeOptionalString(id);
+        out.writeOptionalString(model);
     }
 }
