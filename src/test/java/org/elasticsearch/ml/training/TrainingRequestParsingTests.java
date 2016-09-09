@@ -47,7 +47,7 @@ public class TrainingRequestParsingTests extends ESTestCase {
         sourceBuilder.startObject();
         {
             sourceBuilder.field("id", "abcd");
-            sourceBuilder.field("fields", "field1", "field2", "field3");
+            sourceBuilder.array("fields", "field1", "field2", "field3");
             sourceBuilder.field("target_field", "class");
             sourceBuilder.startObject("training_set");
             {
@@ -116,7 +116,7 @@ public class TrainingRequestParsingTests extends ESTestCase {
         sourceBuilder.startObject();
         {
             sourceBuilder.field("id", "abcd");
-            sourceBuilder.field("fields", "field1", "field2", "field3");
+            sourceBuilder.array("fields", "field1", "field2", "field3");
             sourceBuilder.field("target_field", "class");
             sourceBuilder.startObject("training_set");
             {
