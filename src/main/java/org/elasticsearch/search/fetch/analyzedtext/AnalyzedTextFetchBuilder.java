@@ -18,23 +18,19 @@
  */
 package org.elasticsearch.search.fetch.analyzedtext;
 
-import org.elasticsearch.action.ActionRequestValidationException;
-import org.elasticsearch.action.support.single.shard.SingleShardRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.search.SearchExtBuilder;
 
 import java.io.IOException;
-
-import static org.elasticsearch.action.ValidateActions.addValidationError;
 
 /**
  * A request to analyze a text associated with a specific index. Allow to provide
  * the actual analyzer name to perform the analysis with.
  */
-public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest> {
-
-    private String[] text;
+public class AnalyzedTextFetchBuilder extends SearchExtBuilder {
 
     private String analyzer;
 
@@ -46,28 +42,29 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
 
     private String field;
 
-    public AnalyzedTextRequest() {
+    public AnalyzedTextFetchBuilder() {
     }
 
-    /**
-     * Constructs a new analyzer request for the provided index.
-     *
-     * @param index The text to analyze
-     */
-    public AnalyzedTextRequest(String index) {
-        this.index(index);
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
-    public String[] text() {
-        return this.text;
+    @Override
+    public boolean equals(Object obj) {
+        return false;
     }
 
-    public AnalyzedTextRequest text(String... text) {
-        this.text = text;
-        return this;
+    public AnalyzedTextFetchBuilder(StreamInput in) throws IOException {
+        analyzer = in.readOptionalString();
+        tokenizer = in.readOptionalString();
+        tokenFilters = in.readStringArray();
+        charFilters = in.readStringArray();
+        field = in.readOptionalString();
     }
 
-    public AnalyzedTextRequest analyzer(String analyzer) {
+
+    public AnalyzedTextFetchBuilder analyzer(String analyzer) {
         this.analyzer = analyzer;
         return this;
     }
@@ -76,7 +73,7 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
         return this.analyzer;
     }
 
-    public AnalyzedTextRequest tokenizer(String tokenizer) {
+    public AnalyzedTextFetchBuilder tokenizer(String tokenizer) {
         this.tokenizer = tokenizer;
         return this;
     }
@@ -85,7 +82,7 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
         return this.tokenizer;
     }
 
-    public AnalyzedTextRequest tokenFilters(String... tokenFilters) {
+    public AnalyzedTextFetchBuilder tokenFilters(String... tokenFilters) {
         this.tokenFilters = tokenFilters;
         return this;
     }
@@ -94,7 +91,7 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
         return this.tokenFilters;
     }
 
-    public AnalyzedTextRequest charFilters(String... charFilters) {
+    public AnalyzedTextFetchBuilder charFilters(String... charFilters) {
         this.charFilters = charFilters;
         return this;
     }
@@ -103,7 +100,7 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
         return this.charFilters;
     }
 
-    public AnalyzedTextRequest field(String field) {
+    public AnalyzedTextFetchBuilder field(String field) {
         this.field = field;
         return this;
     }
@@ -113,39 +110,37 @@ public class AnalyzedTextRequest extends SingleShardRequest<AnalyzedTextRequest>
     }
 
     @Override
-    public ActionRequestValidationException validate() {
-        ActionRequestValidationException validationException = null;
-        if (text == null || text.length == 0) {
-            validationException = addValidationError("text is missing", validationException);
-        }
-        if (tokenFilters == null) {
-            validationException = addValidationError("token filters must not be null", validationException);
-        }
-        if (charFilters == null) {
-            validationException = addValidationError("char filters must not be null", validationException);
-        }
-        return validationException;
-    }
-
-    @Override
-    public void readFrom(StreamInput in) throws IOException {
-        super.readFrom(in);
-        text = in.readStringArray();
-        analyzer = in.readOptionalString();
-        tokenizer = in.readOptionalString();
-        tokenFilters = in.readStringArray();
-        charFilters = in.readStringArray();
-        field = in.readOptionalString();
-    }
-
-    @Override
     public void writeTo(StreamOutput out) throws IOException {
-        super.writeTo(out);
-        out.writeStringArray(text);
         out.writeOptionalString(analyzer);
         out.writeOptionalString(tokenizer);
         out.writeStringArray(tokenFilters);
         out.writeStringArray(charFilters);
         out.writeOptionalString(field);
+    }
+
+    @Override
+    public String getWriteableName() {
+        return AnalyzedTextFetchSubPhase.NAME;
+    }
+
+    @Override
+    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        if (analyzer != null) {
+            builder.field("analyzer", analyzer);
+        }
+        if (tokenizer != null) {
+            builder.field("tokenizer", tokenizer);
+        }
+        if (tokenFilters != null && tokenFilters.length > 0) {
+            builder.array("filters", tokenFilters);
+        }
+        if (charFilters != null && charFilters.length > 0) {
+            builder.array("char_filters", charFilters);
+        }
+        if (field != null) {
+            builder.array("field", field);
+        }
+
+        return null;
     }
 }

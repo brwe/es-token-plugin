@@ -28,59 +28,33 @@ import org.elasticsearch.index.analysis.CustomAnalyzer;
 import org.elasticsearch.index.analysis.TokenFilterFactory;
 import org.elasticsearch.index.analysis.TokenizerFactory;
 import org.elasticsearch.search.SearchHitField;
-import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.fetch.FetchSubPhase;
-import org.elasticsearch.search.internal.InternalSearchHit;
 import org.elasticsearch.search.internal.InternalSearchHitField;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
 
-    public static final ContextFactory<AnalyzedTextFetchContext> CONTEXT_FACTORY = new ContextFactory<AnalyzedTextFetchContext>() {
-
-        @Override
-        public String getName() {
-            return NAMES[0];
-        }
-
-        @Override
-        public AnalyzedTextFetchContext newContextInstance() {
-            return new AnalyzedTextFetchContext();
-        }
-    };
-
     public AnalyzedTextFetchSubPhase() {
     }
 
-    public static final String[] NAMES = {"analyzed_text"};
-
-    @Override
-    public Map<String, ? extends SearchParseElement> parseElements() {
-        return  Collections.singletonMap(NAMES[0], new AnalyzedTextFetchParseElement());
-    }
-
-    @Override
-    public void hitsExecute(SearchContext context, InternalSearchHit[] hits) {
-    }
+    public static final String NAME = "analyzed_text";
 
     @Override
     public void hitExecute(SearchContext context, HitContext hitContext) {
-        if (context.getFetchSubPhaseContext(CONTEXT_FACTORY).hitExecutionNeeded() == false) {
+        AnalyzedTextFetchBuilder request = (AnalyzedTextFetchBuilder)context.getSearchExt(NAME);
+        if (request == null) {
             return;
         }
-        AnalyzedTextRequest request = context.getFetchSubPhaseContext(CONTEXT_FACTORY).getRequest();
-        Analyzer analyzer = null;
+        Analyzer analyzer;
         boolean closeAnalyzer = false;
         String text = (String) context.lookup().source().extractValue(request.field());
-        if (analyzer == null && request.analyzer() != null) {
+        if (request.analyzer() != null) {
             analyzer = context.analysisService().analyzer(request.analyzer());
             if (analyzer == null) {
                 throw new IllegalArgumentException("failed to find analyzer [" + request.analyzer() + "]");
@@ -137,10 +111,10 @@ public class AnalyzedTextFetchSubPhase implements FetchSubPhase {
         if (hitContext.hit().fieldsOrNull() == null) {
             hitContext.hit().fields(new HashMap<String, SearchHitField>());
         }
-        SearchHitField hitField = hitContext.hit().fields().get(NAMES[0]);
+        SearchHitField hitField = hitContext.hit().fields().get(NAME);
         if (hitField == null) {
-            hitField = new InternalSearchHitField(NAMES[0], new ArrayList<>(1));
-            hitContext.hit().fields().put(NAMES[0], hitField);
+            hitField = new InternalSearchHitField(NAME, new ArrayList<>(1));
+            hitContext.hit().fields().put(NAME, hitField);
         }
 
         hitField.values().add(tokens);

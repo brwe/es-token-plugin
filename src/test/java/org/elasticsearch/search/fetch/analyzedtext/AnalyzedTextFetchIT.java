@@ -26,10 +26,8 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -58,17 +56,14 @@ public class AnalyzedTextFetchIT extends ESIntegTestCase {
         client().admin().indices().prepareRefresh().execute().actionGet();
         ensureGreen();
 
-        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(jsonBuilder().startObject()
-                .startObject(AnalyzedTextFetchSubPhase.NAMES[0])
-                .field("field", "test")
-                .endObject()
-                .endObject());
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
+                Collections.singletonList(new AnalyzedTextFetchBuilder().field("test")));
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
         SearchHit hit = response.getHits().getAt(0);
         // get the fields from the response
-        SearchHitField fields = hit.field(AnalyzedTextFetchSubPhase.NAMES[0]);
+        SearchHitField fields = hit.field(AnalyzedTextFetchSubPhase.NAME);
         List<String> termVectors = fields.getValue();
         assertArrayEquals(termVectors.toArray(new String[termVectors.size()]), new String[]{"i", "am", "sam", "i", "am"});
         logger.info("{}", termVectors);

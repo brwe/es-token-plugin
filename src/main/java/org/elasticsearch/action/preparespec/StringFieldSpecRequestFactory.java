@@ -25,6 +25,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.query.QueryParseContext;
 import org.elasticsearch.indices.query.IndicesQueriesRegistry;
+import org.elasticsearch.search.SearchExtRegistry;
 import org.elasticsearch.search.aggregations.AggregatorParsers;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.suggest.Suggesters;
@@ -38,7 +39,7 @@ public class StringFieldSpecRequestFactory {
 
     public static FieldSpecRequest createStringFieldSpecRequest(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
                                                                 Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
-                                                                Map<String, Object> parameters) {
+                                                                SearchExtRegistry searchExtRegistry, Map<String, Object> parameters) {
         String field = (String) parameters.remove("field");
         if (field == null) {
             throw new ElasticsearchException("field parameter missing from prepare spec request");
@@ -62,7 +63,7 @@ public class StringFieldSpecRequestFactory {
             }
             assertParametersEmpty(parameters);
             SearchSourceBuilder searchSourceBuilder = parseSearchRequest(queryRegistry, aggParsers, suggesters, parseFieldMatcher,
-                    searchRequest);
+                    searchExtRegistry, searchRequest);
             return new StringFieldSignificantTermsSpecRequest(searchSourceBuilder, index, number, field);
         }
         if (TokenGenerateMethod.fromString(tokens).equals(TokenGenerateMethod.ALL_TERMS)) {
@@ -99,10 +100,10 @@ public class StringFieldSpecRequestFactory {
 
     private static SearchSourceBuilder parseSearchRequest(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
                                                           Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
-                                                          String searchRequest) {
+                                                          SearchExtRegistry searchExtRegistry, String searchRequest) {
         try (XContentParser parser = XContentFactory.xContent(searchRequest).createParser(searchRequest)) {
             QueryParseContext context = new QueryParseContext(queryRegistry, parser, parseFieldMatcher);
-            return SearchSourceBuilder.fromXContent(context, aggParsers, suggesters);
+            return SearchSourceBuilder.fromXContent(context, aggParsers, suggesters, searchExtRegistry);
         } catch (IOException e) {
             throw new ElasticsearchException(e);
         }

@@ -24,25 +24,27 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.search.SearchParseElement;
-import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.search.SearchExtParser;
+
+import java.io.IOException;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
-public class TermVectorsFetchParseElement implements SearchParseElement {
+public class TermVectorsFetchParser implements SearchExtParser<TermVectorsFetchBuilder> {
+
+    public static final TermVectorsFetchParser INSTANCE = new TermVectorsFetchParser();
+
+    private TermVectorsFetchParser() {
+    }
 
     @Override
-    public void parse(XContentParser parser, SearchContext context) throws Exception {
-
-        TermVectorsFetchContext fetchSubPhaseContext = context.getFetchSubPhaseContext(TermVectorsFetchSubPhase.CONTEXT_FACTORY);
-        fetchSubPhaseContext.setHitExecutionNeeded(true);
+    public TermVectorsFetchBuilder fromXContent(XContentParser parser) throws IOException {
         TermVectorsRequest request = new TermVectorsRequest();
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
         XContentParser newParser = XContentFactory.xContent(XContentType.JSON).createParser(newBuilder.string());
         TermVectorsRequest.parseRequest(request, newParser);
-        fetchSubPhaseContext.setRequest(request);
-
+        return new TermVectorsFetchBuilder(request);
     }
 }

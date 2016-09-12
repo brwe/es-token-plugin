@@ -33,18 +33,14 @@ import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.service.ClusterService;
 import org.elasticsearch.common.UUIDs;
-import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryParseContext;
-import org.elasticsearch.index.query.QueryParser;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.ml.training.ModelTrainer.TrainingSession;
-import org.elasticsearch.plugins.SearchPlugin;
 import org.elasticsearch.plugins.SearchPlugin.QuerySpec;
 import org.elasticsearch.search.SearchRequestParsers;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -56,7 +52,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -84,7 +79,7 @@ public class TrainingServiceTests extends ESTestCase {
         indicesQueriesRegistry.register(spec.getParser(), spec.getName());
     }
 
-    private final SearchRequestParsers searchParsers = new SearchRequestParsers(indicesQueriesRegistry, null, null);
+    private final SearchRequestParsers searchParsers = new SearchRequestParsers(indicesQueriesRegistry, null, null, null);
 
     private final Settings MINIMAL_INDEX_SETTINGS = Settings.builder()
             .put(IndexMetaData.SETTING_VERSION_CREATED, Version.CURRENT)

@@ -28,13 +28,12 @@ import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
 import org.elasticsearch.common.ParseFieldMatcher;
 import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.ParseFieldRegistry;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.script.SharedMethods;
+import org.elasticsearch.search.SearchExtRegistry;
 import org.elasticsearch.search.SearchRequestParsers;
 import org.elasticsearch.search.aggregations.AggregatorParsers;
 import org.elasticsearch.search.suggest.Suggesters;
@@ -54,13 +53,14 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
     private final IndicesQueriesRegistry queryRegistry;
     private final AggregatorParsers aggParsers;
     private final Suggesters suggesters;
+    private final SearchExtRegistry searchExtRegistry;
     private final ParseFieldMatcher parseFieldMatcher;
 
 
     @Inject
     public TransportPrepareSpecAction(Settings settings, ThreadPool threadPool, TransportService transportService,
                                       ActionFilters actionFilters, IndicesQueriesRegistry queryRegistry,
-                                      SearchRequestParsers searchRequestParsers,
+                                      SearchRequestParsers searchRequestParsers, SearchExtRegistry searchExtRegistry,
                                       IndexNameExpressionResolver indexNameExpressionResolver, Client client) {
         super(settings, PrepareSpecAction.NAME, threadPool, transportService, actionFilters, indexNameExpressionResolver,
                 PrepareSpecRequest::new);
@@ -68,6 +68,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
         this.queryRegistry = queryRegistry;
         this.aggParsers = searchRequestParsers.aggParsers;
         this.suggesters = searchRequestParsers.suggesters;
+        this.searchExtRegistry = searchExtRegistry;
         this.parseFieldMatcher = new ParseFieldMatcher(settings);
     }
 
@@ -75,7 +76,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
     protected void doExecute(final PrepareSpecRequest request, final ActionListener<PrepareSpecResponse> listener) {
         Tuple<Boolean, List<FieldSpecRequest>> fieldSpecRequests = null;
         try {
-            fieldSpecRequests = parseFieldSpecRequests(queryRegistry, aggParsers, suggesters, parseFieldMatcher, request.source());
+            fieldSpecRequests = parseFieldSpecRequests(queryRegistry, aggParsers, suggesters, searchExtRegistry, parseFieldMatcher,
+                    request.source());
         } catch (IOException e) {
             listener.onFailure(e);
         }
@@ -88,7 +90,8 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
     }
 
     static Tuple<Boolean, List<FieldSpecRequest>> parseFieldSpecRequests(IndicesQueriesRegistry queryRegistry, AggregatorParsers aggParsers,
-                                                                         Suggesters suggesters, ParseFieldMatcher parseFieldMatcher,
+                                                                         Suggesters suggesters, SearchExtRegistry searchExtRegistry,
+                                                                         ParseFieldMatcher parseFieldMatcher,
                                                                          String source) throws IOException {
         List<FieldSpecRequest> fieldSpecRequests = new ArrayList<>();
         Map<String, Object> parsedSource = SharedMethods.getSourceAsMap(source);
@@ -106,7 +109,7 @@ public class TransportPrepareSpecAction extends HandledTransportAction<PrepareSp
             }
             if (type.equals("string")) {
                 fieldSpecRequests.add(StringFieldSpecRequestFactory.createStringFieldSpecRequest(queryRegistry, aggParsers, suggesters,
-                        parseFieldMatcher, field));
+                        parseFieldMatcher, searchExtRegistry, field));
             } else {
                 throw new UnsupportedOperationException("I am working as quick as I can! But I have not done it for " + type + " yet.");
             }

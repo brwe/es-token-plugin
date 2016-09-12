@@ -22,26 +22,28 @@ package org.elasticsearch.search.fetch.analyzedtext;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.SharedMethods;
-import org.elasticsearch.search.SearchParseElement;
-import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.search.SearchExtParser;
 
+import java.io.IOException;
 import java.util.Map;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
-public class AnalyzedTextFetchParseElement implements SearchParseElement {
+public class AnalyzedTextFetchParser implements SearchExtParser<AnalyzedTextFetchBuilder> {
+
+    public static final AnalyzedTextFetchParser INSTANCE = new AnalyzedTextFetchParser();
+
+    private AnalyzedTextFetchParser() {
+
+    }
 
     @Override
-    public void parse(XContentParser parser, SearchContext context) throws Exception {
-
-        AnalyzedTextFetchContext analyzedTextFetchContext = context.getFetchSubPhaseContext(AnalyzedTextFetchSubPhase.CONTEXT_FACTORY);
-        analyzedTextFetchContext.setHitExecutionNeeded(true);
-
+    public AnalyzedTextFetchBuilder fromXContent(XContentParser parser) throws IOException {
         XContentBuilder newBuilder = jsonBuilder();
         newBuilder.copyCurrentStructure(parser);
         Map<String, Object> requestAsMap = SharedMethods.getSourceAsMap(newBuilder.string());
-        AnalyzedTextRequest request = new AnalyzedTextRequest();
+        AnalyzedTextFetchBuilder request = new AnalyzedTextFetchBuilder();
         if (requestAsMap.get("analyzer") != null) {
             request.analyzer((String) requestAsMap.remove("analyzer"));
         }
@@ -58,8 +60,6 @@ public class AnalyzedTextFetchParseElement implements SearchParseElement {
             request.field((String) requestAsMap.remove("field"));
         }
         assert requestAsMap.isEmpty();
-        analyzedTextFetchContext.setRequest(request);
-
+        return request;
     }
-
 }

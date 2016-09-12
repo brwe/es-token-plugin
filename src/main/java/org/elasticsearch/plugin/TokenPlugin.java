@@ -57,7 +57,11 @@ import org.elasticsearch.script.pmml.PMMLModelScriptEngineService;
 import org.elasticsearch.script.pmml.VectorScriptFactory;
 import org.elasticsearch.search.SearchRequestParsers;
 import org.elasticsearch.search.fetch.FetchSubPhase;
+import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchBuilder;
+import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchParser;
 import org.elasticsearch.search.fetch.analyzedtext.AnalyzedTextFetchSubPhase;
+import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchBuilder;
+import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchParser;
 import org.elasticsearch.search.fetch.termvectors.TermVectorsFetchSubPhase;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.watcher.ResourceWatcherService;
@@ -65,7 +69,6 @@ import org.elasticsearch.watcher.ResourceWatcherService;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -145,5 +148,13 @@ public class TokenPlugin extends Plugin implements ScriptPlugin, ActionPlugin, S
     @Override
     public List<Setting<?>> getSettings() {
         return Collections.singletonList(ingestAnalysisService.getIngestAnalysisGroupSetting());
+    }
+
+    @Override
+    public List<SearchExtSpec<?>> getSearchExts() {
+        return Arrays.asList(
+                new SearchExtSpec<>(TermVectorsFetchSubPhase.NAME, TermVectorsFetchBuilder::new, TermVectorsFetchParser.INSTANCE),
+                new SearchExtSpec<>(AnalyzedTextFetchSubPhase.NAME, AnalyzedTextFetchBuilder::new, AnalyzedTextFetchParser.INSTANCE)
+                );
     }
 }

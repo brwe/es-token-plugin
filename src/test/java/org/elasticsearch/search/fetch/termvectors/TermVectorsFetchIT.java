@@ -22,6 +22,7 @@ package org.elasticsearch.search.fetch.termvectors;
 import org.elasticsearch.action.preparespec.PrepareSpecRequestBuilder;
 import org.elasticsearch.action.preparespec.PrepareSpecResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.termvectors.TermVectorsRequestBuilder;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.settings.Settings;
@@ -35,7 +36,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.test.ESIntegTestCase;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,26 +82,22 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                         .source(jsonBuilder().startObject().field("test", "I am sam i am").endObject())).actionGet();
 
         client().admin().indices().prepareRefresh().execute().actionGet();
-
+        TermVectorsRequestBuilder termVectorsRequestBuilder = client().prepareTermVectors().setSelectedFields("test");
         SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
-                jsonBuilder().startObject()
-                .startObject(TermVectorsFetchSubPhase.NAMES[0])
-                .field("fields", new String[]{"test"})
-                .endObject()
-                .endObject());
+                Collections.singletonList(new TermVectorsFetchBuilder(termVectorsRequestBuilder)));
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
         SearchHit hit = response.getHits().getAt(0);
         // get the fields from the response
-        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAMES[0]);
+        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAME);
         Map<String, Object> termVectors = fields.getValue();
         // get frequencies for field test
         Map<String, Object> field = (Map<String, Object>) termVectors.get("test");
         Map<String, Object> freqs = (Map<String, Object>) field.get("terms");
-        assertThat((Integer) ((Map<String, Object>) freqs.get("i")).get("term_freq"), equalTo(2));
-        assertThat((Integer) ((Map<String, Object>) freqs.get("am")).get("term_freq"), equalTo(2));
-        assertThat((Integer) ((Map<String, Object>) freqs.get("sam")).get("term_freq"), equalTo(1));
+        assertThat(((Map<String, Object>) freqs.get("i")).get("term_freq"), equalTo(2));
+        assertThat(((Map<String, Object>) freqs.get("am")).get("term_freq"), equalTo(2));
+        assertThat(((Map<String, Object>) freqs.get("sam")).get("term_freq"), equalTo(1));
     }
 
     @SuppressWarnings("unchecked")
@@ -128,28 +124,25 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         client().admin().indices().prepareRefresh().execute().actionGet();
 
-        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
-                jsonBuilder().startObject()
-                .startObject(TermVectorsFetchSubPhase.NAMES[0])
-                .field("fields", new String[]{"text"})
-                .endObject()
-                .endObject())
+        TermVectorsRequestBuilder termVectorsRequestBuilder = client().prepareTermVectors().setSelectedFields("text");
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource()
+                .ext(Collections.singletonList(new TermVectorsFetchBuilder(termVectorsRequestBuilder)))
                 .storedField("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
         SearchHit hit = response.getHits().getAt(0);
         // get the fields from the response
-        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAMES[0]);
+        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAME);
         Map<String, Object> termVectors = fields.getValue();
         // get frequencies for field test
         Map<String, Object> field = (Map<String, Object>) termVectors.get("text");
         Map<String, Object> freqs = (Map<String, Object>) field.get("terms");
-        assertThat((Integer) ((Map<String, Object>) freqs.get("i")).get("term_freq"), equalTo(2));
-        assertThat((Integer) ((Map<String, Object>) freqs.get("am")).get("term_freq"), equalTo(2));
-        assertThat((Integer) ((Map<String, Object>) freqs.get("sam")).get("term_freq"), equalTo(1));
+        assertThat(((Map<String, Object>) freqs.get("i")).get("term_freq"), equalTo(2));
+        assertThat(((Map<String, Object>) freqs.get("am")).get("term_freq"), equalTo(2));
+        assertThat(((Map<String, Object>) freqs.get("sam")).get("term_freq"), equalTo(1));
         SearchHitField textField = hit.field("text");
-        assertThat((String) textField.getValue(), equalTo("I am sam i am"));
+        assertThat(textField.getValue(), equalTo("I am sam i am"));
     }
 
     @SuppressWarnings("unchecked")
@@ -184,12 +177,9 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
                 .source(getTextFieldRequestSourceWithAllTerms().string()).setId("my_id").get();
         Map<String, Object> params = new HashMap<>();
         params.put("spec", prepareSpecResponse.getSpecAsMap());
-        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
-                jsonBuilder().startObject()
-                .startObject(TermVectorsFetchSubPhase.NAMES[0])
-                .field("fields", new String[]{"text"})
-                .endObject()
-                .endObject())
+        TermVectorsRequestBuilder termVectorsRequestBuilder = client().prepareTermVectors().setSelectedFields("text");
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource()
+                .ext(Collections.singletonList(new TermVectorsFetchBuilder(termVectorsRequestBuilder)))
                 .scriptField("vectors", new Script("doc_to_vector", ScriptService.ScriptType.INLINE, "native", params))
                 .storedField("text");
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
@@ -197,7 +187,7 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
         logger.info(response.toString());
         SearchHit hit = response.getHits().getAt(0);
         // get the fields from the response
-        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAMES[0]);
+        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAME);
         Map<String, Object> termVectors = fields.getValue();
         // get frequencies for field test
         Map<String, Object> field = (Map<String, Object>) termVectors.get("text");
@@ -241,20 +231,16 @@ public class TermVectorsFetchIT extends ESIntegTestCase {
 
         ensureGreen();
         refresh();
-        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource().ext(
-                jsonBuilder().startObject()
-                .startObject(TermVectorsFetchSubPhase.NAMES[0])
-                .startObject("per_field_analyzer")
-                .field("text", "keyword")
-                .endObject()
-                .endObject()
-                .endObject());
+        TermVectorsRequestBuilder termVectorsRequestBuilder = client().prepareTermVectors()
+                .setPerFieldAnalyzer(Collections.singletonMap("text", "keyword"));
+        SearchSourceBuilder searchSource = SearchSourceBuilder.searchSource()
+                .ext(Collections.singletonList(new TermVectorsFetchBuilder(termVectorsRequestBuilder)));
         SearchResponse response = client().prepareSearch().setSource(searchSource).get();
         assertSearchResponse(response);
         logger.info(response.toString());
         SearchHit hit = response.getHits().getAt(0);
         // get the fields from the response
-        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAMES[0]);
+        SearchHitField fields = hit.field(TermVectorsFetchSubPhase.NAME);
         Map<String, Object> termVectors = fields.getValue();
         // get frequencies for field test
         Map<String, Object> field = (Map<String, Object>) termVectors.get("text");

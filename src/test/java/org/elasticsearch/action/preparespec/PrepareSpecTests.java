@@ -31,6 +31,7 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.plugin.TokenPlugin;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.search.SearchExtRegistry;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorParsers;
@@ -53,6 +54,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class PrepareSpecTests extends ESTestCase {
     private IndicesQueriesRegistry queryRegistry = new IndicesQueriesRegistry();
+    private SearchExtRegistry searchExtRegistry = new SearchExtRegistry();
 
     private ParseFieldRegistry<Aggregator.Parser> aggregationParserRegistry = new ParseFieldRegistry<>("aggregation");
     private AggregatorParsers aggParsers = new AggregatorParsers(aggregationParserRegistry,
@@ -73,21 +75,21 @@ public class PrepareSpecTests extends ESTestCase {
     public void testParseFieldSpecRequestsWithSignificantTemrs() throws IOException {
         XContentBuilder source = getTextFieldRequestSourceWithSignificnatTerms();
         Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
-                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
+                queryRegistry, aggParsers, suggesters, searchExtRegistry, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     public void testParseFieldSpecRequestsWithAllTerms() throws IOException {
         XContentBuilder source = getTextFieldRequestSourceWithAllTerms();
         Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
-                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
+                queryRegistry, aggParsers, suggesters, searchExtRegistry, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
     public void testParseFieldSpecRequestsWithGivenTerms() throws IOException {
         XContentBuilder source = getTextFieldRequestSourceWithGivenTerms();
         Tuple<Boolean,List<FieldSpecRequest>> fieldSpecRequests = TransportPrepareSpecAction.parseFieldSpecRequests(
-                queryRegistry, aggParsers, suggesters, parseFieldMatcher, source.string());
+                queryRegistry, aggParsers, suggesters, searchExtRegistry, parseFieldMatcher, source.string());
         assertThat(fieldSpecRequests.v2().size(), equalTo(1));
     }
 
