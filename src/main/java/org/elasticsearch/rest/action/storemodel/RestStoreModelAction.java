@@ -61,7 +61,7 @@ public class RestStoreModelAction extends BaseRestHandler {
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
+    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
         final String id;
         if (request.hasParam("id")) {
             id = request.param("id");
@@ -88,10 +88,10 @@ public class RestStoreModelAction extends BaseRestHandler {
         } catch (IOException e) {
             throw new ElasticsearchException("cannot store model", e);
         }
-        storeModel(channel, client, id, model);
+        return storeModel(client, id, model);
     }
 
-    public void storeModel(final RestChannel channel, Client client, String id, String model) {
+    public RestChannelConsumer storeModel(Client client, String id, String model) {
         PutStoredScriptRequestBuilder storedScriptRequestBuilder;
         try {
             storedScriptRequestBuilder = client.admin().cluster().preparePutStoredScript().setScriptLang(PMMLModelScriptEngineService.NAME)
@@ -102,15 +102,18 @@ public class RestStoreModelAction extends BaseRestHandler {
         if (id != null) {
             storedScriptRequestBuilder.setId(id);
         }
-        storedScriptRequestBuilder.execute(new RestBuilderListener<PutStoredScriptResponse>(channel){
-            @Override
-            public RestResponse buildResponse(PutStoredScriptResponse response, XContentBuilder builder) throws Exception {
-                builder.startObject();
-                builder.field("acknowledged", response.isAcknowledged());
-                builder.field("id", id);
-                builder.endObject();
-                return new BytesRestResponse(OK, builder);
-            }
-        });
+        return channel -> {
+            storedScriptRequestBuilder.execute(new RestBuilderListener<PutStoredScriptResponse>(channel) {
+                @Override
+                public RestResponse buildResponse(PutStoredScriptResponse response, XContentBuilder builder) throws Exception {
+                    builder.startObject();
+                    builder.field("acknowledged", response.isAcknowledged());
+                    builder.field("id", id);
+                    builder.endObject();
+                    return new BytesRestResponse(OK, builder);
+                }
+            });
+        };
     }
+
 }

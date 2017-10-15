@@ -37,6 +37,7 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.action.RestBuilderListener;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 import static org.elasticsearch.rest.RestRequest.Method.POST;
@@ -54,7 +55,7 @@ public class RestPrepareSpecAction extends BaseRestHandler {
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
+    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
         String id = request.param("id");
         final PrepareSpecRequest prepareSpecRequest = new PrepareSpecRequest();
         if (request.content() == null) {
@@ -64,17 +65,17 @@ public class RestPrepareSpecAction extends BaseRestHandler {
         if (id != null) {
             prepareSpecRequest.id(id);
         }
-
-        client.execute(PrepareSpecAction.INSTANCE, prepareSpecRequest, new RestBuilderListener<PrepareSpecResponse>(channel) {
-            @Override
-            public RestResponse buildResponse(PrepareSpecResponse response, XContentBuilder builder) throws Exception {
-                builder.startObject();
-                response.toXContent(builder, request);
-                builder.endObject();
-                return new BytesRestResponse(OK, builder);
-            }
-        });
-
+        return channel -> {
+            client.execute(PrepareSpecAction.INSTANCE, prepareSpecRequest, new RestBuilderListener<PrepareSpecResponse>(channel) {
+                @Override
+                public RestResponse buildResponse(PrepareSpecResponse response, XContentBuilder builder) throws Exception {
+                    builder.startObject();
+                    response.toXContent(builder, request);
+                    builder.endObject();
+                    return new BytesRestResponse(OK, builder);
+                }
+            });
+        };
 
     }
 }

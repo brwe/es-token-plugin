@@ -50,7 +50,7 @@ public class RestTrainModelAction extends BaseRestHandler {
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
+    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
         TrainModelRequestBuilder trainModelRequestBuilder = new TrainModelRequestBuilder(client);
         trainModelRequestBuilder.setModelId(request.param("id"));
         try {
@@ -59,14 +59,16 @@ public class RestTrainModelAction extends BaseRestHandler {
             throw new IllegalArgumentException(ex);
         }
 
-        trainModelRequestBuilder.execute(new RestBuilderListener<TrainModelResponse>(channel) {
-            @Override
-            public RestResponse buildResponse(TrainModelResponse response, XContentBuilder builder) throws Exception {
-                builder.startObject();
-                response.toXContent(builder, request);
-                builder.endObject();
-                return new BytesRestResponse(OK, builder);
-            }
-        });
+        return channel -> {
+            trainModelRequestBuilder.execute(new RestBuilderListener<TrainModelResponse>(channel) {
+                @Override
+                public RestResponse buildResponse(TrainModelResponse response, XContentBuilder builder) throws Exception {
+                    builder.startObject();
+                    response.toXContent(builder, request);
+                    builder.endObject();
+                    return new BytesRestResponse(OK, builder);
+                }
+            });
+        };
     }
 }

@@ -34,6 +34,8 @@ import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestResponse;
 import org.elasticsearch.rest.action.RestBuilderListener;
 
+import java.io.IOException;
+
 import static org.elasticsearch.rest.RestRequest.Method.GET;
 import static org.elasticsearch.rest.RestStatus.OK;
 
@@ -49,7 +51,7 @@ public class RestAllTermsAction extends BaseRestHandler {
     }
 
     @Override
-    public void handleRequest(final RestRequest request, final RestChannel channel, final NodeClient client) {
+    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
         final AllTermsRequest allTermsRequest = new AllTermsRequest();
         allTermsRequest.index(request.param("index"));
         allTermsRequest.field(request.param("field"));
@@ -57,14 +59,16 @@ public class RestAllTermsAction extends BaseRestHandler {
         allTermsRequest.from(request.param("from"));
         allTermsRequest.minDocFreq(request.paramAsLong("min_doc_freq", 0));
 
-        client.execute(AllTermsAction.INSTANCE, allTermsRequest, new RestBuilderListener<AllTermsResponse>(channel) {
-            @Override
-            public RestResponse buildResponse(AllTermsResponse response, XContentBuilder builder) throws Exception {
-                builder.startObject();
-                response.toXContent(builder, request);
-                builder.endObject();
-                return new BytesRestResponse(OK, builder);
-            }
-        });
+        return channel -> {
+            client.execute(AllTermsAction.INSTANCE, allTermsRequest, new RestBuilderListener<AllTermsResponse>(channel) {
+                @Override
+                public RestResponse buildResponse(AllTermsResponse response, XContentBuilder builder) throws Exception {
+                    builder.startObject();
+                    response.toXContent(builder, request);
+                    builder.endObject();
+                    return new BytesRestResponse(OK, builder);
+                }
+            });
+        };
     }
 }
