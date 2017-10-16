@@ -41,5 +41,12 @@ html_docs
 backwards/
 eclipse-build
 
+# demo files
+demo/data
+demo/elasticsearch*
+demo/kibana*
+
+# build files
+out
 
 *~

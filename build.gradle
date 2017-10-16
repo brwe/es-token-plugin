@@ -70,6 +70,7 @@ thirdPartyAudit.enabled = false
 forbiddenPatterns {
     // it really doesn't like tabs in knime workspace and log files
     exclude 'knime/knime_workspace/**/*'
+    exclude 'demo/**/*'
 }
 
 integTest {
